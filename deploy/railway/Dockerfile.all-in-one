@@ -1,5 +1,5 @@
 # ==============================================================================
-# IRON ID Sovereign Mail — All-in-One Virtual Linux VPS Container for Railway
+# IRON ID Sovereign Mail — All-in-One Railway Virtual VPS Container
 # Runs: PostgreSQL 16 + SeaweedFS + Stalwart Rust + Node.js Webmail Gateway
 # ==============================================================================
 
@@ -9,27 +9,28 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PORT=3001
 ENV NODE_ENV=production
 
-# 1. Install Base Packages, PostgreSQL 16, Supervisor, and Node.js
+# 1. Install System Dependencies, PostgreSQL, and Node.js LTS
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
     tar \
-    supervisor \
     ca-certificates \
     gnupg \
-    postgresql-16 \
-    postgresql-contrib-16 \
+    postgresql \
+    postgresql-contrib \
+    tzdata \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Download and Install Stalwart Mail Server (Rust)
-RUN curl -sSL https://github.com/stalwartlabs/mail-server/releases/download/v0.16.23/stalwart-mail-x86_64-unknown-linux-gnu.tar.gz \
+RUN curl -fsSL https://github.com/stalwartlabs/stalwart/releases/download/v0.16.23/stalwart-x86_64-unknown-linux-gnu.tar.gz \
     | tar -xz -C /usr/local/bin/ \
-    && chmod +x /usr/local/bin/stalwart-mail
+    && chmod +x /usr/local/bin/stalwart \
+    && ln -sf /usr/local/bin/stalwart /usr/local/bin/stalwart-mail
 
-# 3. Download and Install SeaweedFS
-RUN curl -sSL https://github.com/seaweedfs/seaweedfs/releases/download/3.74/linux_amd64.tar.gz \
+# 3. Download and Install SeaweedFS (Apache 2.0 S3 Storage)
+RUN curl -fsSL https://github.com/seaweedfs/seaweedfs/releases/download/3.74/linux_amd64.tar.gz \
     | tar -xz -C /usr/local/bin/ \
     && chmod +x /usr/local/bin/weed
 
@@ -39,7 +40,6 @@ WORKDIR /opt/iron-id
 COPY webmail /opt/iron-id/webmail
 COPY deploy/init.sql /opt/iron-id/init.sql
 COPY deploy/railway/config.all-in-one.toml /opt/iron-id/config.toml
-COPY deploy/railway/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY deploy/railway/entrypoint.sh /opt/iron-id/entrypoint.sh
 
 RUN chmod +x /opt/iron-id/entrypoint.sh \

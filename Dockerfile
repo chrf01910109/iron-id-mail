@@ -18,17 +18,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg \
     postgresql \
     postgresql-contrib \
+    tzdata \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Download and Install Stalwart Mail Server (Rust)
-RUN curl -sSL https://github.com/stalwartlabs/mail-server/releases/download/v0.16.23/stalwart-mail-x86_64-unknown-linux-gnu.tar.gz \
+RUN curl -fsSL https://github.com/stalwartlabs/stalwart/releases/download/v0.16.23/stalwart-x86_64-unknown-linux-gnu.tar.gz \
     | tar -xz -C /usr/local/bin/ \
-    && chmod +x /usr/local/bin/stalwart-mail
+    && chmod +x /usr/local/bin/stalwart \
+    && ln -sf /usr/local/bin/stalwart /usr/local/bin/stalwart-mail
 
-# 3. Download and Install SeaweedFS
-RUN curl -sSL https://github.com/seaweedfs/seaweedfs/releases/download/3.74/linux_amd64.tar.gz \
+# 3. Download and Install SeaweedFS (Apache 2.0 S3 Storage)
+RUN curl -fsSL https://github.com/seaweedfs/seaweedfs/releases/download/3.74/linux_amd64.tar.gz \
     | tar -xz -C /usr/local/bin/ \
     && chmod +x /usr/local/bin/weed
 

@@ -66,12 +66,13 @@ else
   exit 1
 fi
 
-STALWART_URL="https://github.com/stalwartlabs/mail-server/releases/download/v${STALWART_VERSION}/stalwart-mail-${STALWART_ARCH}.tar.gz"
+STALWART_URL="https://github.com/stalwartlabs/stalwart/releases/download/v${STALWART_VERSION}/stalwart-${STALWART_ARCH}.tar.gz"
 echo "Downloading from: ${STALWART_URL}"
 curl -sSL "${STALWART_URL}" | tar -xz -C "${INSTALL_DIR}/engine"
 
-chmod +x "${INSTALL_DIR}/engine/stalwart-mail"
-ln -sf "${INSTALL_DIR}/engine/stalwart-mail" /usr/local/bin/stalwart-mail
+chmod +x "${INSTALL_DIR}/engine/stalwart"
+ln -sf "${INSTALL_DIR}/engine/stalwart" /usr/local/bin/stalwart-mail
+ln -sf "${INSTALL_DIR}/engine/stalwart" /usr/local/bin/stalwart
 
 # 5. Production Configuration (config.toml)
 echo "--> [5/7] Writing Stalwart production configuration..."
