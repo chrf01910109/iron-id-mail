@@ -1,0 +1,103 @@
+# ==============================================================================
+# IRON ID Sovereign Mail — Production Stalwart Configuration
+# Stack: PostgreSQL 16 + OpenSearch 2 + SeaweedFS (S3)
+# ==============================================================================
+
+[server]
+hostname = "mail.iron-id.io"
+
+# ------------------------------------------------------------------------------
+# Storage Subsystem Routing (Enterprise Disaggregation)
+# ------------------------------------------------------------------------------
+[storage]
+data = "postgres"        # Metadata, directory, accounts, mailboxes, sessions
+lookup = "postgres"      # High-speed routing
+fts = "elastic"          # Full-Text Search via OpenSearch (Wire-Compatible)
+blob = "s3"              # Attachment blobs in SeaweedFS (S3 API)
+
+# ------------------------------------------------------------------------------
+# PostgreSQL 16 Store Configuration
+# ------------------------------------------------------------------------------
+[store.postgres]
+type = "postgres"
+host = "postgres"
+port = 5432
+database = "stalwart_mail"
+user = "stalwart"
+password = "StalwartSecretPass2026!"
+max-connections = 32
+
+# ------------------------------------------------------------------------------
+# OpenSearch 2.x FTS Node Configuration
+# ------------------------------------------------------------------------------
+[store.elastic]
+type = "elastic"
+url = "http://opensearch:9200"
+index = "iron_id_emails"
+bulk-size = 1000
+
+# ------------------------------------------------------------------------------
+# SeaweedFS (S3) Object Storage Configuration
+# ------------------------------------------------------------------------------
+[store.s3]
+type = "s3"
+endpoint = "http://seaweedfs:8333"
+region = "us-east-1"
+bucket = "iron-id-mail-blobs"
+access-key = "any"
+secret-key = "any"
+use-path-style = true
+compression = "lz4"
+max-connections = 64
+
+# ------------------------------------------------------------------------------
+# Internal Directory on PostgreSQL
+# ------------------------------------------------------------------------------
+[directory.internal]
+type = "internal"
+store = "postgres"
+
+# ------------------------------------------------------------------------------
+# Network Listeners
+# ------------------------------------------------------------------------------
+[server.listener."smtp"]
+bind = ["0.0.0.0:25", "[::]:25"]
+protocol = "smtp"
+
+[server.listener."submissions"]
+bind = ["0.0.0.0:465", "[::]:465"]
+protocol = "smtp"
+tls.implicit = true
+tls.certificate = "letsencrypt"
+
+[server.listener."submission"]
+bind = ["0.0.0.0:587", "[::]:587"]
+protocol = "smtp"
+tls.certificate = "letsencrypt"
+
+[server.listener."imaps"]
+bind = ["0.0.0.0:993", "[::]:993"]
+protocol = "imap"
+tls.implicit = true
+tls.certificate = "letsencrypt"
+
+[server.listener."http"]
+bind = ["0.0.0.0:8080"]
+protocol = "http"
+
+# ------------------------------------------------------------------------------
+# TLS & Automated ACME Let's Encrypt
+# ------------------------------------------------------------------------------
+[certificate."letsencrypt"]
+acme = "letsencrypt"
+domains = ["mail.iron-id.io"]
+
+[acme."letsencrypt"]
+directory = "https://acme-v02.api.letsencrypt.org/directory"
+contact = ["admin@iron-id.io"]
+
+[jmap]
+allow-insecure-auth = true
+
+[authentication]
+allow-cleartext = true

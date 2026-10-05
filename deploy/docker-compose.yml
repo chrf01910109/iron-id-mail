@@ -1,0 +1,127 @@
+# ==============================================================================
+# IRON ID Sovereign Mail — Apache 2.0 Enterprise Sovereign Stack
+# Core: Stalwart Mail Server + PostgreSQL 16 + OpenSearch 2 + SeaweedFS (S3) + Webmail
+# License: 100% Permissive Open Source (No AGPL, No SSPL)
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # 1. Relational Metadata, Accounts & Directory (PostgreSQL 16)
+  postgres:
+    image: postgres:16-alpine
+    container_name: iron-id-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: stalwart_mail
+      POSTGRES_USER: stalwart
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-StalwartSecretPass2026!}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - iron-internal
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stalwart -d stalwart_mail"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Apache 2.0 Distributed Full-Text Search (OpenSearch 2.x)
+  # Replaces Elasticsearch (SSPL) with fully open-source OpenSearch
+  opensearch:
+    image: opensearchproject/opensearch:2.17.0
+    container_name: iron-id-opensearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms1536m -Xmx1536m"
+    volumes:
+      - opensearchdata:/usr/share/opensearch/data
+    networks:
+      - iron-internal
+    ports:
+      - "127.0.0.1:9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cat/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # 3. Apache 2.0 High-Throughput Blob & Attachment Storage (SeaweedFS)
+  # Replaces MinIO (AGPLv3). Facebook Haystack architecture optimized for billions of small/medium email blobs.
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    container_name: iron-id-seaweedfs
+    restart: always
+    command: "server -dir=/data -s3 -s3.port=8333 -s3.allowEmptyFolder=true -ip=seaweedfs"
+    volumes:
+      - seaweeddata:/data
+    networks:
+      - iron-internal
+    ports:
+      - "127.0.0.1:8333:8333"   # S3 Compatible API Endpoint
+      - "127.0.0.1:8888:8888"   # SeaweedFS Filer Web Interface
+      - "127.0.0.1:9333:9333"   # Master Server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9333/cluster/status"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 4. Core Stalwart Sovereign Mail Server (Rust Core)
+  stalwart-mail:
+    image: stalwartlabs/mail-server:v0.16.23
+    container_name: iron-id-stalwart
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
+    volumes:
+      - ./config.toml:/opt/stalwart-mail/etc/config.toml:ro
+      - maildata:/opt/stalwart-mail/data
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - iron-internal
+    ports:
+      - "25:25"                 # Inbound ESMTP (Server-to-Server)
+      - "465:465"               # SMTPS (Submission TLS)
+      - "587:587"               # SMTP Submission
+      - "993:993"               # IMAPS (Encrypted Sync)
+      - "4190:4190"             # ManageSieve
+      - "127.0.0.1:8080:8080"   # JMAP Internal Gateway
+
+  # 5. Webmail Client & Administrative Gateway (Node.js)
+  webmail-gateway:
+    build:
+      context: ../webmail
+      dockerfile: Dockerfile
+    container_name: iron-id-webmail
+    restart: always
+    depends_on:
+      - stalwart-mail
+    environment:
+      - PORT=3001
+      - STALWART_HOST=stalwart-mail
+      - STALWART_PORT=8080
+      - NODE_ENV=production
+    networks:
+      - iron-internal
+    ports:
+      - "3001:3001"
+
+volumes:
+  pgdata:
+  opensearchdata:
+  seaweeddata:
+  maildata:
+
+networks:
+  iron-internal:
+    driver: bridge

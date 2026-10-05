@@ -1,0 +1,7 @@
+FROM stalwartlabs/mail-server:v0.16.23
+
+COPY deploy/config.toml /opt/stalwart-mail/etc/config.toml
+
+EXPOSE 8080 25 465 587 993 4190
+
+CMD ["/usr/local/bin/stalwart-mail", "-c", "/opt/stalwart-mail/etc/config.toml"]

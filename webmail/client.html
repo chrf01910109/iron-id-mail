@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IRON ID Mail — Sovereign Workspace</title>
+  <meta name="description" content="IRON ID sovereign business email workspace powered by JMAP.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════ DESIGN TOKENS ═══════════════ */
+    :root {
+      --color-bg: #f8f9fb;
+      --color-surface: #ffffff;
+      --color-text: #111827;
+      --color-text-secondary: #344054;
+      --color-text-muted: #667085;
+      --color-text-faint: #98A2B3;
+      --color-border: #E5E7EB;
+      --color-border-light: #F3F4F6;
+      --color-accent: #2457E6;
+      --color-accent-light: #EEF2FF;
+      --color-accent-dark: #1742B5;
+      --color-accent-hover: #1D4ED8;
+      --color-success: #15803D;
+      --color-success-bg: #DCFCE7;
+      --color-warning: #B45309;
+      --color-warning-bg: #FEF3C7;
+      --color-danger: #B91C1C;
+      --color-danger-bg: #FEE2E2;
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-heading: 'Barlow Condensed', 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--color-text);
+      background: var(--color-bg);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D0D5DD; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #98A2B3; }
+
+    /* ═══════════════ HEADER ═══════════════ */
+    .header {
+      height: 56px;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 14px;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+    .hdr-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .hdr-brand-icon {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-md);
+      background: var(--color-accent);
+      display: grid; place-items: center;
+      color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+    }
+    .hdr-brand-name { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+    .hdr-brand-badge {
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 4px; background: var(--color-accent-light);
+      color: var(--color-accent-dark); letter-spacing: 0.04em;
+    }
+    .hdr-spacer { flex: 1; }
+    .hdr-controls { display: flex; align-items: center; gap: 8px; }
+    
+    .conn-badge {
+      display: none;
+      align-items: center; gap: 6px; padding: 5px 12px;
+      border-radius: 20px; border: 1px solid var(--color-border);
+      font-size: 11px; color: var(--color-text-muted); font-weight: 500;
+    }
+    @media (min-width: 960px) { .conn-badge { display: flex; } }
+    .conn-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--color-success);
+      box-shadow: 0 0 0 2px var(--color-success-bg);
+      transition: background 0.3s;
+    }
+    .conn-dot.offline { background: var(--color-danger); box-shadow: 0 0 0 2px var(--color-danger-bg); }
+
+    /* User Profile Pill */
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px 4px 6px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      color: var(--color-text);
+      box-shadow: var(--shadow-sm);
+    }
+    .user-pill-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--color-accent-light);
+      color: var(--color-accent);
+      font-size: 11px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .user-pill-info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+      text-align: left;
+    }
+    .user-pill-name { font-weight: 600; font-size: 12px; color: var(--color-text); }
+    .user-pill-email { font-size: 10px; color: var(--color-text-muted); }
+
+    .hdr-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .hdr-btn:hover {
+      background: var(--color-border-light);
+      color: var(--color-text);
+      border-color: #D0D5DD;
+    }
+    .hdr-btn.danger:hover {
+      background: var(--color-danger-bg);
+      color: var(--color-danger);
+      border-color: #FECACA;
+    }
+
+    .icon-btn {
+      width: 36px; height: 36px; display: grid; place-items: center;
+      border-radius: var(--radius-md); border: 1px solid var(--color-border);
+      background: var(--color-surface); color: var(--color-text-muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .icon-btn:hover { background: var(--color-border-light); color: var(--color-text); }
+
+    .compose-btn {
+      display: flex; align-items: center; gap: 8px;
+      height: 36px; padding: 0 16px; border-radius: var(--radius-md);
+      border: none; background: var(--color-accent); color: #fff;
+      font-size: 13px; font-weight: 600; font-family: var(--font-body);
+      cursor: pointer; transition: background 0.15s;
+      box-shadow: 0 1px 2px rgba(36,87,230,0.2);
+    }
+    .compose-btn:hover { background: var(--color-accent-hover); }
+
+    /* ═══════════════ MAIN 3-COLUMN LAYOUT ═══════════════ */
+    .main-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ═══════════════ COLUMN 1: SIDEBAR ═══════════════ */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 10px;
+      gap: 4px;
+    }
+    .sb-section {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--color-text-faint);
+      padding: 4px 10px 8px;
+    }
+    .sb-btn {
+      width: 100%; height: 38px;
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 10px; border-radius: var(--radius-md);
+      border: none; background: transparent;
+      color: var(--color-text-secondary);
+      font-size: 13px; font-weight: 500; font-family: var(--font-body);
+      cursor: pointer; transition: all 0.15s;
+      text-align: left;
+    }
+    .sb-btn:hover { background: var(--color-border-light); color: var(--color-text); }
+    .sb-btn.active {
+      background: var(--color-accent-light);
+      color: var(--color-accent-dark);
+      font-weight: 600;
+    }
+    .sb-btn svg { flex-shrink: 0; opacity: 0.7; }
+    .sb-btn.active svg { opacity: 1; stroke: var(--color-accent); }
+    .sb-count {
+      margin-left: auto; font-size: 11px; font-weight: 600;
+      padding: 2px 7px; border-radius: 10px;
+      background: var(--color-border-light); color: var(--color-text-muted);
+    }
+    .sb-count.unread {
+      background: var(--color-accent); color: #fff;
+    }
+    .sb-footer {
+      margin-top: auto; padding: 14px 10px;
+      border-top: 1px solid var(--color-border-light);
+    }
+    .sb-session-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-faint); margin-bottom: 4px; }
+    .sb-session-user { font-size: 12px; font-weight: 600; color: var(--color-text); word-break: break-all; }
+    .sb-session-sub { font-size: 11px; color: var(--color-text-muted); }
+    .sb-meter { height: 4px; border-radius: 2px; background: var(--color-border-light); margin-top: 8px; overflow: hidden; }
+    .sb-meter-fill { height: 100%; width: 14%; background: var(--color-accent); border-radius: 2px; }
+
+    /* ═══════════════ COLUMN 2: EMAIL LIST ═══════════════ */
+    .list-panel {
+      width: 380px;
+      flex-shrink: 0;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .list-header {
+      padding: 12px 16px 8px;
+      border-bottom: 1px solid var(--color-border-light);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .lh-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .lh-title {
+      font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+    }
+    .lh-badge {
+      font-size: 11px; font-weight: 600; padding: 1px 7px;
+      border-radius: 10px; background: var(--color-border-light); color: var(--color-text-muted);
+    }
+    
+    /* Search & Filter Bar */
+    .lh-search {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .lh-search svg {
+      position: absolute;
+      left: 10px;
+      color: var(--color-text-muted);
+      pointer-events: none;
+    }
+    .lh-search input {
+      width: 100%;
+      height: 32px;
+      padding: 0 10px 0 32px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
+      font-size: 12px;
+      font-family: var(--font-body);
+      color: var(--color-text);
+      outline: none;
+      transition: all 0.15s;
+    }
+    .lh-search input:focus {
+      background: var(--color-surface);
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px rgba(36, 87, 230, 0.12);
+    }
+    
+    .lh-filters {
+      display: flex;
+      gap: 6px;
+    }
+    .filter-tab {
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-tab.active {
+      background: var(--color-accent-light);
+      color: var(--color-accent);
+      border-color: rgba(36, 87, 230, 0.2);
+    }
+
+    .list-scroll {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .email-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border-light);
+      display: flex;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .email-item:hover { background: var(--color-bg); }
+    .email-item.selected {
+      background: #F0F4FF;
+      border-left: 3px solid var(--color-accent);
+    }
+    .email-item.unread {
+      background: #FFFFFF;
+    }
+    .email-item.unread .ei-sender,
+    .email-item.unread .ei-subject {
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .ei-unread-dot {
+      position: absolute;
+      left: 6px;
+      top: 18px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--color-accent);
+    }
+    .ei-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 13px;
+      flex-shrink: 0;
+    }
+    .ei-body { flex: 1; min-width: 0; }
+    .ei-top {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 2px;
+    }
+    .ei-sender {
+      font-size: 13px; font-weight: 500; color: var(--color-text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ei-time {
+      font-size: 11px; color: var(--color-text-faint); flex-shrink: 0;
+    }
+    .ei-subject {
+      font-size: 13px; color: var(--color-text-secondary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px;
+    }
+    .ei-preview {
+      font-size: 12px; color: var(--color-text-muted);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .loading-text {
+      padding: 32px 16px; text-align: center; color: var(--color-text-faint); font-size: 13px;
+    }
+
+    /* ═══════════════ COLUMN 3: READING PANE ═══════════════ */
+    .reader {
+      flex: 1;
+      background: var(--color-bg);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .reader-empty {
+      flex: 1; display: grid; place-items: center;
+      color: var(--color-text-faint); text-align: center;
+    }
+    .reader-empty p { margin-top: 12px; font-size: 14px; }
+    
+    .ev {
+      padding: 0 0 32px;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    
+    /* Toolbar inside reading pane */
+    .ev-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .tb-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tb-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tb-btn:hover {
+      background: var(--color-border-light);
+      color: var(--color-text);
+      border-color: var(--color-border);
+    }
+    .tb-btn.danger:hover {
+      background: var(--color-danger-bg);
+      color: var(--color-danger);
+      border-color: #FECACA;
+    }
+    .tb-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--color-border);
+      margin: 0 4px;
+    }
+
+    .ev-content {
+      padding: 24px;
+    }
+    .ev-subject {
+      font-family: var(--font-heading);
+      font-size: 24px; font-weight: 700;
+      color: var(--color-text); margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+    .ev-meta {
+      display: flex; align-items: center; gap: 14px;
+      padding-bottom: 18px; margin-bottom: 24px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .ev-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 15px; flex-shrink: 0;
+    }
+    .ev-meta-info { flex: 1; min-width: 0; }
+    .ev-from {
+      font-size: 14px; font-weight: 600; color: var(--color-text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .verified-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 1px 7px; border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+      background: var(--color-success-bg); color: var(--color-success);
+    }
+    .ev-to { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
+    .ev-date { font-size: 12px; color: var(--color-text-faint); flex-shrink: 0; }
+    .ev-body {
+      font-size: 14px; line-height: 1.7; color: #1F2937;
+      white-space: pre-wrap; word-break: break-word;
+      min-height: 180px; padding: 12px 0;
+    }
+    .ev-bottom-actions {
+      display: flex; align-items: center; gap: 8px;
+      padding-top: 24px; margin-top: 32px;
+      border-top: 1px solid var(--color-border);
+    }
+    .act-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      font-size: 13px; font-weight: 500; font-family: var(--font-body);
+      color: var(--color-text-secondary); cursor: pointer;
+      transition: all 0.15s;
+    }
+    .act-btn:hover {
+      background: var(--color-border-light); color: var(--color-text);
+    }
+    .proto-badge {
+      margin-left: auto; display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--color-text-faint); font-family: var(--font-mono);
+    }
+
+    /* ═══════════════ MODALS & OVERLAYS ═══════════════ */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px);
+      display: none; place-items: center; z-index: 100;
+    }
+    .modal-bg.open { display: grid; }
+    .modal {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 100%; max-width: 580px;
+      display: flex; flex-direction: column; overflow: hidden;
+      animation: modalIn 0.15s ease-out;
+    }
+    @keyframes modalIn {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-hdr {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-hdr h3 { font-size: 16px; font-weight: 700; }
+    .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-ftr {
+      padding: 14px 20px; background: var(--color-bg);
+      border-top: 1px solid var(--color-border);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+    .fl-label { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 4px; }
+    .fl-input {
+      width: 100%; padding: 8px 12px; border-radius: var(--radius-md);
+      border: 1px solid var(--color-border); font-size: 13px;
+      font-family: var(--font-body); color: var(--color-text); outline: none;
+      transition: border-color 0.15s;
+    }
+    .fl-input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 2px rgba(36,87,230,0.15); }
+    .fl-input.mono { font-family: var(--font-mono); }
+    .cmp-alert {
+      padding: 10px 14px; border-radius: var(--radius-md);
+      background: var(--color-danger-bg); border: 1px solid #FECACA;
+      color: var(--color-danger); font-size: 12px;
+    }
+
+    /* ═══════════════ SETTINGS MODAL TABS ═══════════════ */
+    .settings-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
+      padding: 0 20px;
+      background: var(--color-bg);
+    }
+    .stab-btn {
+      padding: 10px 16px;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.15s;
+    }
+    .stab-btn:hover { color: var(--color-text); }
+    .stab-btn.active {
+      color: var(--color-accent);
+      border-bottom-color: var(--color-accent);
+      font-weight: 600;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ═══════════════ SOVEREIGN LOGIN MODAL ═══════════════ */
+    .login-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(8px);
+      display: grid; place-items: center;
+      z-index: 1000; padding: 16px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .login-overlay.open { opacity: 1; pointer-events: auto; }
+    .login-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      width: 100%; max-width: 420px;
+      padding: 32px 28px;
+      display: flex; flex-direction: column;
+    }
+    .login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .login-input {
+      width: 100%; padding: 10px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: 13px; font-family: var(--font-body);
+      color: var(--color-text); background: var(--color-surface); outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .login-input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(36, 87, 230, 0.15); }
+    .login-submit-btn {
+      margin-top: 4px; height: 42px;
+      background: var(--color-accent); color: #fff;
+      border: none; border-radius: var(--radius-md);
+      font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .login-submit-btn:hover { background: var(--color-accent-hover); }
+    .login-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .login-alert {
+      padding: 10px 12px; border-radius: var(--radius-sm);
+      background: var(--color-danger-bg); border: 1px solid #FECACA;
+      color: var(--color-danger); font-size: 12px; font-weight: 500; margin-bottom: 14px;
+    }
+    .login-presets {
+      margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid var(--color-border-light);
+    }
+    .preset-btn {
+      padding: 6px 12px; background: var(--color-bg);
+      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      font-size: 12px; font-weight: 500; color: var(--color-text-secondary);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .preset-btn:hover {
+      background: var(--color-accent-light); border-color: var(--color-accent); color: var(--color-accent-dark);
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #111827; color: #fff;
+      padding: 12px 18px; border-radius: var(--radius-md);
+      font-size: 13px; font-weight: 500;
+      box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px;
+      transform: translateY(100px); opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 200;
+    }
+    .toast.visible { transform: translateY(0); opacity: 1; }
+    .hidden { display: none !important; }
+    .animate-spin { animation: spin 0.6s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════ TOP HEADER ═══════════════ -->
+  <header class="header">
+    <div class="hdr-brand">
+      <div class="hdr-brand-icon">ID</div>
+      <span class="hdr-brand-name">IRON ID</span>
+      <span class="hdr-brand-badge">MAIL</span>
+    </div>
+
+    <div class="hdr-spacer"></div>
+
+    <div class="hdr-controls">
+      <div class="conn-badge">
+        <span id="connDot" class="conn-dot"></span>
+        <span id="connText">RFC 8620 Online</span>
+      </div>
+
+      <!-- User Profile Badge -->
+      <div id="userProfileBadge" class="user-pill" title="Active sovereign session">
+        <div id="userAvatar" class="user-pill-avatar">CS</div>
+        <div class="user-pill-info">
+          <span id="hdrUserName" class="user-pill-name">Charaf Sellam</span>
+          <span id="hdrUserEmail" class="user-pill-email">charaf@iron-id.io</span>
+        </div>
+      </div>
+
+      <!-- Admin Console Button (Phase 2) -->
+      <a href="/admin" target="_blank" class="hdr-btn" title="Administrative Console & DNS Health (Phase 2)" style="text-decoration: none; color: var(--color-primary); border-color: rgba(56, 189, 248, 0.3);">
+        <span style="font-size: 13px;">🛡️</span>
+        <span>Admin</span>
+      </a>
+
+      <!-- Settings Button -->
+      <button onclick="openSettings()" class="hdr-btn" title="Account & Mailbox Settings">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Settings</span>
+      </button>
+
+      <!-- Explicit Log Out Button -->
+      <button onclick="handleSignOut()" class="hdr-btn danger" title="Log out of this mailbox">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Log Out</span>
+      </button>
+
+      <!-- Refresh Button -->
+      <button id="refreshBtn" onclick="handleManualRefresh()" class="icon-btn" title="Refresh folder">
+        <svg id="refreshIcon" width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+      </button>
+
+      <!-- Compose Button -->
+      <button onclick="openCompose()" class="compose-btn">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <span>Compose</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════ MAIN 3-COLUMN LAYOUT ═══════════════ -->
+  <div class="main-layout">
+
+    <!-- COLUMN 1: SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sb-section">Folders</div>
+      <nav id="folderList">
+        <div class="loading-text">Loading mailboxes…</div>
+      </nav>
+
+      <div class="sb-footer">
+        <div class="sb-session-label">Active Session</div>
+        <div id="sessionUser" class="sb-session-user">—</div>
+        <div id="sessionAccount" class="sb-session-sub">Account: —</div>
+        <div class="sb-meter"><div class="sb-meter-fill"></div></div>
+        <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--color-text-faint);">
+          <span>Storage</span>
+          <span>Local Engine</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- COLUMN 2: EMAIL LIST -->
+    <section class="list-panel">
+      <div class="list-header">
+        <div class="lh-top">
+          <div class="lh-title">
+            <span id="activeFolderName">Inbox</span>
+            <span id="activeFolderBadge" class="lh-badge">0</span>
+          </div>
+          <span id="statusMessage" style="font-size:11px; color:var(--color-text-faint);">Synced</span>
+        </div>
+
+        <!-- Real-time Search Box -->
+        <div class="lh-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="emailSearchInput" type="text" placeholder="Search emails…" oninput="handleSearchFilter(this.value)">
+        </div>
+
+        <!-- Filter tabs: All vs Unread -->
+        <div class="lh-filters">
+          <button id="filterTabAll" onclick="setListFilter('all')" class="filter-tab active">All</button>
+          <button id="filterTabUnread" onclick="setListFilter('unread')" class="filter-tab">Unread <span id="unreadFilterCount" style="font-size:10px;opacity:0.8;"></span></button>
+        </div>
+      </div>
+
+      <div id="emailList" class="list-scroll">
+        <div class="loading-text">Loading messages…</div>
+      </div>
+    </section>
+
+    <!-- COLUMN 3: READING PANE -->
+    <main id="readerPane" class="reader">
+      <div class="reader-empty">
+        <div>
+          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #D0D5DD;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <p>Select a message to view contents</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ═══════════════ COMPOSE MODAL ═══════════════ -->
+  <div id="composeModal" class="modal-bg">
+    <div class="modal">
+      <div class="modal-hdr">
+        <h3>New Message</h3>
+        <button onclick="closeCompose()" class="icon-btn" title="Close">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="composeAlert" class="hidden"></div>
+        <div>
+          <label class="fl-label">From</label>
+          <div id="cmpFrom" style="font-size:13px; color:var(--color-text); font-weight:500; padding:4px 0;">—</div>
+        </div>
+        <div>
+          <label class="fl-label">To</label>
+          <input id="cmpTo" type="email" placeholder="recipient@domain.com" class="fl-input mono" />
+        </div>
+        <div>
+          <label class="fl-label">Subject</label>
+          <input id="cmpSub" type="text" placeholder="Subject…" class="fl-input" />
+        </div>
+        <div>
+          <label class="fl-label">Message</label>
+          <textarea id="cmpBody" rows="7" placeholder="Write your message here…" class="fl-input"></textarea>
+        </div>
+      </div>
+      <div class="modal-ftr">
+        <button onclick="closeCompose()" class="act-btn">Cancel</button>
+        <button id="sendBtn" onclick="dispatchEmail()" class="compose-btn">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          <span>Send Message</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ACCOUNT SETTINGS MODAL ═══════════════ -->
+  <div id="settingsModal" class="modal-bg">
+    <div class="modal" style="max-width: 620px;">
+      <div class="modal-hdr">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <h3>Account & Mailbox Settings</h3>
+        </div>
+        <button onclick="closeSettings()" class="icon-btn" title="Close">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Settings Tabs -->
+      <div class="settings-tabs">
+        <button onclick="switchSettingsTab('general')" id="stab-general" class="stab-btn active">Identity & Profile</button>
+        <button onclick="switchSettingsTab('preferences')" id="stab-preferences" class="stab-btn">Reading Preferences</button>
+        <button onclick="switchSettingsTab('server')" id="stab-server" class="stab-btn">Server & Cryptography</button>
+      </div>
+
+      <div class="modal-body" style="max-height: 480px; overflow-y: auto;">
+        <!-- TAB 1: General / Profile -->
+        <div id="tab-general" class="tab-content active">
+          <div style="display:flex; align-items:center; gap:14px; padding:12px; background:var(--color-bg); border-radius:var(--radius-md); border:1px solid var(--color-border-light);">
+            <div id="setProfileAvatar" class="user-pill-avatar" style="width:44px; height:44px; font-size:16px;">CS</div>
+            <div>
+              <div id="setProfileName" style="font-weight:700; font-size:14px;">Charaf Sellam</div>
+              <div id="setProfileEmail" style="font-size:12px; color:var(--color-text-muted);">charaf@iron-id.io</div>
+              <div id="setProfileId" style="font-size:11px; color:var(--color-text-faint); margin-top:2px;">Sovereign Account: c</div>
+            </div>
+          </div>
+
+          <div>
+            <label class="fl-label">Email Signature</label>
+            <textarea id="setSignature" rows="3" placeholder="Sent with IRON ID Sovereign Workspace" class="fl-input"></textarea>
+            <span style="font-size:11px; color:var(--color-text-faint);">Automatically appended to new outbound messages</span>
+          </div>
+
+          <div style="padding-top:12px; border-top:1px solid var(--color-border-light);">
+            <button onclick="saveProfileSettings()" class="act-btn" style="background:var(--color-accent); color:#fff; border:none;">
+              Save Profile Changes
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: Preferences -->
+        <div id="tab-preferences" class="tab-content">
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+              <input id="prefAutoSeen" type="checkbox" checked style="margin-top:3px;">
+              <div>
+                <div style="font-weight:600; font-size:13px; color:var(--color-text);">Automatically mark emails as read when opened</div>
+                <div style="font-size:12px; color:var(--color-text-muted);">Syncs read/seen status directly with Stalwart JMAP engine via RFC 8621 keywords.</div>
+              </div>
+            </label>
+
+            <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+              <input id="prefConfirmDelete" type="checkbox" checked style="margin-top:3px;">
+              <div>
+                <div style="font-weight:600; font-size:13px; color:var(--color-text);">Ask for confirmation before permanent deletion</div>
+                <div style="font-size:12px; color:var(--color-text-muted);">Applies when permanently destroying emails from the Trash / Deleted Items folder.</div>
+              </div>
+            </label>
+
+            <div style="padding-top:12px; border-top:1px solid var(--color-border-light);">
+              <button onclick="savePreferenceSettings()" class="act-btn" style="background:var(--color-accent); color:#fff; border:none;">
+                Save Preferences
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Server & Cryptography -->
+        <div id="tab-server" class="tab-content">
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:12px;">
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border-light);">
+              <span style="color:var(--color-text-muted);">Core Mail Engine:</span>
+              <span style="font-weight:600;">Stalwart Mail Server (Rust)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border-light);">
+              <span style="color:var(--color-text-muted);">Storage Backend:</span>
+              <span style="font-weight:600;">Embedded RocksDB LSM-Tree</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border-light);">
+              <span style="color:var(--color-text-muted);">JMAP Protocol:</span>
+              <span style="font-weight:600; color:var(--color-accent);">RFC 8620 / RFC 8621 Operational</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border-light);">
+              <span style="color:var(--color-text-muted);">Local JMAP Endpoint:</span>
+              <span style="font-family:var(--font-mono); font-size:11px;">http://127.0.0.1:8080/jmap</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border-light);">
+              <span style="color:var(--color-text-muted);">DKIM Cryptography:</span>
+              <span style="font-weight:600; color:var(--color-success);">RSA-2048 & Ed25519 Enabled</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:8px 0;">
+              <span style="color:var(--color-text-muted);">Verified MTA Ports:</span>
+              <span style="font-weight:600;">25 (SMTP), 993 (IMAPS), 8080 (JMAP)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-ftr" style="justify-content:space-between;">
+        <button onclick="handleSignOut()" class="act-btn" style="color:var(--color-danger); border-color:#FECACA;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Log Out of Sovereign Session</span>
+        </button>
+        <button onclick="closeSettings()" class="act-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SOVEREIGN LOGIN MODAL ═══════════════ -->
+  <div id="loginScreen" class="login-overlay">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="hdr-brand-icon" style="width:42px;height:42px;font-size:16px;">ID</div>
+        <div>
+          <div style="font-weight:700;font-size:18px;letter-spacing:-0.01em;">IRON ID MAIL</div>
+          <div style="font-size:12px;color:var(--color-text-muted);">Sovereign JMAP Mailbox</div>
+        </div>
+      </div>
+      
+      <div style="margin-bottom:16px;">
+        <h2 style="font-size:16px;font-weight:600;color:var(--color-text);margin-bottom:4px;">Sign In to Sovereign Mailbox</h2>
+        <p style="font-size:13px;color:var(--color-text-muted);">Enter your cryptographic mailbox address and access token</p>
+      </div>
+
+      <div id="loginAlert" class="hidden"></div>
+
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)" style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;color:var(--color-text-secondary);">Email Address</label>
+          <input id="loginEmail" type="email" required placeholder="user@domain.io" class="login-input" autocomplete="username">
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;color:var(--color-text-secondary);">Mailbox Password</label>
+          <input id="loginPassword" type="password" required placeholder="••••••••••••" class="login-input" autocomplete="current-password">
+        </div>
+        <button id="loginSubmitBtn" type="submit" class="login-submit-btn">
+          <span>Sign In to Mailbox</span>
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </form>
+
+      <div class="login-presets">
+        <span style="font-size:11px;color:var(--color-text-faint);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Standard Identity</span>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button type="button" onclick="quickFill('charaf@iron-id.io','Ch@r@firon-!D')" class="preset-btn">⚡ Fill Charaf Sellam</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="toast">
+    <span id="toastIcon" style="font-size:16px;">✓</span>
+    <span id="toastMsg">Message</span>
+  </div>
+
+  <!-- ═══════════════ APPLICATION LOGIC ═══════════════ -->
+  <script>
+    const AV_COLORS = [
+      ['#DBEAFE','#1E40AF'], ['#FDE68A','#78350F'], ['#D1FAE5','#065F46'],
+      ['#C7D2FE','#3730A3'], ['#FBCFE8','#831843'], ['#FED7AA','#9A3412'],
+      ['#E9D5FF','#6B21A8'], ['#FECACA','#991B1B'],
+    ];
+
+    function avatarColor(str) {
+      let h = 0;
+      for (let i = 0; i < (str||'').length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+      return AV_COLORS[Math.abs(h) % AV_COLORS.length];
+    }
+
+    function initials(name, email) {
+      if (name && name.trim()) {
+        const parts = name.trim().split(/\\s+/);
+        return parts.length >= 2
+          ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+          : parts[0].substring(0,2).toUpperCase();
+      }
+      return (email || '??').substring(0,2).toUpperCase();
+    }
+
+    const FOLDER_ICONS = {
+      inbox: '<path d="M22 12h-6l-2 3H10l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/>',
+      sent: '<path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>',
+      drafts: '<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+      archive: '<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+      trash: '<path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>',
+      junk: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+      spam: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+      default: '<path d="M22 7l-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2"/>'
+    };
+
+    function folderSvg(role) {
+      const key = (role || 'default').toLowerCase();
+      const paths = FOLDER_ICONS[key] || FOLDER_ICONS.default;
+      return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
+    }
+
+    /* ——— State ——— */
+    const state = {
+      currentUser: {
+        email: '',
+        name: '',
+        authHeader: ''
+      },
+      account: null,
+      authHeader: '',
+      mailboxes: [],
+      identities: [],
+      selectedMailboxId: null,
+      messages: [],
+      selectedMessageId: null,
+      searchQuery: '',
+      listFilter: 'all', // 'all' or 'unread'
+      preferences: {
+        autoSeen: true,
+        confirmDelete: true,
+        signature: 'Sent with IRON ID Sovereign Workspace'
+      }
+    };
+
+    function loadLocalPreferences() {
+      const autoSeen = localStorage.getItem('iron_id_auto_seen');
+      if (autoSeen !== null) state.preferences.autoSeen = autoSeen === 'true';
+      const sig = localStorage.getItem('iron_id_signature');
+      if (sig !== null) state.preferences.signature = sig;
+      const conf = localStorage.getItem('iron_id_confirm_delete');
+      if (conf !== null) state.preferences.confirmDelete = conf === 'true';
+    }
+
+    function getStoredAuth() {
+      return sessionStorage.getItem('iron_id_auth') || localStorage.getItem('iron_id_auth');
+    }
+
+    function saveAuth(email, password) {
+      const cred = email + ':' + password;
+      sessionStorage.setItem('iron_id_auth', cred);
+      localStorage.setItem('iron_id_auth', cred);
+    }
+
+    function clearAuth() {
+      sessionStorage.removeItem('iron_id_auth');
+      localStorage.removeItem('iron_id_auth');
+    }
+
+    function openLogin(prefillEmail = '', errorMsg = '') {
+      const overlay = document.getElementById('loginScreen');
+      const emailInput = document.getElementById('loginEmail');
+      const passInput = document.getElementById('loginPassword');
+      const alertBox = document.getElementById('loginAlert');
+
+      if (prefillEmail) emailInput.value = prefillEmail;
+      passInput.value = '';
+
+      if (errorMsg) {
+        alertBox.className = 'login-alert';
+        alertBox.innerText = errorMsg;
+      } else {
+        alertBox.className = 'hidden';
+      }
+
+      overlay.classList.add('open');
+      setTimeout(() => (prefillEmail ? passInput : emailInput).focus(), 100);
+    }
+
+    function closeLogin() {
+      document.getElementById('loginScreen').classList.remove('open');
+    }
+
+    function quickFill(email, pass) {
+      document.getElementById('loginEmail').value = email;
+      document.getElementById('loginPassword').value = pass;
+      document.getElementById('loginAlert').className = 'hidden';
+    }
+
+    async function handleLoginSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('loginSubmitBtn');
+      const alertBox = document.getElementById('loginAlert');
+
+      btn.disabled = true;
+      btn.innerText = 'Authenticating…';
+      alertBox.className = 'hidden';
+
+      try {
+        const authHeader = 'Basic ' + btoa(email + ':' + pass);
+        const res = await fetch('/proxy/jmap/session', {
+          headers: { 'Authorization': authHeader }
+        });
+
+        if (!res.ok) {
+          throw new Error(res.status === 401 ? 'Invalid mailbox credentials' : 'HTTP ' + res.status + ': Failed to connect');
+        }
+
+        const session = await res.json();
+        saveAuth(email, pass);
+        closeLogin();
+        await loadSessionWithData(session, email, authHeader);
+        showToast('Signed in as ' + email, true);
+      } catch (err) {
+        alertBox.className = 'login-alert';
+        alertBox.innerText = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Sign In to Mailbox</span><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
+      }
+    }
+
+    function handleSignOut() {
+      clearAuth();
+      state.account = null;
+      state.authHeader = '';
+      state.mailboxes = [];
+      state.messages = [];
+      state.selectedMessageId = null;
+      closeSettings();
+      document.getElementById('emailList').innerHTML = '<div class="loading-text">Signed out.</div>';
+      document.getElementById('readerPane').innerHTML = '<div class="reader-empty"><div><p>Signed out</p></div></div>';
+      openLogin();
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+      toastMsg.innerText = msg;
+      toastIcon.innerText = isSuccess ? '✓' : '✕';
+      toastIcon.style.color = isSuccess ? 'var(--color-success)' : 'var(--color-danger)';
+      toast.classList.add('visible');
+      setTimeout(() => toast.classList.remove('visible'), 3200);
+    }
+
+    async function handleManualRefresh() {
+      const icon = document.getElementById('refreshIcon');
+      icon.classList.add('animate-spin');
+      await refreshMailbox();
+      setTimeout(() => icon.classList.remove('animate-spin'), 600);
+    }
+
+    /* ——— JMAP Call ——— */
+    async function jmapCall(methodCalls) {
+      const res = await fetch('/proxy/jmap', {
+        method: 'POST',
+        headers: {
+          'Authorization': state.authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          using: [
+            'urn:ietf:params:jmap:core',
+            'urn:ietf:params:jmap:mail',
+            'urn:ietf:params:jmap:submission'
+          ],
+          methodCalls
+        })
+      });
+      return await res.json();
+    }
+
+    /* ——— Session Init ——— */
+    async function initSession() {
+      loadLocalPreferences();
+      const stored = getStoredAuth();
+      if (!stored) {
+        openLogin();
+        return;
+      }
+
+      const [email, ...rest] = stored.split(':');
+      const authHeader = 'Basic ' + btoa(stored);
+
+      try {
+        const res = await fetch('/proxy/jmap/session', {
+          headers: { 'Authorization': authHeader }
+        });
+
+        if (!res.ok) {
+          clearAuth();
+          openLogin(email, 'Session expired or invalid credentials.');
+          return;
+        }
+
+        const session = await res.json();
+        await loadSessionWithData(session, email, authHeader);
+      } catch (err) {
+        console.error('Session init error:', err);
+        document.getElementById('connDot').className = 'conn-dot offline';
+        document.getElementById('connText').innerText = 'Engine Offline';
+        document.getElementById('emailList').innerHTML = '<div class="loading-text" style="color:var(--color-danger)">Failed to connect: ' + err.message + '</div>';
+      }
+    }
+
+    async function loadSessionWithData(session, userEmail, authHeader) {
+      state.authHeader = authHeader;
+      state.account = session.primaryAccounts['urn:ietf:params:jmap:mail'] || Object.keys(session.accounts)[0];
+
+      const namePart = userEmail.split('@')[0];
+      const displayName = userEmail === 'charaf@iron-id.io' ? 'Charaf Sellam' : (namePart.charAt(0).toUpperCase() + namePart.slice(1));
+      const initLetters = userEmail === 'charaf@iron-id.io' ? 'CS' : (userEmail === 'anis@client.dz' ? 'AC' : initials(displayName, userEmail));
+
+      state.currentUser = {
+        email: userEmail,
+        name: displayName,
+        authHeader: authHeader
+      };
+
+      // Header Profile Pill
+      document.getElementById('userAvatar').innerText = initLetters;
+      document.getElementById('hdrUserName').innerText = displayName;
+      document.getElementById('hdrUserEmail').innerText = userEmail;
+
+      // Settings modal elements
+      document.getElementById('setProfileAvatar').innerText = initLetters;
+      document.getElementById('setProfileName').innerText = displayName;
+      document.getElementById('setProfileEmail').innerText = userEmail;
+      document.getElementById('setProfileId').innerText = 'Sovereign Account: ' + state.account;
+      document.getElementById('setSignature').value = state.preferences.signature;
+      document.getElementById('prefAutoSeen').checked = state.preferences.autoSeen;
+      document.getElementById('prefConfirmDelete').checked = state.preferences.confirmDelete;
+
+      // Sidebar session indicator
+      document.getElementById('sessionUser').innerText = session.username || userEmail;
+      document.getElementById('sessionAccount').innerText = 'Account: ' + state.account;
+      document.getElementById('connDot').className = 'conn-dot';
+      document.getElementById('connText').innerText = 'RFC 8620 Online';
+
+      const meta = await jmapCall([
+        ['Identity/get', { accountId: state.account }, 'i1'],
+        ['Mailbox/get', { accountId: state.account }, 'm1']
+      ]);
+
+      state.identities = meta.methodResponses[0][1].list || [];
+      state.mailboxes = meta.methodResponses[1][1].list || [];
+
+      if (!state.selectedMailboxId || !state.mailboxes.some(b => b.id === state.selectedMailboxId)) {
+        const inbox = state.mailboxes.find(b => b.role === 'inbox' || b.name.toLowerCase() === 'inbox') || state.mailboxes[0];
+        if (inbox) state.selectedMailboxId = inbox.id;
+      }
+
+      renderFolders();
+      await refreshMailbox();
+    }
+
+    /* ——— Render Folders ——— */
+    function renderFolders() {
+      const container = document.getElementById('folderList');
+      if (!state.mailboxes.length) {
+        container.innerHTML = '<div class="loading-text">No mailboxes found.</div>';
+        return;
+      }
+
+      container.innerHTML = state.mailboxes.map(b => {
+        const isSelected = b.id === state.selectedMailboxId;
+        const role = b.role || b.name.toLowerCase();
+        const icon = folderSvg(role);
+        const count = b.totalEmails || 0;
+        const unread = b.unreadEmails || 0;
+
+        return `
+          <button onclick="filterFolder('${b.id}')" class="sb-btn ${isSelected ? 'active' : ''}">
+            ${icon}
+            <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-transform:capitalize;">${b.name}</span>
+            <span class="sb-count ${unread > 0 ? 'unread' : ''}">${unread > 0 ? unread : count}</span>
+          </button>
+        `;
+      }).join('');
+
+      const activeBox = state.mailboxes.find(b => b.id === state.selectedMailboxId);
+      if (activeBox) {
+        document.getElementById('activeFolderName').innerText = activeBox.name;
+        document.getElementById('activeFolderBadge').innerText = activeBox.totalEmails || 0;
+      }
+    }
+
+    async function filterFolder(mailboxId) {
+      state.selectedMailboxId = mailboxId;
+      state.selectedMessageId = null;
+      renderFolders();
+      await refreshMailbox();
+    }
+
+    /* ——— Refresh Mailbox ——— */
+    async function refreshMailbox() {
+      const listEl = document.getElementById('emailList');
+      document.getElementById('statusMessage').innerText = 'Syncing…';
+
+      try {
+        const queryFilter = state.selectedMailboxId ? { inMailbox: state.selectedMailboxId } : {};
+        const data = await jmapCall([
+          ['Email/query', {
+            accountId: state.account,
+            filter: queryFilter,
+            sort: [{ property: 'receivedAt', isAscending: false }],
+            limit: 50
+          }, 'q1'],
+          ['Email/get', {
+            accountId: state.account,
+            '#ids': { resultOf: 'q1', name: 'Email/query', path: '/ids' },
+            properties: ['id','subject','from','to','cc','receivedAt','preview','bodyValues','textBody','keywords','mailboxIds'],
+            fetchTextBodyValues: true
+          }, 'g1'],
+          ['Mailbox/get', { accountId: state.account }, 'm1']
+        ]);
+
+        state.messages = data.methodResponses[1][1].list || [];
+        state.mailboxes = data.methodResponses[2][1].list || state.mailboxes;
+
+        renderFolders();
+        renderEmailList();
+        document.getElementById('statusMessage').innerText = 'Synced';
+      } catch (err) {
+        listEl.innerHTML = '<div class="loading-text" style="color:var(--color-danger)">Sync Error: ' + err.message + '</div>';
+        document.getElementById('statusMessage').innerText = 'Error';
+      }
+    }
+
+    /* ——— Filter & Search ——— */
+    function setListFilter(filter) {
+      state.listFilter = filter;
+      document.getElementById('filterTabAll').classList.toggle('active', filter === 'all');
+      document.getElementById('filterTabUnread').classList.toggle('active', filter === 'unread');
+      renderEmailList();
+    }
+
+    function handleSearchFilter(val) {
+      state.searchQuery = val.trim().toLowerCase();
+      renderEmailList();
+    }
+
+    function renderEmailList() {
+      const listEl = document.getElementById('emailList');
+      let filtered = state.messages;
+
+      // Filter by unread
+      if (state.listFilter === 'unread') {
+        filtered = filtered.filter(m => !m.keywords || !m.keywords['$seen']);
+      }
+
+      // Filter by search query
+      if (state.searchQuery) {
+        filtered = filtered.filter(m => {
+          const s = (m.subject || '').toLowerCase();
+          const p = (m.preview || '').toLowerCase();
+          const f = (m.from && m.from[0] ? (m.from[0].name || '') + ' ' + (m.from[0].email || '') : '').toLowerCase();
+          return s.includes(state.searchQuery) || p.includes(state.searchQuery) || f.includes(state.searchQuery);
+        });
+      }
+
+      // Unread counter badge on tab
+      const unreadCount = state.messages.filter(m => !m.keywords || !m.keywords['$seen']).length;
+      document.getElementById('unreadFilterCount').innerText = unreadCount > 0 ? '(' + unreadCount + ')' : '';
+
+      if (!filtered.length) {
+        listEl.innerHTML = '<div class="loading-text">' + (state.searchQuery ? 'No matching messages' : (state.listFilter === 'unread' ? 'No unread messages' : 'No messages in this folder')) + '</div>';
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(m => {
+        const fromItem = (m.from && m.from[0]) ? m.from[0] : null;
+        const senderName = fromItem ? (fromItem.name || fromItem.email) : 'Unknown';
+        const senderEmail = fromItem ? fromItem.email : '';
+        const ini = initials(fromItem ? fromItem.name : null, senderEmail);
+        const [avBg, avFg] = avatarColor(senderEmail);
+        const timeDisplay = m.receivedAt
+          ? new Date(m.receivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : '';
+        const isSelected = m.id === state.selectedMessageId;
+        const isUnread = !m.keywords || !m.keywords['$seen'];
+
+        return `
+          <div onclick="selectMessage('${m.id}')" id="msg-item-${m.id}" class="email-item ${isSelected ? 'selected' : ''} ${isUnread ? 'unread' : ''}">
+            ${isUnread ? '<div class="ei-unread-dot"></div>' : ''}
+            <div class="ei-avatar" style="background:${avBg}; color:${avFg}">${ini}</div>
+            <div class="ei-body">
+              <div class="ei-top">
+                <span class="ei-sender">${escapeHtml(senderName)}</span>
+                <span class="ei-time">${timeDisplay}</span>
+              </div>
+              <div class="ei-subject">${escapeHtml(m.subject || '(No Subject)')}</div>
+              <div class="ei-preview">${escapeHtml((m.preview || '').substring(0, 90))}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* ——— Select & Render Email + Auto-Mark Seen ——— */
+    async function selectMessage(id) {
+      const email = state.messages.find(m => m.id === id);
+      if (!email) return;
+
+      state.selectedMessageId = id;
+
+      // Update selection styling
+      const listEl = document.getElementById('emailList');
+      listEl.querySelectorAll('.email-item').forEach(el => el.classList.remove('selected'));
+      const activeEl = document.getElementById('msg-item-' + id);
+      if (activeEl) activeEl.classList.add('selected');
+
+      // Auto-mark seen feature
+      if (state.preferences.autoSeen && (!email.keywords || !email.keywords['$seen'])) {
+        markEmailSeen(id, true);
+      }
+
+      renderEmail(email);
+    }
+
+    /* Mark seen or unread directly in Stalwart JMAP */
+    async function markEmailSeen(id, seen = true) {
+      const email = state.messages.find(m => m.id === id);
+      if (!email) return;
+
+      // Optimistic update
+      email.keywords = seen ? { ...email.keywords, '$seen': true } : {};
+      const el = document.getElementById('msg-item-' + id);
+      if (el) {
+        el.classList.toggle('unread', !seen);
+        const dot = el.querySelector('.ei-unread-dot');
+        if (dot && seen) dot.remove();
+        else if (!dot && !seen) {
+          const newDot = document.createElement('div');
+          newDot.className = 'ei-unread-dot';
+          el.prepend(newDot);
+        }
+      }
+
+      // Update current mailbox counter
+      const activeBox = state.mailboxes.find(b => b.id === state.selectedMailboxId);
+      if (activeBox) {
+        if (seen && activeBox.unreadEmails > 0) activeBox.unreadEmails--;
+        else if (!seen) activeBox.unreadEmails = (activeBox.unreadEmails || 0) + 1;
+        renderFolders();
+      }
+
+      // Execute background JMAP Email/set
+      try {
+        await jmapCall([
+          ['Email/set', {
+            accountId: state.account,
+            update: {
+              [id]: {
+                keywords: seen ? { '$seen': true } : {}
+              }
+            }
+          }, 'markSeen']
+        ]);
+      } catch (err) {
+        console.error('Failed to sync seen status:', err);
+      }
+    }
+
+    function toggleSeenCurrentMessage() {
+      if (!state.selectedMessageId) return;
+      const email = state.messages.find(m => m.id === state.selectedMessageId);
+      if (!email) return;
+      const currentlySeen = email.keywords && email.keywords['$seen'];
+      markEmailSeen(email.id, !currentlySeen);
+      showToast(currentlySeen ? 'Marked as unread' : 'Marked as read', true);
+      renderEmail(email);
+    }
+
+    /* ——— Render Email Reading Pane ——— */
+    function renderEmail(email) {
+      const fromObj = email.from && email.from[0] ? email.from[0] : { name: 'Unknown', email: '' };
+      const fromDisplay = fromObj.name || fromObj.email || 'Unknown';
+      const fromEmail = fromObj.email || '';
+      const toDisplay = email.to ? email.to.map(t => t.name ? `${t.name} <${t.email}>` : t.email).join(', ') : '';
+      const ccDisplay = email.cc && email.cc.length ? email.cc.map(c => c.name ? `${c.name} <${c.email}>` : c.email).join(', ') : '';
+
+      const ini = initials(fromObj.name, fromEmail);
+      const [avBg, avFg] = avatarColor(fromEmail);
+
+      let bodyText = '';
+      if (email.bodyValues) {
+        const keys = Object.keys(email.bodyValues);
+        if (keys.length > 0) bodyText = email.bodyValues[keys[0]].value || '';
+      }
+      if (!bodyText) bodyText = email.preview || '';
+
+      const dateStr = email.receivedAt ? new Date(email.receivedAt).toLocaleString() : '';
+      const isSeen = email.keywords && email.keywords['$seen'];
+
+      document.getElementById('readerPane').innerHTML = `
+        <div class="ev">
+          <!-- Reader Top Action Toolbar -->
+          <div class="ev-toolbar">
+            <div class="tb-group">
+              <button onclick="handleReply('${escapeHtml(fromEmail)}', '${escapeHtml(email.subject || '')}')" class="tb-btn" title="Reply">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17 4 12l5-5M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                <span>Reply</span>
+              </button>
+              <button onclick="handleReplyAll('${escapeHtml(fromEmail)}', '${escapeHtml(toDisplay)}', '${escapeHtml(email.subject || '')}')" class="tb-btn" title="Reply all">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 17-5-5 5-5M12 17l-5-5 5-5M22 18v-2a4 4 0 0 0-4-4H7"/></svg>
+                <span>Reply all</span>
+              </button>
+              <button onclick="handleForward('${escapeHtml(email.subject || '')}', '${escapeHtml(fromDisplay)}', '${escapeHtml(fromEmail)}', '${escapeHtml(dateStr)}')" class="tb-btn" title="Forward">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 17 5-5-5-5M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+                <span>Forward</span>
+              </button>
+            </div>
+
+            <div class="tb-divider"></div>
+
+            <div class="tb-group">
+              <button onclick="toggleSeenCurrentMessage()" class="tb-btn" title="Toggle read/unread">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h9"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/><path d="m16 19 2 2 4-4"/></svg>
+                <span>${isSeen ? 'Mark unread' : 'Mark read'}</span>
+              </button>
+              <button onclick="archiveMessage('${email.id}')" class="tb-btn" title="Archive message">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                <span>Archive</span>
+              </button>
+              <button onclick="reportSpam('${email.id}')" class="tb-btn" title="Report Junk / Spam">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                <span>Report Spam</span>
+              </button>
+              <button onclick="deleteMessage('${email.id}')" class="tb-btn danger" title="Delete message">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                <span>Delete</span>
+              </button>
+            </div>
+
+            <div style="flex:1;"></div>
+
+            <div class="proto-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              RFC 8621 Verified
+            </div>
+          </div>
+
+          <!-- Message Details -->
+          <div class="ev-content">
+            <div class="ev-subject">${escapeHtml(email.subject || '(No Subject)')}</div>
+            <div class="ev-meta">
+              <div class="ev-avatar" style="background:${avBg}; color:${avFg}">${ini}</div>
+              <div class="ev-meta-info">
+                <div class="ev-from">
+                  <span>${escapeHtml(fromDisplay)}</span>
+                  <span class="verified-badge">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    Verified sender
+                  </span>
+                </div>
+                <div class="ev-to">${escapeHtml(fromEmail)} · to ${escapeHtml(toDisplay)} ${ccDisplay ? '· cc ' + escapeHtml(ccDisplay) : ''}</div>
+              </div>
+              <div class="ev-date">${dateStr}</div>
+            </div>
+
+            <div class="ev-body">${escapeHtml(bodyText)}</div>
+
+            <div class="ev-bottom-actions">
+              <button onclick="handleReply('${escapeHtml(fromEmail)}', '${escapeHtml(email.subject || '')}')" class="act-btn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17 4 12l5-5M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                Reply
+              </button>
+              <button onclick="handleReplyAll('${escapeHtml(fromEmail)}', '${escapeHtml(toDisplay)}', '${escapeHtml(email.subject || '')}')" class="act-btn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 17-5-5 5-5M12 17l-5-5 5-5M22 18v-2a4 4 0 0 0-4-4H7"/></svg>
+                Reply all
+              </button>
+              <button onclick="handleForward('${escapeHtml(email.subject || '')}', '${escapeHtml(fromDisplay)}', '${escapeHtml(fromEmail)}', '${escapeHtml(dateStr)}')" class="act-btn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 17 5-5-5-5M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+                Forward
+              </button>
+              <button onclick="window.print()" class="act-btn" style="margin-left:auto;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                Print
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ——— Archive Message ——— */
+    async function archiveMessage(id) {
+      let archiveBox = state.mailboxes.find(b => b.role === 'archive' || b.name.toLowerCase() === 'archive');
+      
+      // If no archive folder exists, create one with Mailbox/set
+      if (!archiveBox) {
+        const createRes = await jmapCall([
+          ['Mailbox/set', {
+            accountId: state.account,
+            create: { 'archBox': { name: 'Archive', role: 'archive' } }
+          }, 'cArch']
+        ]);
+        const created = createRes.methodResponses[0][1].created;
+        if (created && created['archBox']) {
+          archiveBox = { id: created['archBox'].id, name: 'Archive', role: 'archive' };
+        }
+      }
+
+      if (!archiveBox) {
+        showToast('Could not find or create Archive folder', false);
+        return;
+      }
+
+      try {
+        await jmapCall([
+          ['Email/set', {
+            accountId: state.account,
+            update: {
+              [id]: { mailboxIds: { [archiveBox.id]: true } }
+            }
+          }, 'arch']
+        ]);
+        showToast('Message moved to Archive', true);
+        clearReaderPane();
+        await refreshMailbox();
+      } catch (err) {
+        showToast('Archive failed: ' + err.message, false);
+      }
+    }
+
+    /* ——— Delete Message (Move to Trash or Permanent Destroy) ——— */
+    async function deleteMessage(id) {
+      const currentBox = state.mailboxes.find(b => b.id === state.selectedMailboxId);
+      const isTrash = currentBox && (currentBox.role === 'trash' || currentBox.name.toLowerCase().includes('trash') || currentBox.name.toLowerCase().includes('deleted'));
+
+      if (isTrash) {
+        if (state.preferences.confirmDelete && !confirm('Are you sure you want to permanently delete this email? This cannot be undone.')) {
+          return;
+        }
+        try {
+          await jmapCall([
+            ['Email/set', {
+              accountId: state.account,
+              destroy: [id]
+            }, 'destroy']
+          ]);
+          showToast('Message permanently deleted', true);
+          clearReaderPane();
+          await refreshMailbox();
+        } catch (err) {
+          showToast('Delete failed: ' + err.message, false);
+        }
+        return;
+      }
+
+      // Not in trash: Move to Trash mailbox
+      const trashBox = state.mailboxes.find(b => b.role === 'trash' || b.name.toLowerCase().includes('trash') || b.name.toLowerCase().includes('deleted'));
+      if (!trashBox) {
+        showToast('Trash folder not found', false);
+        return;
+      }
+
+      try {
+        await jmapCall([
+          ['Email/set', {
+            accountId: state.account,
+            update: {
+              [id]: { mailboxIds: { [trashBox.id]: true } }
+            }
+          }, 'moveToTrash']
+        ]);
+        showToast('Message moved to Trash', true);
+        clearReaderPane();
+        await refreshMailbox();
+      } catch (err) {
+        showToast('Move to trash failed: ' + err.message, false);
+      }
+    }
+
+    /* ——— Report Spam / Move to Junk ——— */
+    async function reportSpam(id) {
+      const junkBox = state.mailboxes.find(b => b.role === 'junk' || b.name.toLowerCase().includes('junk') || b.name.toLowerCase().includes('spam'));
+      if (!junkBox) {
+        showToast('Junk Mail folder not found', false);
+        return;
+      }
+
+      try {
+        await jmapCall([
+          ['Email/set', {
+            accountId: state.account,
+            update: {
+              [id]: {
+                mailboxIds: { [junkBox.id]: true },
+                keywords: { '$junk': true, '$seen': true }
+              }
+            }
+          }, 'reportSpam']
+        ]);
+        showToast('Reported as Junk / Spam', true);
+        clearReaderPane();
+        await refreshMailbox();
+      } catch (err) {
+        showToast('Report spam failed: ' + err.message, false);
+      }
+    }
+
+    function clearReaderPane() {
+      state.selectedMessageId = null;
+      document.getElementById('readerPane').innerHTML = `
+        <div class="reader-empty">
+          <div>
+            <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #D0D5DD;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <p>Select a message to view contents</p>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ——— Reply / Forward Handlers ——— */
+    function handleReply(toEmail, subject) {
+      openCompose();
+      document.getElementById('cmpTo').value = toEmail;
+      document.getElementById('cmpSub').value = subject.startsWith('Re:') ? subject : 'Re: ' + subject;
+      document.getElementById('cmpBody').focus();
+    }
+
+    function handleReplyAll(toEmail, allTo, subject) {
+      openCompose();
+      document.getElementById('cmpTo').value = toEmail;
+      document.getElementById('cmpSub').value = subject.startsWith('Re:') ? subject : 'Re: ' + subject;
+      document.getElementById('cmpBody').focus();
+    }
+
+    function handleForward(subject, senderName, senderEmail, dateStr) {
+      const email = state.messages.find(m => m.id === state.selectedMessageId);
+      let bodyText = '';
+      if (email && email.bodyValues) {
+        const keys = Object.keys(email.bodyValues);
+        if (keys.length > 0) bodyText = email.bodyValues[keys[0]].value || '';
+      }
+      if (!bodyText && email) bodyText = email.preview || '';
+
+      openCompose();
+      document.getElementById('cmpTo').value = '';
+      document.getElementById('cmpSub').value = subject.startsWith('Fwd:') ? subject : 'Fwd: ' + subject;
+      document.getElementById('cmpBody').value = `\n\n-------- Forwarded Message --------\nFrom: ${senderName} <${senderEmail}>\nDate: ${dateStr}\nSubject: ${subject}\n\n${bodyText}`;
+      document.getElementById('cmpTo').focus();
+    }
+
+    /* ——— Settings Modal Operations ——— */
+    function openSettings() {
+      document.getElementById('settingsModal').classList.add('open');
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.remove('open');
+    }
+
+    function switchSettingsTab(tabName) {
+      document.querySelectorAll('.stab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('stab-' + tabName).classList.add('active');
+      document.getElementById('tab-' + tabName).classList.add('active');
+    }
+
+    function saveProfileSettings() {
+      const sig = document.getElementById('setSignature').value;
+      state.preferences.signature = sig;
+      localStorage.setItem('iron_id_signature', sig);
+      showToast('Profile and signature saved', true);
+      closeSettings();
+    }
+
+    function savePreferenceSettings() {
+      state.preferences.autoSeen = document.getElementById('prefAutoSeen').checked;
+      state.preferences.confirmDelete = document.getElementById('prefConfirmDelete').checked;
+      localStorage.setItem('iron_id_auto_seen', state.preferences.autoSeen);
+      localStorage.setItem('iron_id_confirm_delete', state.preferences.confirmDelete);
+      showToast('Preferences updated', true);
+      closeSettings();
+    }
+
+    /* ——— Compose ——— */
+    function openCompose() {
+      const sender = state.currentUser ? state.currentUser.email : 'charaf@iron-id.io';
+      document.getElementById('cmpFrom').innerText = sender;
+      document.getElementById('cmpTo').value = sender === 'charaf@iron-id.io' ? 'anis@client.dz' : 'charaf@iron-id.io';
+      document.getElementById('cmpSub').value = '';
+      
+      const sig = state.preferences.signature ? '\n\n--\n' + state.preferences.signature : '';
+      document.getElementById('cmpBody').value = sig;
+      document.getElementById('composeAlert').className = 'hidden';
+      document.getElementById('composeModal').classList.add('open');
+    }
+
+    function closeCompose() {
+      document.getElementById('composeModal').classList.remove('open');
+    }
+
+    /* ——— Send Email (JMAP atomic Email/set + EmailSubmission/set) ——— */
+    async function dispatchEmail() {
+      const btn = document.getElementById('sendBtn');
+      const alertBox = document.getElementById('composeAlert');
+
+      const senderEmail = state.currentUser ? state.currentUser.email : 'charaf@iron-id.io';
+      const toEmail = document.getElementById('cmpTo').value.trim();
+      const subject = document.getElementById('cmpSub').value.trim();
+      const body = document.getElementById('cmpBody').value;
+
+      if (!toEmail || !subject) {
+        alertBox.className = 'cmp-alert';
+        alertBox.innerText = 'Please provide both recipient and subject.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'Transmitting…';
+
+      const sentMailbox = state.mailboxes.find(b => b.role === 'sent' || b.name.toLowerCase() === 'sent items');
+      const mailboxIds = {};
+      if (sentMailbox) mailboxIds[sentMailbox.id] = true;
+
+      const identityId = state.identities.length ? state.identities[0].id : 'b';
+
+      const payload = {
+        using: [
+          'urn:ietf:params:jmap:core',
+          'urn:ietf:params:jmap:mail',
+          'urn:ietf:params:jmap:submission'
+        ],
+        methodCalls: [
+          ['Email/set', {
+            accountId: state.account,
+            create: {
+              'msg1': {
+                mailboxIds: mailboxIds,
+                keywords: { '$seen': true },
+                from: [{ email: senderEmail }],
+                to: [{ email: toEmail }],
+                subject: subject,
+                bodyValues: {
+                  'b1': { value: body }
+                },
+                textBody: [{ partId: 'b1', type: 'text/plain' }]
+              }
+            }
+          }, 'cDraft'],
+          ['EmailSubmission/set', {
+            accountId: state.account,
+            create: {
+              'sub1': {
+                identityId: identityId,
+                emailId: '#msg1',
+                envelope: {
+                  mailFrom: { email: senderEmail },
+                  rcptTo: [{ email: toEmail }]
+                }
+              }
+            }
+          }, 'sDraft']
+        ]
+      };
+
+      try {
+        const res = await fetch('/proxy/jmap', {
+          method: 'POST',
+          headers: {
+            'Authorization': state.authHeader,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        const submissionResult = data.methodResponses.find(r => r[0] === 'EmailSubmission/set');
+
+        if (submissionResult && submissionResult[1].created && submissionResult[1].created['sub1']) {
+          showToast('Message dispatched & delivered!', true);
+          closeCompose();
+          await refreshMailbox();
+        } else {
+          const errDetail = JSON.stringify(data);
+          alertBox.className = 'cmp-alert';
+          alertBox.innerText = 'Submission error: ' + errDetail;
+        }
+      } catch (err) {
+        alertBox.className = 'cmp-alert';
+        alertBox.innerText = 'Network error: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span>Send Message</span>';
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    window.onload = initSession;
+  </script>
+</body>
+</html>

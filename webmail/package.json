@@ -1,0 +1,10 @@
+{
+  "name": "iron-id-webmail",
+  "version": "1.0.0",
+  "description": "IRON ID Sovereign JMAP Webmail & Gateway Proxy",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}

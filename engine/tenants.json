@@ -1,0 +1,168 @@
+{
+  "tenants": {
+    "iron-id.io": {
+      "domain": "iron-id.io",
+      "displayName": "IRON ID Sovereign HQ",
+      "status": "active",
+      "createdAt": "2026-09-23T18:00:00.000Z",
+      "dkim": {
+        "selector": "stalwart",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAn8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q=\n-----END PUBLIC KEY-----",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=n8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@iron-id.io; ruf=mailto:dmarc@iron-id.io; fo=1",
+        "mtaSts": "v=STSv1; id=20260923T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 1000
+    },
+    "client.dz": {
+      "domain": "client.dz",
+      "displayName": "Client DZ Partner Tenant",
+      "status": "active",
+      "createdAt": "2026-09-23T18:30:00.000Z",
+      "dkim": {
+        "selector": "stalwart",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAd5X8J2eQ3uY9kP+M4tL1mQ8vZ3bX2vW1qO9sT8yU7X8=\n-----END PUBLIC KEY-----",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=d5X8J2eQ3uY9kP+M4tL1mQ8vZ3bX2vW1qO9sT8yU7X8="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@client.dz",
+        "mtaSts": "v=STSv1; id=20260923T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 5120,
+      "defaultDailyLimit": 250
+    },
+    "api-tenant-1791230511376.com": {
+      "domain": "api-tenant-1791230511376.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-05T20:01:51.389Z",
+      "dkim": {
+        "selector": "stalwart",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAlBz8gB+gj+fenzvtuUFeeplSLsO5ROieTfXpKXQWbEE=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAlBz8gB+gj+fenzvtuUFeeplSLsO5ROieTfXpKXQWbEE="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791230511376.com",
+        "mtaSts": "v=STSv1; id=20261005T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250
+    },
+    "api-tenant-1791232983097.com": {
+      "domain": "api-tenant-1791232983097.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-05T20:43:03.088Z",
+      "dkim": {
+        "selector": "stalwart",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEABkfC4NZA4gBiyLiuOUzWDrI+uaEjalnww0zhAqXgDVM=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEABkfC4NZA4gBiyLiuOUzWDrI+uaEjalnww0zhAqXgDVM="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791232983097.com",
+        "mtaSts": "v=STSv1; id=20261005T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250
+    }
+  },
+  "mailboxes": {
+    "charaf@iron-id.io": {
+      "email": "charaf@iron-id.io",
+      "domain": "iron-id.io",
+      "accountId": "c",
+      "identityId": "b",
+      "displayName": "Charaf Sellam",
+      "role": "admin",
+      "status": "active",
+      "passwordHash": "e5869652172cbcb611bb1df3adb1ccbaff88bc6f35dedc3a2f159ce6cdbb9b36",
+      "storageQuotaMb": 20480,
+      "usedStorageMb": 42.5,
+      "dailySendLimit": 2000,
+      "todaySentCount": 2,
+      "lastActiveAt": "2026-10-05T20:10:00.000Z",
+      "createdAt": "2026-09-23T18:00:00.000Z"
+    },
+    "anis@client.dz": {
+      "email": "anis@client.dz",
+      "domain": "client.dz",
+      "accountId": "e",
+      "identityId": "d",
+      "displayName": "Anis Client",
+      "role": "tenant_user",
+      "status": "active",
+      "passwordHash": "89156048465da7592424968157d7b8b3e5f8fead9d5c5b6b4004fe48b66fb195",
+      "storageQuotaMb": 5120,
+      "usedStorageMb": 14.8,
+      "dailySendLimit": 250,
+      "todaySentCount": 1,
+      "lastActiveAt": "2026-10-05T20:10:00.000Z",
+      "createdAt": "2026-09-23T18:30:00.000Z"
+    }
+  },
+  "auditLog": [
+    {
+      "timestamp": "2026-10-05T20:43:03.093Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-05T20:43:03.088Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791232983097.com",
+      "details": "Provisioned new tenant domain with Ed25519 DKIM keys."
+    },
+    {
+      "timestamp": "2026-10-05T20:01:51.401Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-05T20:01:51.390Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791230511376.com",
+      "details": "Provisioned new tenant domain with Ed25519 DKIM keys."
+    },
+    {
+      "timestamp": "2026-09-23T18:00:00.000Z",
+      "action": "TENANT_INITIALIZED",
+      "domain": "iron-id.io",
+      "details": "Root authoritative sovereign domain provisioned."
+    },
+    {
+      "timestamp": "2026-09-23T18:30:00.000Z",
+      "action": "TENANT_INITIALIZED",
+      "domain": "client.dz",
+      "details": "Secondary client test tenant provisioned."
+    }
+  ]
+}
