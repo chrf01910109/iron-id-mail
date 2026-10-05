@@ -2,31 +2,42 @@
 set -e
 
 echo "===================================================================="
-echo " [IRON ID] Initializing All-in-One Sovereign VPS Container on Railway"
+echo " [IRON ID] Initializing Sovereign VPS Container on Railway"
 echo "===================================================================="
 
-# Ensure data directories exist
-mkdir -p /data/seaweed /opt/iron-id/data /var/log /var/run /var/lib/postgresql/16/main
-chown -R postgres:postgres /var/lib/postgresql
+# 1. Start PostgreSQL service
+echo "--> Starting PostgreSQL service..."
+service postgresql start
 
-# Initialize PostgreSQL cluster if not already initialized
-if [ ! -f /var/lib/postgresql/16/main/PG_VERSION ]; then
-  echo "--> Initializing PostgreSQL 16 cluster..."
-  su - postgres -c "/usr/lib/postgresql/16/bin/initdb -D /var/lib/postgresql/16/main"
-fi
+# Wait for PostgreSQL to be ready
+until su - postgres -c "pg_isready" > /dev/null 2>&1; do
+  echo "Waiting for PostgreSQL to initialize..."
+  sleep 1
+done
 
-# Temporarily start PostgreSQL to run init.sql
-echo "--> Starting PostgreSQL for database bootstrap..."
-su - postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/lib/postgresql/16/main -l /var/log/pg_boot.log start"
+# 2. Initialize user and database if not already created
+echo "--> Verifying database and user..."
+su - postgres -c "psql -tc \"SELECT 1 FROM pg_user WHERE usename = 'stalwart'\" | grep -q 1 || psql -c \"CREATE USER stalwart WITH PASSWORD 'StalwartSecretPass2026!' SUPERUSER;\""
+su - postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'stalwart_mail'\" | grep -q 1 || psql -c \"CREATE DATABASE stalwart_mail OWNER stalwart;\""
 
-# Create database and user
-echo "--> Bootstrapping database and running migrations..."
-su - postgres -c "psql -c \"CREATE USER stalwart WITH PASSWORD 'StalwartSecretPass2026!' SUPERUSER;\"" || true
-su - postgres -c "psql -c \"CREATE DATABASE stalwart_mail OWNER stalwart;\"" || true
+# Run schema migrations
+echo "--> Executing schema migrations..."
 su - postgres -c "psql -d stalwart_mail -f /opt/iron-id/init.sql" || true
 
-# Stop temporary PostgreSQL
-su - postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/lib/postgresql/16/main stop"
+# 3. Start SeaweedFS S3 engine
+mkdir -p /data/seaweed /opt/iron-id/data /var/log
+echo "--> Starting SeaweedFS S3 engine on port 8333..."
+/usr/local/bin/weed server -dir=/data/seaweed -s3 -s3.port=8333 -s3.allowEmptyFolder=true -ip=127.0.0.1 > /var/log/seaweedfs.log 2>&1 &
 
-echo "--> Launching Supervisor daemon..."
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+sleep 2
+
+# 4. Start Stalwart Mail Server
+echo "--> Starting Stalwart Mail Engine on port 8080..."
+/usr/local/bin/stalwart-mail -c /opt/iron-id/config.toml > /var/log/stalwart.log 2>&1 &
+
+sleep 2
+
+# 5. Start Webmail & Admin Gateway in foreground
+echo "--> Starting Webmail & Admin Gateway on port ${PORT:-3001}..."
+cd /opt/iron-id/webmail
+exec node server.js

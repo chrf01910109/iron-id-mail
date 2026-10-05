@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { handleApiRequest } = require('./routes/api');
 
-const PORT = 3001;
+const PORT = parseInt(process.env.PORT, 10) || 3001;
 const STALWART_HOST = '127.0.0.1';
 const STALWART_PORT = 8080;
 const HTML_FILE = path.join(__dirname, 'client.html');
