@@ -14,3 +14,7 @@ engine/data/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Reports and generated documents (Device-only, do not track in Git)
+*.pdf
+docs/*.pdf
