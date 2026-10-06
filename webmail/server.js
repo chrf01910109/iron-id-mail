@@ -7,9 +7,14 @@ const fs = require('fs');
 const path = require('path');
 const { handleApiRequest } = require('./routes/api');
 
-const PORT = parseInt(process.env.PORT, 10) || 8080;
+let PORT = parseInt(process.env.PORT, 10) || 3001;
 const STALWART_HOST = process.env.STALWART_HOST || '127.0.0.1';
-const STALWART_PORT = parseInt(process.env.STALWART_PORT, 10) || 8085;
+const STALWART_PORT = parseInt(process.env.STALWART_PORT, 10) || 8080;
+
+// Prevent port collision with Stalwart
+if (PORT === STALWART_PORT) {
+  PORT = 3001;
+}
 const HTML_FILE = path.join(__dirname, 'client.html');
 const ADMIN_HTML_FILE = path.join(__dirname, 'admin.html');
 

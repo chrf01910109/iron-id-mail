@@ -6,7 +6,7 @@
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PORT=8080
+ENV PORT=3001
 ENV NODE_ENV=production
 
 # 1. Install System Dependencies, PostgreSQL 16, and Node.js LTS
@@ -45,6 +45,6 @@ RUN chmod +x /opt/iron-id/entrypoint.sh \
     && ln -sf /opt/iron-id/server.js /app/server.js \
     && cd /opt/iron-id/webmail && npm install --production || true
 
-EXPOSE 8080 8085 25 465 587 993 5432
+EXPOSE 3001 8080 5432
 
 ENTRYPOINT ["/opt/iron-id/entrypoint.sh"]

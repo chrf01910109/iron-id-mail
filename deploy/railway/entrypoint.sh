@@ -44,79 +44,70 @@ fi
 echo "--> Applying PostgreSQL schema migrations from init.sql..."
 PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f /opt/iron-id/init.sql 2>&1 || true
 
-# 4. Generate Stalwart config.toml pointing to PostgreSQL
-echo "--> Generating Stalwart PostgreSQL 16 configuration..."
-cat <<EOF > /opt/iron-id/config.toml
-# ==============================================================================
-# IRON ID Sovereign Mail — PostgreSQL 16 Configuration
-# ==============================================================================
-[server]
-hostname = "mail.iron-id.io"
-
-[storage]
-data = "postgres"
-lookup = "postgres"
-blob = "postgres"
-fts = "postgres"
-
-[store.postgres]
-type = "postgres"
-host = "$DB_HOST"
-port = $DB_PORT
-database = "$DB_NAME"
-user = "$DB_USER"
-password = "$DB_PASS"
-max-connections = 32
-
-[directory.internal]
-type = "internal"
-store = "postgres"
-
-[server.listener."http"]
-bind = ["127.0.0.1:8085"]
-protocol = "http"
-
-[jmap]
-allow-insecure-auth = true
-
-[authentication]
-allow-cleartext = true
+# 4. Generate Stalwart config.json pointing to PostgreSQL (JSON format verified)
+echo "--> Generating Stalwart PostgreSQL 16 config.json..."
+cat <<EOF > /opt/iron-id/config.json
+{
+  "@type": "PostgreSql",
+  "host": "$DB_HOST",
+  "port": $DB_PORT,
+  "database": "$DB_NAME",
+  "authUsername": "$DB_USER",
+  "authSecret": {
+    "@type": "Value",
+    "value": "$DB_PASS"
+  },
+  "poolMaxConnections": 16
+}
 EOF
 
 # 5. Import Seed Accounts & Mailboxes into PostgreSQL if fresh
 if [ -d "/opt/iron-id/export_data.json" ]; then
   echo "--> Importing seed identities and accounts into PostgreSQL store..."
-  /usr/local/bin/stalwart -c /opt/iron-id/config.toml -i /opt/iron-id/export_data.json 2>&1 || true
+  /usr/local/bin/stalwart -c /opt/iron-id/config.json -i /opt/iron-id/export_data.json 2>&1 || true
 fi
 
-# 6. Start Stalwart Mail Server (PostgreSQL) in background
-echo "--> Starting Stalwart Mail Engine (PostgreSQL 16) on port 8085..."
-/usr/local/bin/stalwart -c /opt/iron-id/config.toml > /var/log/stalwart.log 2>&1 &
+# 6. Set Stalwart recovery/internal port to 8085 to avoid collision with Railway PORT
+export STALWART_RECOVERY_MODE_PORT=8085
 
-# 7. Wait for Stalwart to report healthy
+# 7. Start Stalwart Mail Server (PostgreSQL) in background
+echo "--> Starting Stalwart Mail Engine (PostgreSQL 16) in background..."
+/usr/local/bin/stalwart -c /opt/iron-id/config.json > /var/log/stalwart.log 2>&1 &
+
+# 8. Wait for Stalwart to report healthy on internal port 8085 or 8080
 echo "--> Verifying Stalwart PostgreSQL engine is listening..."
 MAX_RETRIES=30
 RETRY_COUNT=0
-READY=0
+DETECTED_PORT=""
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
   if curl -s http://127.0.0.1:8085/jmap/session > /dev/null 2>&1; then
-    READY=1
+    DETECTED_PORT="8085"
+    break
+  fi
+  if curl -s http://127.0.0.1:8080/jmap/session > /dev/null 2>&1; then
+    DETECTED_PORT="8080"
     break
   fi
   RETRY_COUNT=$((RETRY_COUNT+1))
-  echo "Waiting for Stalwart PostgreSQL engine to initialize... ($RETRY_COUNT/$MAX_RETRIES)"
+  echo "Waiting for Stalwart PostgreSQL engine... ($RETRY_COUNT/$MAX_RETRIES)"
   sleep 1
 done
 
-if [ $READY -eq 1 ]; then
-  echo "--> Stalwart PostgreSQL 16 Engine is LIVE and READY on port 8085!"
+if [ -n "$DETECTED_PORT" ]; then
+  echo "--> Stalwart PostgreSQL 16 Engine is LIVE and READY on port $DETECTED_PORT!"
 else
   echo "[WARNING] Stalwart took longer than expected. Logs:"
   cat /var/log/stalwart.log || true
 fi
 
-# 8. Start Webmail & Admin Gateway in foreground
-echo "--> Starting Webmail & Admin Gateway on port ${PORT:-8080}..."
+# 9. Determine Web Gateway Port
+FINAL_STALWART_PORT="${DETECTED_PORT:-8085}"
+WEB_PORT="${PORT:-8080}"
+if [ "$WEB_PORT" = "$FINAL_STALWART_PORT" ]; then
+  WEB_PORT="3001"
+fi
+
+echo "--> Starting Webmail & Admin Gateway on port $WEB_PORT (connecting to Stalwart on $FINAL_STALWART_PORT)..."
 cd /opt/iron-id/webmail
-exec node server.js
+PORT="$WEB_PORT" STALWART_PORT="$FINAL_STALWART_PORT" exec node server.js
