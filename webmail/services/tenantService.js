@@ -128,7 +128,20 @@ class TenantService {
     try {
       if (fs.existsSync(DATA_FILE)) {
         const raw = fs.readFileSync(DATA_FILE, 'utf8');
-        return JSON.parse(raw);
+        const store = JSON.parse(raw);
+        let migrated = false;
+        for (const t of Object.values(store.tenants || {})) {
+          if (t.dkim && (t.dkim.selector === 'stalwart' || !t.dkim.selector)) {
+            t.dkim.selector = 'ironid';
+            migrated = true;
+          }
+        }
+        if (migrated) {
+          try {
+            fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
+          } catch(e) {}
+        }
+        return store;
       }
     } catch (err) {
       console.warn('[TenantService] Failed reading tenants.json, initializing default:', err.message);
