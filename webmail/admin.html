@@ -480,11 +480,30 @@
         <div style="font-size: 12px; color: var(--text-muted);">Sovereign Tenant Provisioning & DNS Health Gateway</div>
       </div>
     </div>
-    <div class="nav-actions">
+    <div class="nav-actions" style="display: flex; align-items: center; gap: 12px;">
+      <!-- Operator Identity & Sovereign RBAC Switcher -->
+      <div id="operatorBadgeBox" style="display: flex; align-items: center; gap: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 6px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+        <div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(56, 189, 248, 0.15); color: #38BDF8; font-size: 14px;">
+          🛡️
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Active Operator:</span>
+            <span id="operatorRoleBadge" class="badge badge-active" style="font-size: 9px; padding: 1px 6px;">MASTER ADMIN</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+            <select id="operatorSelect" class="mono" style="background: transparent; border: none; color: #38BDF8; font-weight: 600; font-size: 12px; cursor: pointer; outline: none;" onchange="handleOperatorChange(this.value)">
+              <option value="admin@iron-id.io" style="background: #111827; color: #38BDF8;">admin@iron-id.io (IRON ID Master Administrator)</option>
+              <option value="anis@client.dz" style="background: #111827; color: #9CA3AF;">anis@client.dz (Tenant User — Read-Only)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <a href="/" class="btn btn-secondary">
         ← Open Webmail Client
       </a>
-      <button class="btn btn-primary" onclick="openTenantModal()">
+      <button id="btnNewTenant" class="btn btn-primary" onclick="handleNewTenantClick()">
         ➕ New Tenant
       </button>
     </div>
@@ -607,7 +626,7 @@
         <div style="display: flex; gap: 12px; max-width: 650px; flex-wrap: wrap;">
           <select id="dnsDomainSelect" class="form-select" style="flex: 1; min-width: 220px;"></select>
           <button class="btn btn-primary" onclick="runDnsAudit()">🔍 Run Live Audit</button>
-          <button class="btn btn-secondary" onclick="openEditDnsFromSelect()">⚙️ Edit DNS Records</button>
+          <button id="btnDnsTabEdit" class="btn btn-secondary" onclick="openEditDnsFromSelect()">⚙️ Edit DNS Records</button>
         </div>
 
         <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 14px 18px; margin-top: 18px; display: flex; align-items: flex-start; gap: 14px;">
@@ -778,6 +797,10 @@
         <strong>Sovereign Record Authority:</strong> Changes saved here configure the mail engine's cryptographic signing and validation. Once saved, copy and publish these records in your DNS registrar (Cloudflare / Namecheap / GoDaddy) to go live.
       </div>
 
+      <div id="editDnsRbacBanner" style="display: none; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #FCA5A5; line-height: 1.4;">
+        🔒 <strong>Access Restricted (Read-Only View):</strong> Tenant users are not permitted to modify DNS records or cryptographic keys. Strictly restricted to the master sovereign administrator (<strong>admin@iron-id.io</strong>).
+      </div>
+
       <form onsubmit="handleSaveDns(event)">
         <input type="hidden" id="editDnsDomainHidden">
 
@@ -794,7 +817,7 @@
                 <option value="ed25519">Ed25519 (Modern, 256-bit, High-Speed)</option>
                 <option value="rsa2048">RSA (2048-bit, Legacy Compatible)</option>
               </select>
-              <button type="button" class="btn btn-secondary" style="white-space: nowrap; padding: 6px 10px; font-size: 11px;" onclick="handleRegenDkim()">🔄 Re-key</button>
+              <button id="btnRegenDkim" type="button" class="btn btn-secondary" style="white-space: nowrap; padding: 6px 10px; font-size: 11px;" onclick="handleRegenDkim()">🔄 Re-key</button>
             </div>
           </div>
         </div>
@@ -838,7 +861,7 @@
           <button type="button" class="btn btn-secondary" onclick="copyAllDnsRecords()">📋 Copy All 5 DNS Records</button>
           <div style="display: flex; gap: 8px;">
             <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditDns')">Cancel</button>
-            <button type="submit" class="btn btn-primary">💾 Save & Apply Records</button>
+            <button id="btnSaveDns" type="submit" class="btn btn-primary">💾 Save & Apply Records</button>
           </div>
         </div>
       </form>
@@ -849,9 +872,88 @@
   <script>
     let tenants = [];
     let mailboxes = [];
+    let currentOperator = localStorage.getItem('ironid_operator_email') || 'admin@iron-id.io';
+
+    function isMasterAdmin(email) {
+      if (!email) return false;
+      const clean = String(email).trim().toLowerCase();
+      return clean === 'admin@iron-id.io' || clean === 'charaf@iron-id.io';
+    }
+
+    function getCurrentOperator() {
+      return currentOperator;
+    }
+
+    function handleOperatorChange(newEmail) {
+      currentOperator = newEmail;
+      localStorage.setItem('ironid_operator_email', newEmail);
+      updateOperatorUI();
+    }
+
+    function showAdminOnlyAlert() {
+      alert('Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.');
+    }
+
+    function handleNewTenantClick() {
+      if (!isMasterAdmin(currentOperator)) {
+        return alert('Access Denied: Only the master administrator (admin@iron-id.io) has authority to provision sovereign domains.');
+      }
+      openTenantModal();
+    }
+
+    function updateOperatorUI() {
+      const isMaster = isMasterAdmin(currentOperator);
+      const badge = document.getElementById('operatorRoleBadge');
+      const sel = document.getElementById('operatorSelect');
+      if (sel) sel.value = currentOperator;
+
+      if (badge) {
+        if (isMaster) {
+          badge.className = 'badge badge-active';
+          badge.innerText = 'MASTER ADMIN (AUTHORIZED)';
+          badge.style.background = 'rgba(16, 185, 129, 0.15)';
+          badge.style.color = '#10B981';
+          badge.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        } else {
+          badge.className = 'badge badge-suspended';
+          badge.innerText = 'TENANT USER (READ-ONLY)';
+          badge.style.background = 'rgba(239, 68, 68, 0.15)';
+          badge.style.color = '#EF4444';
+          badge.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        }
+      }
+
+      const btnNewTenant = document.getElementById('btnNewTenant');
+      if (btnNewTenant) {
+        if (isMaster) {
+          btnNewTenant.innerHTML = '➕ New Tenant';
+          btnNewTenant.className = 'btn btn-primary';
+          btnNewTenant.title = 'Provision sovereign domain';
+        } else {
+          btnNewTenant.innerHTML = '🔒 New Tenant (Restricted)';
+          btnNewTenant.className = 'btn btn-secondary';
+          btnNewTenant.title = 'Restricted to admin@iron-id.io';
+        }
+      }
+
+      const btnDnsTabEdit = document.getElementById('btnDnsTabEdit');
+      if (btnDnsTabEdit) {
+        if (isMaster) {
+          btnDnsTabEdit.innerHTML = '⚙️ Edit DNS Records';
+          btnDnsTabEdit.className = 'btn btn-secondary';
+        } else {
+          btnDnsTabEdit.innerHTML = '🔒 Edit DNS Records (Admin Only)';
+          btnDnsTabEdit.className = 'btn btn-secondary';
+        }
+      }
+
+      renderTenants();
+    }
 
     async function loadData() {
       try {
+        updateOperatorUI();
+
         const statsRes = await fetch('/api/stats').then(r => r.json());
         if (statsRes.success) {
           const s = statsRes.stats;
@@ -891,6 +993,7 @@
         tb.innerHTML = '<tr><td colspan="7" style="text-align: center;">No tenants provisioned.</td></tr>';
         return;
       }
+      const isMaster = isMasterAdmin(currentOperator);
       tb.innerHTML = tenants.map(t => `
         <tr>
           <td><strong style="color: var(--color-primary);">${t.domain}</strong></td>
@@ -904,7 +1007,10 @@
           <td><span class="badge badge-active">${t.dkim.keyType.toUpperCase()}</span></td>
           <td>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="openEditDnsModal('${t.domain}')">⚙️ Edit Records</button>
+              ${isMaster
+                ? `<button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="openEditDnsModal('${t.domain}')">⚙️ Edit Records</button>`
+                : `<button class="btn btn-secondary" style="opacity: 0.6; cursor: not-allowed; padding: 4px 8px; font-size: 11px;" title="🔒 Restricted: Only admin@iron-id.io can modify sovereign DNS records" onclick="showAdminOnlyAlert()">🔒 Edit Records</button>`
+              }
               <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="quickDnsCheck('${t.domain}')">🔍 Check DNS</button>
             </div>
           </td>
@@ -985,6 +1091,9 @@
 
     async function handleCreateTenant(e) {
       e.preventDefault();
+      if (!isMasterAdmin(currentOperator)) {
+        return alert('Access Denied: Only the master administrator (admin@iron-id.io) has authority to provision sovereign domains.');
+      }
       const domain = document.getElementById('newTenantDomain').value;
       const displayName = document.getElementById('newTenantName').value;
       const defaultQuotaMb = document.getElementById('newTenantQuota').value;
@@ -993,7 +1102,10 @@
       try {
         const res = await fetch('/api/tenants', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Admin-Account': currentOperator
+          },
           body: JSON.stringify({ domain, displayName, defaultQuotaMb, defaultDailyLimit })
         }).then(r => r.json());
 
@@ -1157,6 +1269,27 @@
         document.getElementById('editDnsDmarc').value = plan.dmarc || `v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@${t.domain}`;
         document.getElementById('editDnsMtaSts').value = plan.mtaSts || `v=STSv1; id=20261006T01; mode=enforce; max_age=86400`;
 
+        const isMaster = isMasterAdmin(currentOperator);
+        const rbacBanner = document.getElementById('editDnsRbacBanner');
+        const btnSave = document.getElementById('btnSaveDns');
+        const btnRegen = document.getElementById('btnRegenDkim');
+
+        if (rbacBanner) rbacBanner.style.display = isMaster ? 'none' : 'block';
+        if (btnSave) {
+          btnSave.disabled = !isMaster;
+          btnSave.style.opacity = isMaster ? '1' : '0.5';
+          btnSave.innerText = isMaster ? '💾 Save & Apply Records' : '🔒 Locked (admin@iron-id.io only)';
+        }
+        if (btnRegen) {
+          btnRegen.disabled = !isMaster;
+          btnRegen.style.opacity = isMaster ? '1' : '0.5';
+        }
+
+        ['editDnsSelector', 'editDnsKeyType', 'editDnsMxHost', 'editDnsMxPriority', 'editDnsSpf', 'editDnsDmarc', 'editDnsMtaSts'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = !isMaster;
+        });
+
         document.getElementById('editDnsSelector').oninput = function() {
           const s = this.value.trim() || 'selector';
           document.getElementById('editDnsSelectorHost').innerText = `${s}._domainkey.${t.domain}`;
@@ -1170,6 +1303,9 @@
 
     async function handleSaveDns(e) {
       e.preventDefault();
+      if (!isMasterAdmin(currentOperator)) {
+        return showAdminOnlyAlert();
+      }
       const domain = document.getElementById('editDnsDomainHidden').value;
       const selector = document.getElementById('editDnsSelector').value.trim();
       const mxHost = document.getElementById('editDnsMxHost').value.trim();
@@ -1181,12 +1317,15 @@
       try {
         const res = await fetch(`/api/tenants/${encodeURIComponent(domain)}/dns`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Admin-Account': currentOperator
+          },
           body: JSON.stringify({ selector, mxHost, mxPriority, spf, dmarc, mtaSts })
         }).then(r => r.json());
 
         if (res.success) {
-          alert(`DNS records and plan updated for ${domain}!\n\nRemember to publish any changed records in your DNS provider (Cloudflare / Registrar).`);
+          alert(`DNS records and plan updated for ${domain} by ${currentOperator}!\n\nRemember to publish any changed records in your DNS provider (Cloudflare / Registrar).`);
           closeModal('modalEditDns');
           loadData();
           if (document.getElementById('dnsDomainSelect').value === domain) {
@@ -1201,6 +1340,9 @@
     }
 
     async function handleRegenDkim() {
+      if (!isMasterAdmin(currentOperator)) {
+        return showAdminOnlyAlert();
+      }
       const domain = document.getElementById('editDnsDomainHidden').value;
       const keyType = document.getElementById('editDnsKeyType').value;
       if (!confirm(`Are you sure you want to regenerate the cryptographic DKIM key (${keyType}) for ${domain}?\n\nThis will invalidate any previous public key published in DNS until you update it.`)) return;
@@ -1208,13 +1350,16 @@
       try {
         const res = await fetch(`/api/tenants/${encodeURIComponent(domain)}/regenerate-dkim`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Admin-Account': currentOperator
+          },
           body: JSON.stringify({ keyType })
         }).then(r => r.json());
 
         if (res.success && res.dkim) {
           document.getElementById('editDnsTxt').value = res.dkim.dnsTxt;
-          alert(`New ${res.dkim.keyType.toUpperCase()} DKIM Key generated!\n\nNew DNS TXT record:\n${res.dkim.dnsTxt}`);
+          alert(`New ${res.dkim.keyType.toUpperCase()} DKIM Key generated by ${currentOperator}!\n\nNew DNS TXT record:\n${res.dkim.dnsTxt}`);
           loadData();
         } else {
           alert('Error: ' + res.error);

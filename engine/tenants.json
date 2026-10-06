@@ -6,7 +6,7 @@
       "status": "active",
       "createdAt": "2026-09-23T18:00:00.000Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAn8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q=\n-----END PUBLIC KEY-----",
         "dnsTxt": "v=DKIM1; k=ed25519; p=n8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q="
@@ -21,7 +21,8 @@
         "mtaSts": "v=STSv1; id=20260923T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 1000
+      "defaultDailyLimit": 1000,
+      "updatedAt": "2026-10-06T18:56:38.909Z"
     },
     "client.dz": {
       "domain": "client.dz",
@@ -29,7 +30,7 @@
       "status": "active",
       "createdAt": "2026-09-23T18:30:00.000Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAd5X8J2eQ3uY9kP+M4tL1mQ8vZ3bX2vW1qO9sT8yU7X8=\n-----END PUBLIC KEY-----",
         "dnsTxt": "v=DKIM1; k=ed25519; p=d5X8J2eQ3uY9kP+M4tL1mQ8vZ3bX2vW1qO9sT8yU7X8="
@@ -52,7 +53,7 @@
       "status": "active",
       "createdAt": "2026-10-05T20:01:51.389Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAlBz8gB+gj+fenzvtuUFeeplSLsO5ROieTfXpKXQWbEE=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAlBz8gB+gj+fenzvtuUFeeplSLsO5ROieTfXpKXQWbEE="
@@ -75,7 +76,7 @@
       "status": "active",
       "createdAt": "2026-10-05T20:43:03.088Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEABkfC4NZA4gBiyLiuOUzWDrI+uaEjalnww0zhAqXgDVM=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEABkfC4NZA4gBiyLiuOUzWDrI+uaEjalnww0zhAqXgDVM="
@@ -98,7 +99,7 @@
       "status": "active",
       "createdAt": "2026-10-06T12:13:45.782Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAbykQUw6a4mOLGgEfX4HtH5726mgGv61Cnp9BRgUOMyM=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAbykQUw6a4mOLGgEfX4HtH5726mgGv61Cnp9BRgUOMyM="
@@ -121,7 +122,7 @@
       "status": "active",
       "createdAt": "2026-10-06T12:53:48.746Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAFIDu2qq5jrabgtZpwfWc7n/In4FEc8m6uqnAz4tgC48=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAFIDu2qq5jrabgtZpwfWc7n/In4FEc8m6uqnAz4tgC48="
@@ -144,7 +145,7 @@
       "status": "active",
       "createdAt": "2026-10-06T13:01:24.294Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEApg6eQKeuTIMCBQeCVKfqN8mG/oSC1KlI6xfY3+grL1A=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEApg6eQKeuTIMCBQeCVKfqN8mG/oSC1KlI6xfY3+grL1A="
@@ -167,7 +168,7 @@
       "status": "active",
       "createdAt": "2026-10-06T13:40:15.154Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA2xywEV2M5IQyFTU/SZoMBerGCXsZVb9mCL2w8OfS1Eg=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEA2xywEV2M5IQyFTU/SZoMBerGCXsZVb9mCL2w8OfS1Eg="
@@ -190,7 +191,7 @@
       "status": "active",
       "createdAt": "2026-10-06T14:09:29.861Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAuJr0U9JPlpcPLkakek1ZZm3THPjHQ0zl5QX5ZgL5bc8=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAuJr0U9JPlpcPLkakek1ZZm3THPjHQ0zl5QX5ZgL5bc8="
@@ -213,7 +214,7 @@
       "status": "active",
       "createdAt": "2026-10-06T15:02:56.429Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAW3JvT2UvZmRFoeJcI+jZuVTlRzXKyJi20XviSRrD2Hw=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAW3JvT2UvZmRFoeJcI+jZuVTlRzXKyJi20XviSRrD2Hw="
@@ -236,7 +237,7 @@
       "status": "active",
       "createdAt": "2026-10-06T15:27:37.595Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEATBmBsjc+rkQ+Gbd09eVxP9c6LMR5/zYBHjskzc6wMow=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEATBmBsjc+rkQ+Gbd09eVxP9c6LMR5/zYBHjskzc6wMow="
@@ -259,7 +260,7 @@
       "status": "active",
       "createdAt": "2026-10-06T15:40:04.813Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAp+23q3EzJfc+eZgVWKIJzKWu87YQdyji3R7AwqZjzjA=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAp+23q3EzJfc+eZgVWKIJzKWu87YQdyji3R7AwqZjzjA="
@@ -282,7 +283,7 @@
       "status": "active",
       "createdAt": "2026-10-06T16:06:14.089Z",
       "dkim": {
-        "selector": "stalwart",
+        "selector": "ironid",
         "keyType": "ed25519",
         "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAtmuCVQ1DlsODvq4d+KD7BgsRFOjVAxFiAMwAOJbwUE8=\n-----END PUBLIC KEY-----\n",
         "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAtmuCVQ1DlsODvq4d+KD7BgsRFOjVAxFiAMwAOJbwUE8="
@@ -294,6 +295,29 @@
         },
         "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
         "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791302774080.com",
+        "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250
+    },
+    "api-tenant-1791312998494.com": {
+      "domain": "api-tenant-1791312998494.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-06T18:56:38.497Z",
+      "dkim": {
+        "selector": "ironid",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAhiAKFUeKxo8etIDGC4AIsdQ0Ne/WW/8f4/PiHn34m18=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAhiAKFUeKxo8etIDGC4AIsdQ0Ne/WW/8f4/PiHn34m18="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791312998494.com",
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
@@ -332,9 +356,43 @@
       "todaySentCount": 1,
       "lastActiveAt": "2026-10-05T20:10:00.000Z",
       "createdAt": "2026-09-23T18:30:00.000Z"
+    },
+    "admin@iron-id.io": {
+      "email": "admin@iron-id.io",
+      "domain": "iron-id.io",
+      "accountId": "master_admin",
+      "identityId": "id_admin",
+      "displayName": "IRON ID Master Administrator",
+      "role": "superadmin",
+      "status": "active",
+      "passwordHash": "eb4da2a5b9db05598aaaa51277746be897238e5855dd0b2df418675a4562ae42",
+      "storageQuotaMb": 51200,
+      "usedStorageMb": 0.1,
+      "dailySendLimit": 5000,
+      "todaySentCount": 0,
+      "lastActiveAt": "2026-10-06T18:56:30.428Z",
+      "createdAt": "2026-09-23T18:00:00.000Z"
     }
   },
   "auditLog": [
+    {
+      "timestamp": "2026-10-06T18:56:38.909Z",
+      "action": "DNS_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Customized DNS plan by admin@iron-id.io (Selector: ironid, MX: mail.iron-id.io)."
+    },
+    {
+      "timestamp": "2026-10-06T18:56:38.507Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-06T18:56:38.497Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791312998494.com",
+      "details": "Provisioned new tenant domain by admin@iron-id.io with Ed25519 DKIM keys."
+    },
     {
       "timestamp": "2026-10-06T16:06:14.101Z",
       "action": "QUOTA_UPDATED",

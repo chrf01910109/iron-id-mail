@@ -10,7 +10,7 @@ const dnsValidator = require('../webmail/services/dnsValidator');
 
 const BASE_URL = 'http://localhost:3001';
 
-function requestJson(method, path, body = null) {
+function requestJson(method, path, body = null, customHeaders = {}) {
   return new Promise((resolve, reject) => {
     const url = new URL(path, BASE_URL);
     const options = {
@@ -19,7 +19,9 @@ function requestJson(method, path, body = null) {
       path: url.pathname + url.search,
       method,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Admin-Account': 'admin@iron-id.io',
+        ...customHeaders
       }
     };
 
@@ -201,6 +203,35 @@ async function runTests() {
     assert.strictEqual(res.body.success, true);
     assert.strictEqual(res.body.verification.domain, 'iron-id.io');
     assert.ok(res.body.verification.score > 0);
+  });
+
+  // --- Test 10b: RBAC Security: Non-Admin Rejection for DNS Modification ---
+  await test('RBAC: Non-admin user cannot modify DNS records (403 Forbidden)', async () => {
+    const res = await requestJson('PATCH', '/api/tenants/iron-id.io/dns', {
+      spf: 'v=spf1 mx ~all'
+    }, { 'X-Admin-Account': 'anis@client.dz' });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+    assert.ok(res.body.error.includes('Only the master administrator (admin@iron-id.io)'));
+  });
+
+  // --- Test 10c: RBAC Security: Master Admin Allowed to Modify DNS ---
+  await test('RBAC: Master administrator (admin@iron-id.io) authorized to modify DNS records (200 OK)', async () => {
+    const res = await requestJson('PATCH', '/api/tenants/iron-id.io/dns', {
+      spf: 'v=spf1 mx ip4:127.0.0.1 ~all'
+    }, { 'X-Admin-Account': 'admin@iron-id.io' });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.success, true);
+  });
+
+  // --- Test 10d: RBAC Security: Non-Admin Rejection for DKIM Re-keying ---
+  await test('RBAC: Non-admin cannot regenerate DKIM cryptographic keys (403 Forbidden)', async () => {
+    const res = await requestJson('POST', '/api/tenants/iron-id.io/regenerate-dkim', {
+      keyType: 'ed25519'
+    }, { 'X-Admin-Account': 'unauthorized_user@external.com' });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+    assert.ok(res.body.error.includes('Only the master administrator (admin@iron-id.io)'));
   });
 
   // --- Test 11: SeaweedFS S3 Blob Storage & IRON ID Box Vaulting ---

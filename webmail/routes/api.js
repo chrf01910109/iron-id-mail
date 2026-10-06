@@ -27,12 +27,20 @@ function parseBody(req) {
   });
 }
 
+function getRequester(req) {
+  const fromHeader = req.headers['x-admin-account'] || req.headers['x-authenticated-user'] || '';
+  if (fromHeader) return fromHeader.trim().toLowerCase();
+  const auth = req.headers['authorization'] || '';
+  if (auth.startsWith('Bearer ')) return auth.slice(7).trim().toLowerCase();
+  return '';
+}
+
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Account, X-Authenticated-User'
   });
   res.end(JSON.stringify(data, null, 2));
 }
@@ -43,7 +51,7 @@ async function handleApiRequest(req, res, pathname) {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Account, X-Authenticated-User'
     });
     res.end();
     return true;
@@ -64,10 +72,18 @@ async function handleApiRequest(req, res, pathname) {
       return true;
     }
 
-    // 3. POST /api/tenants (Provision new tenant domain)
+    // 3. POST /api/tenants (Provision new tenant domain - Restricted to Master Admin)
     if (req.method === 'POST' && pathname === '/api/tenants') {
+      const requester = getRequester(req);
+      if (!tenantService.isMasterAdmin(requester)) {
+        sendJson(res, 403, {
+          success: false,
+          error: 'Access Denied: Only the master administrator (admin@iron-id.io) has authority to provision sovereign domains.'
+        });
+        return true;
+      }
       const payload = await parseBody(req);
-      const newTenant = tenantService.createTenant(payload);
+      const newTenant = tenantService.createTenant({ ...payload, requesterEmail: requester });
       sendJson(res, 201, {
         success: true,
         message: `Tenant domain "${newTenant.domain}" successfully provisioned with Ed25519 DKIM keys.`,
@@ -86,12 +102,20 @@ async function handleApiRequest(req, res, pathname) {
       return true;
     }
 
-    // 4b. PATCH /api/tenants/:domain/dns (Update and customize DNS records & plan)
+    // 4b. PATCH /api/tenants/:domain/dns (Update and customize DNS records & plan - Restricted to Master Admin)
     const tenantDnsMatch = pathname.match(/^\/api\/tenants\/([a-zA-Z0-9.-]+)\/dns$/);
     if (req.method === 'PATCH' && tenantDnsMatch) {
       const domain = tenantDnsMatch[1];
+      const requester = getRequester(req);
+      if (!tenantService.isMasterAdmin(requester)) {
+        sendJson(res, 403, {
+          success: false,
+          error: 'Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.'
+        });
+        return true;
+      }
       const payload = await parseBody(req);
-      const updated = tenantService.updateTenantDns(domain, payload);
+      const updated = tenantService.updateTenantDns(domain, payload, requester);
       sendJson(res, 200, {
         success: true,
         message: `DNS records and plan updated for ${domain}.`,
@@ -100,12 +124,20 @@ async function handleApiRequest(req, res, pathname) {
       return true;
     }
 
-    // 4c. POST /api/tenants/:domain/regenerate-dkim (Re-key cryptographic DKIM)
+    // 4c. POST /api/tenants/:domain/regenerate-dkim (Re-key cryptographic DKIM - Restricted to Master Admin)
     const tenantDkimMatch = pathname.match(/^\/api\/tenants\/([a-zA-Z0-9.-]+)\/regenerate-dkim$/);
     if (req.method === 'POST' && tenantDkimMatch) {
       const domain = tenantDkimMatch[1];
+      const requester = getRequester(req);
+      if (!tenantService.isMasterAdmin(requester)) {
+        sendJson(res, 403, {
+          success: false,
+          error: 'Access Denied: Only the master administrator (admin@iron-id.io) has authority to regenerate cryptographic keys.'
+        });
+        return true;
+      }
       const payload = await parseBody(req);
-      const updated = tenantService.regenerateDkim(domain, payload.keyType || 'ed25519');
+      const updated = tenantService.regenerateDkim(domain, payload.keyType || 'ed25519', requester);
       sendJson(res, 200, {
         success: true,
         message: `Cryptographic DKIM regenerated for ${domain}.`,

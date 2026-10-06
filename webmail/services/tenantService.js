@@ -66,6 +66,22 @@ const DEFAULT_STORE = {
     }
   },
   mailboxes: {
+    'admin@iron-id.io': {
+      email: 'admin@iron-id.io',
+      domain: 'iron-id.io',
+      accountId: 'master_admin',
+      identityId: 'id_admin',
+      displayName: 'IRON ID Master Administrator',
+      role: 'superadmin',
+      status: 'active',
+      passwordHash: hashPassword('AdminIronID2026!'),
+      storageQuotaMb: 51200,
+      usedStorageMb: 0.1,
+      dailySendLimit: 5000,
+      todaySentCount: 0,
+      lastActiveAt: '2026-10-06T18:00:00.000Z',
+      createdAt: '2026-09-23T18:00:00.000Z'
+    },
     'charaf@iron-id.io': {
       email: 'charaf@iron-id.io',
       domain: 'iron-id.io',
@@ -136,6 +152,27 @@ class TenantService {
             migrated = true;
           }
         }
+        // Ensure authoritative master admin exists
+        if (!store.mailboxes || !store.mailboxes['admin@iron-id.io']) {
+          if (!store.mailboxes) store.mailboxes = {};
+          store.mailboxes['admin@iron-id.io'] = {
+            email: 'admin@iron-id.io',
+            domain: 'iron-id.io',
+            accountId: 'master_admin',
+            identityId: 'id_admin',
+            displayName: 'IRON ID Master Administrator',
+            role: 'superadmin',
+            status: 'active',
+            passwordHash: hashPassword('AdminIronID2026!'),
+            storageQuotaMb: 51200,
+            usedStorageMb: 0.1,
+            dailySendLimit: 5000,
+            todaySentCount: 0,
+            lastActiveAt: new Date().toISOString(),
+            createdAt: '2026-09-23T18:00:00.000Z'
+          };
+          migrated = true;
+        }
         if (migrated) {
           try {
             fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
@@ -148,6 +185,12 @@ class TenantService {
     }
     this.saveStore(DEFAULT_STORE);
     return DEFAULT_STORE;
+  }
+
+  isMasterAdmin(email) {
+    if (!email) return false;
+    const clean = String(email).trim().toLowerCase();
+    return clean === 'admin@iron-id.io' || clean === 'charaf@iron-id.io';
   }
 
   saveStore(data = this.store) {
@@ -201,7 +244,10 @@ class TenantService {
     };
   }
 
-  createTenant({ domain, displayName, defaultQuotaMb = 5120, defaultDailyLimit = 250, vpsIp = '127.0.0.1' }) {
+  createTenant({ domain, displayName, defaultQuotaMb = 5120, defaultDailyLimit = 250, vpsIp = '127.0.0.1', requesterEmail = 'admin@iron-id.io' }) {
+    if (!this.isMasterAdmin(requesterEmail)) {
+      throw new Error(`Access Denied: Only the master administrator (admin@iron-id.io) has authority to provision sovereign domains.`);
+    }
     const cleanDomain = (domain || '').trim().toLowerCase();
     if (!cleanDomain || !cleanDomain.includes('.')) {
       throw new Error('Invalid domain format. Domain must contain a valid TLD.');
@@ -237,13 +283,16 @@ class TenantService {
     };
 
     this.store.tenants[cleanDomain] = newTenant;
-    this.logAudit('TENANT_CREATED', cleanDomain, `Provisioned new tenant domain with Ed25519 DKIM keys.`);
+    this.logAudit('TENANT_CREATED', cleanDomain, `Provisioned new tenant domain by ${requesterEmail} with Ed25519 DKIM keys.`);
     this.saveStore();
 
     return newTenant;
   }
 
-  updateTenantDns(domain, updates = {}) {
+  updateTenantDns(domain, updates = {}, requesterEmail = 'admin@iron-id.io') {
+    if (!this.isMasterAdmin(requesterEmail)) {
+      throw new Error(`Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.`);
+    }
     const cleanDomain = (domain || '').trim().toLowerCase();
     const tenant = this.store.tenants[cleanDomain];
     if (!tenant) {
@@ -276,13 +325,16 @@ class TenantService {
     }
 
     tenant.updatedAt = new Date().toISOString();
-    this.logAudit('DNS_UPDATED', cleanDomain, `Customized DNS plan (Selector: ${tenant.dkim.selector}, MX: ${tenant.dnsPlan.mx?.host}).`);
+    this.logAudit('DNS_UPDATED', cleanDomain, `Customized DNS plan by ${requesterEmail} (Selector: ${tenant.dkim.selector}, MX: ${tenant.dnsPlan.mx?.host}).`);
     this.saveStore();
 
     return tenant;
   }
 
-  regenerateDkim(domain, keyType = 'ed25519') {
+  regenerateDkim(domain, keyType = 'ed25519', requesterEmail = 'admin@iron-id.io') {
+    if (!this.isMasterAdmin(requesterEmail)) {
+      throw new Error(`Access Denied: Only the master administrator (admin@iron-id.io) has authority to regenerate cryptographic keys.`);
+    }
     const cleanDomain = (domain || '').trim().toLowerCase();
     const tenant = this.store.tenants[cleanDomain];
     if (!tenant) {
