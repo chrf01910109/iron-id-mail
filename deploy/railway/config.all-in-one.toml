@@ -53,7 +53,7 @@ bind = ["0.0.0.0:993", "[::]:993"]
 protocol = "imap"
 
 [server.listener."http"]
-bind = ["127.0.0.1:8080"]
+bind = ["127.0.0.1:8085"]
 protocol = "http"
 
 [jmap]

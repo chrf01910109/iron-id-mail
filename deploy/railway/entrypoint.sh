@@ -32,12 +32,12 @@ echo "--> Starting SeaweedFS S3 engine on port 8333..."
 sleep 2
 
 # 4. Start Stalwart Mail Server
-echo "--> Starting Stalwart Mail Engine on port 8080..."
+echo "--> Starting Stalwart Mail Engine (internal port 8085)..."
 /usr/local/bin/stalwart-mail -c /opt/iron-id/config.toml > /var/log/stalwart.log 2>&1 &
 
 sleep 2
 
 # 5. Start Webmail & Admin Gateway in foreground
-echo "--> Starting Webmail & Admin Gateway on port ${PORT:-3001}..."
+echo "--> Starting Webmail & Admin Gateway on port ${PORT:-8080}..."
 cd /opt/iron-id/webmail
 exec node server.js

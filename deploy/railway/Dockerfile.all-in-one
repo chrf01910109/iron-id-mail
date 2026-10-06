@@ -6,7 +6,7 @@
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PORT=3001
+ENV PORT=8080
 ENV NODE_ENV=production
 
 # 1. Install System Dependencies, PostgreSQL, and Node.js LTS
