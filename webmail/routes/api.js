@@ -5,6 +5,7 @@
  */
 const tenantService = require('../services/tenantService');
 const dnsValidator = require('../services/dnsValidator');
+const openSearchService = require('../services/openSearchService');
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
@@ -324,6 +325,40 @@ async function handleApiRequest(req, res, pathname) {
     // 13. GET /api/audit (Audit log entries)
     if (req.method === 'GET' && pathname === '/api/audit') {
       sendJson(res, 200, { success: true, log: tenantService.store.auditLog });
+      return true;
+    }
+
+    // 14. GET /api/search (OpenSearch Multilingual Query Engine)
+    if (req.method === 'GET' && pathname === '/api/search') {
+      const parsedUrl = new URL(req.url, 'http://localhost');
+      const query = parsedUrl.searchParams.get('q') || '';
+      const accountId = parsedUrl.searchParams.get('account') || null;
+      const startTime = Date.now();
+      const results = await openSearchService.searchEmails(query, accountId);
+      const latencyMs = Date.now() - startTime;
+      sendJson(res, 200, {
+        success: true,
+        query,
+        accountId,
+        latencyMs,
+        ...results
+      });
+      return true;
+    }
+
+    // 15. GET /api/search/status (OpenSearch Cluster & Index Health)
+    if (req.method === 'GET' && pathname === '/api/search/status') {
+      try {
+        const initRes = await openSearchService.ensureIndex();
+        sendJson(res, 200, {
+          success: true,
+          endpoint: openSearchService.endpoint,
+          index: openSearchService.indexName,
+          status: initRes
+        });
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
       return true;
     }
 

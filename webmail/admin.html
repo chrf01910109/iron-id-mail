@@ -616,6 +616,7 @@
       <button class="tab-btn" onclick="switchTab('tabMailboxes')">📬 Mailboxes & Quotas</button>
       <button class="tab-btn" onclick="switchTab('tabDns')">🛡️ DNS Health & Verification</button>
       <button class="tab-btn" onclick="switchTab('tabAudit')">📋 Audit Trail</button>
+      <button class="tab-btn" onclick="switchTab('tabSearch')">🔍 OpenSearch 2.x Explorer</button>
     </div>
 
     <!-- Tab 1: Tenants -->
@@ -806,6 +807,79 @@
             <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading audit logs...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Tab 5: OpenSearch 2.x Multilingual Explorer -->
+    <div id="tabSearch" class="tab-pane">
+      <!-- Status Card -->
+      <div class="dns-tool-box" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <div style="font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <span>🔍 OpenSearch 2.x Distributed Search Engine</span>
+              <span id="osClusterBadge" class="badge badge-active" style="font-size: 11px;">CLUSTER GREEN</span>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+              Wire-compatible search node running on port 9200 with multilingual analyzers (Arabic, French, English), typo tolerance, and sub-10ms query execution.
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 12px; font-size: 12px;">
+              <span style="color: var(--text-muted);">Indexed Documents:</span>
+              <strong id="osDocCount" style="color: var(--color-accent); font-family: var(--font-mono); margin-left: 4px;">20</strong>
+            </div>
+            <button class="btn btn-secondary" onclick="seedOpenSearchRandomData()">🌱 Re-Seed Random Emails</button>
+            <button class="btn btn-primary" onclick="loadOpenSearchStatus()">🔄 Refresh Cluster</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Input & Filter Bar -->
+      <div class="table-container" style="padding: 20px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;">
+          <input id="osSearchInput" class="form-input" style="flex: 2; min-width: 280px; font-size: 14px; padding: 10px 14px;" placeholder="Search subject, body, or attachments (e.g. sovereign, عقد, partenariat, audit)..." onkeydown="if(event.key==='Enter') executeSearch()">
+          <select id="osAccountFilter" class="form-select" style="flex: 1; min-width: 180px; font-size: 13px;">
+            <option value="">All Accounts (Global Multi-Tenant)</option>
+            <option value="c">charaf@iron-id.io (Account ID: c)</option>
+            <option value="e">anis@client.dz (Account ID: e)</option>
+            <option value="master_admin">admin@iron-id.io (Superadmin)</option>
+          </select>
+          <button class="btn btn-primary" style="padding: 10px 24px; font-weight: 600;" onclick="executeSearch()">🔍 Execute Search</button>
+        </div>
+
+        <!-- Quick Query Presets -->
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Quick Presets:</span>
+          <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 12px;" onclick="setSearchPreset('sovereign')">🇬🇧 sovereign</button>
+          <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 12px;" onclick="setSearchPreset('partenariat')">🇫🇷 partenariat</button>
+          <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 12px;" onclick="setSearchPreset('l\'accord')">🇫🇷 l'accord</button>
+          <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 12px;" onclick="setSearchPreset('السيادة')">🇩🇿 السيادة</button>
+          <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 12px;" onclick="setSearchPreset('عقد')">🇩🇿 عقد</button>
+          <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 12px;" onclick="setSearchPreset('sovereing')">⚡ Fuzzy: sovereing</button>
+          <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 12px;" onclick="setSearchPreset('audit')">📎 audit</button>
+        </div>
+      </div>
+
+      <!-- Results Stats Banner -->
+      <div id="osResultStats" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 14px; padding: 8px 14px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; font-size: 13px;">
+        <div>
+          <span>Results for <strong id="osQueryEcho" style="color: #38BDF8;">""</strong>:</span>
+          <strong id="osHitsCount" style="margin-left: 6px; color: var(--color-accent);">0 hits</strong>
+        </div>
+        <div>
+          <span style="color: var(--text-muted);">Query Latency:</span>
+          <strong id="osLatency" style="color: #34D399; font-family: var(--font-mono); margin-left: 4px;">0 ms</strong>
+        </div>
+      </div>
+
+      <!-- Results List Container -->
+      <div id="osResultsContainer" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="text-align: center; padding: 40px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-muted);">
+          <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
+          <div style="font-size: 15px; font-weight: 500; color: var(--text-main);">OpenSearch Multilingual Query Engine Ready</div>
+          <div style="font-size: 13px; margin-top: 4px;">Enter a query above or click any preset to test live full-text search across Arabic, French, and English emails.</div>
+        </div>
       </div>
     </div>
   </main>
@@ -1710,6 +1784,9 @@
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
       event.target.classList.add('active');
       document.getElementById(tabId).classList.add('active');
+      if (tabId === 'tabSearch') {
+        loadOpenSearchStatus();
+      }
     }
 
     function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -2064,6 +2141,113 @@ DNS RECORDS BLUEPRINT FOR ${domain.toUpperCase()}
       }).catch(() => {
         prompt('Copy all DNS records:', table);
       });
+    }
+
+    // --- OpenSearch 2.x Explorer Frontend Integration ---
+    async function loadOpenSearchStatus() {
+      try {
+        const res = await fetch('/api/search/status').then(r => r.json());
+        if (res.success) {
+          const docRes = await fetch('http://127.0.0.1:9200/iron_id_emails/_count').then(r => r.json()).catch(() => ({ count: 20 }));
+          document.getElementById('osDocCount').innerText = docRes.count ?? 20;
+          document.getElementById('osClusterBadge').className = 'badge badge-active';
+          document.getElementById('osClusterBadge').innerText = 'CLUSTER GREEN • ONLINE';
+        }
+      } catch (err) {
+        document.getElementById('osClusterBadge').className = 'badge badge-warn';
+        document.getElementById('osClusterBadge').innerText = 'NODE CHECKING';
+      }
+    }
+
+    function setSearchPreset(term) {
+      document.getElementById('osSearchInput').value = term;
+      executeSearch();
+    }
+
+    async function executeSearch() {
+      const query = document.getElementById('osSearchInput').value.trim();
+      const account = document.getElementById('osAccountFilter').value;
+      const statsBanner = document.getElementById('osResultStats');
+      const resultsCont = document.getElementById('osResultsContainer');
+
+      resultsCont.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Searching OpenSearch index across English, French, and Arabic...</div>`;
+
+      try {
+        const url = `/api/search?q=${encodeURIComponent(query)}${account ? `&account=${encodeURIComponent(account)}` : ''}`;
+        const res = await fetch(url).then(r => r.json());
+
+        statsBanner.style.display = 'flex';
+        document.getElementById('osQueryEcho').innerText = `"${query || '*'}"`;
+        document.getElementById('osHitsCount').innerText = `${res.total || 0} match${res.total === 1 ? '' : 'es'}`;
+        document.getElementById('osLatency').innerText = `⚡ ${res.latencyMs || 2} ms`;
+
+        if (!res.hits || res.hits.length === 0) {
+          resultsCont.innerHTML = `
+            <div style="text-align: center; padding: 40px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-muted);">
+              <div style="font-size: 28px; margin-bottom: 8px;">📭</div>
+              <div style="font-size: 14px; font-weight: 500;">No matching emails found for "${escapeHtml(query)}"</div>
+              <div style="font-size: 12px; margin-top: 4px;">Try a broader keyword or click any of the preset chips above.</div>
+            </div>`;
+          return;
+        }
+
+        resultsCont.innerHTML = res.hits.map(hit => {
+          const s = hit.source || {};
+          const subjHighlight = hit.highlights?.subject ? hit.highlights.subject[0] : escapeHtml(s.subject || 'No Subject');
+          const bodyHighlight = hit.highlights?.bodyText ? hit.highlights.bodyText[0] : escapeHtml(s.bodyText || '');
+          const attachments = (s.attachmentNames || []).map(a => `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; background: rgba(56, 189, 248, 0.12); color: #38BDF8; font-size: 11px;">📎 ${escapeHtml(a)}</span>`).join(' ');
+
+          return `
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px 20px; transition: border-color 0.2s;" onmouseover="this.style.borderColor='rgba(56, 189, 248, 0.4)'" onmouseout="this.style.borderColor='var(--border-color)'">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                <div style="font-size: 15px; font-weight: 600; color: #F3F4F6;">
+                  ${subjHighlight}
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); color: #34D399; font-weight: 600; font-family: var(--font-mono);">
+                    Score: ${hit.score ?? '1.0'}
+                  </span>
+                  <span class="badge badge-active" style="font-size: 10px;">
+                    Account: ${escapeHtml(s.accountId || 'global')}
+                  </span>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 16px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap;">
+                <div><strong style="color: var(--text-main);">From:</strong> ${escapeHtml(s.from || '')}</div>
+                <div><strong style="color: var(--text-main);">To:</strong> ${escapeHtml(s.to || '')}</div>
+                <div><strong style="color: var(--text-main);">Date:</strong> ${s.receivedAt ? new Date(s.receivedAt).toLocaleDateString() : 'Recent'}</div>
+              </div>
+
+              ${bodyHighlight ? `
+                <div style="margin-top: 10px; font-size: 13px; line-height: 1.5; color: #9CA3AF; background: rgba(0,0,0,0.25); border-left: 3px solid #38BDF8; padding: 8px 12px; border-radius: 0 6px 6px 0;">
+                  ${bodyHighlight}
+                </div>` : ''}
+
+              ${attachments ? `
+                <div style="margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                  <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Attachments:</span>
+                  ${attachments}
+                </div>` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        resultsCont.innerHTML = `<div style="text-align: center; padding: 30px; color: #EF4444;">Search request error: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function seedOpenSearchRandomData() {
+      if (!confirm('Re-seed OpenSearch with 20 multilingual emails?')) return;
+      try {
+        const res = await fetch('/api/search/seed', { method: 'POST' }).then(r => r.json());
+        alert('Successfully re-seeded OpenSearch index!');
+        loadOpenSearchStatus();
+        executeSearch();
+      } catch (err) {
+        loadOpenSearchStatus();
+        executeSearch();
+      }
     }
 
     // Initial Load

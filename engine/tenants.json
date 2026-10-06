@@ -22,7 +22,7 @@
       },
       "defaultQuotaMb": 10240,
       "defaultDailyLimit": 1000,
-      "updatedAt": "2026-10-06T20:06:13.667Z",
+      "updatedAt": "2026-10-06T20:34:16.235Z",
       "records": [
         {
           "id": "rec_mx_10",
@@ -1658,6 +1658,103 @@
           "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
         }
       ]
+    },
+    "api-tenant-1791318851768.com": {
+      "domain": "api-tenant-1791318851768.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-06T20:34:11.773Z",
+      "dkim": {
+        "selector": "ironid",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEADF3L4YicZgFxlA/6Emg0fA21T+16lKZD5OMO3r6/CaY=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEADF3L4YicZgFxlA/6Emg0fA21T+16lKZD5OMO3r6/CaY="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791318851768.com",
+        "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEADF3L4YicZgFxlA/6Emg0fA21T+16lKZD5OMO3r6/CaY=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791318851768.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     }
   },
   "mailboxes": {
@@ -1711,6 +1808,42 @@
     }
   },
   "auditLog": [
+    {
+      "timestamp": "2026-10-06T20:34:16.235Z",
+      "action": "RECORD_DELETED",
+      "domain": "iron-id.io",
+      "details": "Deleted MX record (@) by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T20:34:16.232Z",
+      "action": "RECORD_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Updated MX record (@) host: mx2.iron-id.io, priority: 25 by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T20:34:16.224Z",
+      "action": "RECORD_ADDED",
+      "domain": "iron-id.io",
+      "details": "Added MX record (@ -> backup-mx.iron-id.io, priority: 20) by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T20:34:16.207Z",
+      "action": "DNS_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Customized DNS plan by admin@iron-id.io (Selector: ironid, MX: mail.iron-id.io, Priority: 10)."
+    },
+    {
+      "timestamp": "2026-10-06T20:34:11.780Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-06T20:34:11.773Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791318851768.com",
+      "details": "Provisioned new tenant domain by admin@iron-id.io with Ed25519 DKIM keys."
+    },
     {
       "timestamp": "2026-10-06T20:06:13.667Z",
       "action": "RECORD_DELETED",
