@@ -27,7 +27,7 @@
 ## 2. Why This Strategic Change is Superior for IRON ID
 
 1. **Elimination of Database Lock Bottlenecks**:
-   * RocksDB places an OS-level exclusive file lock (`engine/data/LOCK`). When Stalwart is running, external CLI tools or scripts cannot query the store directly without shutting down the mail server.
+   * RocksDB places an OS-level exclusive file lock (`engine/data/LOCK`). When IRON ID Core Engine is running, external CLI tools or scripts cannot query the store directly without shutting down the mail server.
    * With **PostgreSQL**, the Node.js API Gateway, Admin Console, and CLI tools can query accounts, quotas, and audit trails simultaneously with zero locking conflicts.
 
 2. **Enterprise Multi-Lingual Search (Arabic & French)**:
@@ -46,15 +46,15 @@ Because PostgreSQL and Elasticsearch (JVM) require more system memory than an em
 | Specification | RocksDB (Phase 1 Baseline) | PostgreSQL + Elasticsearch (V2) |
 | :--- | :--- | :--- |
 | **Minimum CPU** | 2 vCPU | **4 vCPU** |
-| **Minimum RAM** | 4 GB | **8 GB – 16 GB** (ES Heap: 2–4GB, Postgres: 1–2GB, Stalwart: 1GB) |
+| **Minimum RAM** | 4 GB | **8 GB – 16 GB** (ES Heap: 2–4GB, Postgres: 1–2GB, IRON ID Core Engine: 1GB) |
 | **Minimum Storage** | 40 GB NVMe | **80 GB – 160 GB NVMe** (Fast IOPS for indexing) |
 | **Recommended VPS** | Hetzner CX22 (~€5/mo) | **Hetzner CPX31 (4 vCPU, 8GB RAM, ~€14/mo)** or **CPX41 (8 vCPU, 16GB RAM)** |
 
 ---
 
-## 4. Stalwart Production Configuration Blueprint (`config.toml`)
+## 4. IRON ID Core Engine Production Configuration Blueprint (`config.toml`)
 
-In Stalwart, migrating from RocksDB to PostgreSQL and Elasticsearch is fully native:
+In IRON ID Core Engine, migrating from RocksDB to PostgreSQL and Elasticsearch is fully native:
 
 ```toml
 # ==============================================================================
@@ -80,7 +80,7 @@ fts = "elastic"          # Distributed full-text search
 type = "postgres"
 host = "127.0.0.1"
 port = 5432
-database = "stalwart_mail"
+database = "ironid_mail"
 user = "stalwart"
 password = "SECRET_DB_PASSWORD"
 max-connections = 32
@@ -131,5 +131,5 @@ Phase 5: Deliverability & DNS Hardening
   └── Unchanged: PTR, SPF, DKIM (Ed25519), DMARC (quarantine), MTA-STS.
 
 Phase 6: Sovereign Deployment Packaging
-  └── Updated: Production Docker Compose stack orchestrating [Stalwart + PostgreSQL + Elasticsearch + Node Gateway].
+  └── Updated: Production Docker Compose stack orchestrating [IRON ID Core Engine + PostgreSQL + Elasticsearch + Node Gateway].
 ```

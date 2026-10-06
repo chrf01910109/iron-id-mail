@@ -1,6 +1,6 @@
 # 🚂 Complete Guide: Deploying the Sovereign "VPS Container" on Railway
 
-> **Goal:** Run the entire sovereign mail stack (Ubuntu 24.04 + PostgreSQL 16 + SeaweedFS + Stalwart Rust + Webmail Gateway) as a self-contained virtual VPS directly on Railway.app.  
+> **Goal:** Run the entire sovereign mail stack (Ubuntu 24.04 + PostgreSQL 16 + SeaweedFS + IRON ID Core Engine Rust + Webmail Gateway) as a self-contained virtual VPS directly on Railway.app.  
 > **Date:** October 5, 2026
 
 ---
@@ -12,7 +12,7 @@ Instead of provisioning, configuring, and maintaining an external bare-metal or 
 * **`supervisord`** automatically monitors and manages all 4 core daemons inside the container:
   1. **PostgreSQL 16** (ACID metadata, accounts, directory, and tenant quotas).
   2. **SeaweedFS** (Apache 2.0 S3 storage for email attachment blobs).
-  3. **Stalwart Mail Engine** (Unified Rust core for JMAP, SMTP, and IMAP).
+  3. **IRON ID Sovereign Mail Engine** (Unified Rust core for JMAP, SMTP, and IMAP).
   4. **Node.js Gateway** (Webmail Single-Page App & Admin Console).
 * Railway provides **zero-downtime deploys**, **automated health monitoring**, and **free automatic HTTPS/SSL** for your custom domain (`mail.iron-id.io`).
 
@@ -47,7 +47,7 @@ git push -u origin main
      ```
 6. Click **Deploy**.
 
-Railway will automatically build the Ubuntu 24.04 image, download Stalwart and SeaweedFS, run database migrations, and boot all services under `supervisord`.
+Railway will automatically build the Ubuntu 24.04 image, download IRON ID Core Engine and SeaweedFS, run database migrations, and boot all services under `supervisord`.
 
 ---
 
@@ -75,4 +75,4 @@ Railway will automatically build the Ubuntu 24.04 image, download Stalwart and S
    Open `https://mail.iron-id.io/admin`.  
    Provision new tenant domains, adjust mailbox quotas, and run live DNS checks.
 3. **Inspect Real-Time Logs**:  
-   In Railway ➔ Click on your service ➔ **View Logs** to see live output from PostgreSQL, SeaweedFS, Stalwart, and the Webmail Gateway simultaneously.
+   In Railway ➔ Click on your service ➔ **View Logs** to see live output from PostgreSQL, SeaweedFS, IRON ID Core Engine, and the Webmail Gateway simultaneously.

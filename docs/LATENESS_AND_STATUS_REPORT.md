@@ -23,7 +23,7 @@ All core engineering, protocol verification, and local development are fully val
 
 ### ✅ 2. Phase 2: Tenant Provisioning & Automated DNS — **100% COMPLETED**
 All Weeks 1–2 milestone deliverables have been engineered, integrated, and verified (10/10 tests passed):
-- [x] **Audit Stalwart RocksDB directory schema:** COMPLETED.
+- [x] **Audit IRON ID Core Engine RocksDB directory schema:** COMPLETED.
 - [x] **Tenant Provisioning REST API:** Developed (`POST /api/tenants`, `GET /api/tenants/:domain`, `POST /api/tenants/:domain/mailboxes`) with automated Ed25519 DKIM keypair generation.
 - [x] **Automated DNS Record Validator:** Developed (`GET /api/dns/verify/:domain`) checking live MX, SPF, DKIM, DMARC, and MTA-STS with health scoring and copy-paste remediation.
 - [x] **Mailbox Quotas & Rate-Limiting Policy:** Enforces daily message send ceilings and storage thresholds via `validateSubmission`.

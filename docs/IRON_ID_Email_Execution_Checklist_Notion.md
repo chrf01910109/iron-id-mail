@@ -16,7 +16,7 @@
 | **Status** | 🟢 Phase 2 Complete ➔ Ready for Phase 3 (Native React Client & VPS Deployment) |
 | **Priority** | 🔴 High |
 | **Target Launch** | 8-Week Cycle (Commercial Release: Weeks 7–8) |
-| **Core Stack** | Stalwart Mail Server (Rust) + RocksDB + JMAP (RFC 8620/8621) + Node.js Gateway |
+| **Core Stack** | IRON ID Sovereign Mail Engine (Rust) + RocksDB + JMAP (RFC 8620/8621) + Node.js Gateway |
 | **Primary Mailbox** | `charaf@iron-id.io` |
 | **Client Test Mailbox** | `anis@client.dz` |
 
@@ -32,11 +32,11 @@
   - [ ] Set up UFW firewall rules for ports `25`, `465`, `587`, `993`, `8080`, `4190`.
 
 - [ ] **Action 2: DNS Cutover & Cryptographic Records (Target: 5 Days)**
-  - [ ] Export Stalwart's public DKIM keys (RSA-2048 & Ed25519).
+  - [ ] Export IRON ID Core Engine's public DKIM keys (RSA-2048 & Ed25519).
   - [ ] Configure Cloudflare DNS records:
     - [ ] `MX` record: `@` → `mail.iron-id.io` (Priority 10).
     - [ ] `SPF` record: `v=spf1 mx ip4:<VPS_IP> ~all`.
-    - [ ] `DKIM` record: TXT under `stalwart._domainkey.iron-id.io`.
+    - [ ] `DKIM` record: TXT under `ironid._domainkey.iron-id.io`.
     - [ ] `DMARC` record: `v=DMARC1; p=quarantine; rua=mailto:dmarc@iron-id.io`.
     - [ ] `MTA-STS` record: `v=STSv1; id=20260923T01` and TLS-RPT record.
   - [ ] Run automated DNS health verification script to ensure 100% propagation.
@@ -49,7 +49,7 @@
 <summary><b>Phase 1: Verification & Core Architecture (100% COMPLETED)</b></summary>
 
 - [x] **Milestone 1: Authoritative Domain & DKIM Setup**
-  - [x] Provision `iron-id.io` as the authoritative domain inside Stalwart.
+  - [x] Provision `iron-id.io` as the authoritative domain inside IRON ID Core Engine.
   - [x] Generate internal 2048-bit RSA and Ed25519 cryptographic key pairs for outbound DKIM signing.
   - [x] Configure embedded RocksDB LSM-Tree key-value store.
 
@@ -94,7 +94,7 @@
 <details open>
 <summary><b>Weeks 1–2: Tenant Provisioning & Automated DNS Verification (100% COMPLETED)</b></summary>
 
-- [x] Audit Stalwart RocksDB directory schema and account storage mechanics.
+- [x] Audit IRON ID Core Engine RocksDB directory schema and account storage mechanics.
 - [x] Develop REST API wrapper for programmatically provisioning new tenant domains (`webmail/services/tenantService.js`, `webmail/routes/api.js`).
 - [x] Build automated DNS record checker verifying MX, SPF, DKIM, and DMARC status (`webmail/services/dnsValidator.js`).
 - [x] Enforce custom storage quotas and rate-limiting per tenant mailbox (`validateSubmission` enforcement engine).
@@ -120,7 +120,7 @@
 
 - [ ] Deploy hardened Ubuntu 24.04 LTS instance with static IP.
 - [ ] Bind host Reverse DNS (PTR record) to `mail.iron-id.io`.
-- [ ] Configure Stalwart built-in ACME client for automated Let's Encrypt TLS certificate generation.
+- [ ] Configure IRON ID Core Engine built-in ACME client for automated Let's Encrypt TLS certificate generation.
 - [ ] Activate production Cloudflare DNS zone records with live proxy bypass (DNS only).
 - [ ] Set up systemd service definitions with automatic restart and log rotation.
 - [ ] Configure automatic daily snapshot backups of the RocksDB database.
@@ -149,7 +149,7 @@ Before opening commercial customer traffic, each of the following checklist crit
 | 🔲 | **Reverse DNS (PTR)** | `VPS_IP` resolves strictly to `mail.iron-id.io` | Pending VPS |
 | 🔲 | **Forward DNS (A/AAAA)** | `mail.iron-id.io` resolves strictly to `VPS_IP` | Pending VPS |
 | 🔲 | **SPF Record** | `v=spf1 mx ip4:<VPS_IP> ~all` | Config Ready |
-| 🔲 | **DKIM Signature** | Valid Ed25519 / RSA-2048 under `stalwart._domainkey` | Keys Generated |
+| 🔲 | **DKIM Signature** | Valid Ed25519 / RSA-2048 under `ironid._domainkey` | Keys Generated |
 | 🔲 | **DMARC Policy** | `v=DMARC1; p=quarantine; rua=mailto:dmarc@iron-id.io` | Config Ready |
 | 🔲 | **MTA-STS Policy** | Strict transport policy enabled on HTTPS endpoint | Drafted |
 | 🔲 | **Port 25 Outbound** | Verified unblocked by cloud hosting provider | Pending VPS |

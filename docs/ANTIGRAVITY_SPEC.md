@@ -4,13 +4,13 @@
 
 \## Objective
 
-Build and mount the IRON ID Workspace Webmail UI. Connect to the local Stalwart Mail Server via RFC 8620/8621 JMAP protocol with zero-hop local domain delivery.
+Build and mount the IRON ID Workspace Webmail UI. Connect to the local IRON ID Sovereign Mail Engine via RFC 8620/8621 JMAP protocol with zero-hop local domain delivery.
 
 
 
 \## Target Environment \& Endpoints
 
-\- Engine: Stalwart Mail Server 0.16 (Rust/RocksDB)
+\- Engine: IRON ID Sovereign Mail Engine 0.16 (Rust/RocksDB)
 
 \- Backend Service: http://127.0.0.1:8080
 

@@ -206,6 +206,75 @@
       },
       "defaultQuotaMb": 10240,
       "defaultDailyLimit": 250
+    },
+    "api-tenant-1791298976420.com": {
+      "domain": "api-tenant-1791298976420.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-06T15:02:56.429Z",
+      "dkim": {
+        "selector": "stalwart",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAW3JvT2UvZmRFoeJcI+jZuVTlRzXKyJi20XviSRrD2Hw=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAW3JvT2UvZmRFoeJcI+jZuVTlRzXKyJi20XviSRrD2Hw="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791298976420.com",
+        "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250
+    },
+    "api-tenant-1791300457591.com": {
+      "domain": "api-tenant-1791300457591.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-06T15:27:37.595Z",
+      "dkim": {
+        "selector": "stalwart",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEATBmBsjc+rkQ+Gbd09eVxP9c6LMR5/zYBHjskzc6wMow=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEATBmBsjc+rkQ+Gbd09eVxP9c6LMR5/zYBHjskzc6wMow="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791300457591.com",
+        "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250
+    },
+    "api-tenant-1791301204807.com": {
+      "domain": "api-tenant-1791301204807.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-06T15:40:04.813Z",
+      "dkim": {
+        "selector": "stalwart",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAp+23q3EzJfc+eZgVWKIJzKWu87YQdyji3R7AwqZjzjA=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAp+23q3EzJfc+eZgVWKIJzKWu87YQdyji3R7AwqZjzjA="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791301204807.com",
+        "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250
     }
   },
   "mailboxes": {
@@ -243,6 +312,42 @@
     }
   },
   "auditLog": [
+    {
+      "timestamp": "2026-10-06T15:40:04.821Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-06T15:40:04.813Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791301204807.com",
+      "details": "Provisioned new tenant domain with Ed25519 DKIM keys."
+    },
+    {
+      "timestamp": "2026-10-06T15:27:37.599Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-06T15:27:37.595Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791300457591.com",
+      "details": "Provisioned new tenant domain with Ed25519 DKIM keys."
+    },
+    {
+      "timestamp": "2026-10-06T15:02:56.436Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-06T15:02:56.429Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791298976420.com",
+      "details": "Provisioned new tenant domain with Ed25519 DKIM keys."
+    },
     {
       "timestamp": "2026-10-06T14:09:29.870Z",
       "action": "QUOTA_UPDATED",

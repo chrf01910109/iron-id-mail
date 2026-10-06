@@ -11,7 +11,7 @@
 ## 📌 Part 1: Everything We Have Built & Delivered
 
 ### 1. Phase 1 — Sovereign Mail Engine & Core Protocols (100% Done)
-* **Core Engine**: Stalwart Mail Server (Rust) with embedded high-performance RocksDB LSM-tree key-value store.
+* **Core Engine**: IRON ID Sovereign Mail Engine (Rust) with embedded high-performance RocksDB LSM-tree key-value store.
 * **Inbound Server-to-Server MTA (Port 25)**: Strict RFC 5321 transaction enforcement, rejection of invalid EHLO/HELO, and automated Sieve Junk Mail routing for unauthorized external mail.
 * **Encrypted Client Sync (Port 993)**: RFC 9051 IMAPS with TLS 1.3 encryption and mailbox listing.
 * **Modern JMAP Protocol (Port 8080)**: RFC 8620/8621 JSON-based JMAP engine with zero-hop intra-server delivery between `charaf@iron-id.io` and `anis@client.dz`.
@@ -81,7 +81,7 @@ In your Cloudflare (or registrar) DNS control panel for `iron-id.io`, add the fo
 | **A** | `mail` | `<YOUR_VPS_PUBLIC_IP>` | Auto | 🔘 **DNS Only (Grey)** |
 | **MX** | `@` (or `iron-id.io`) | `mail.iron-id.io` | **10** | — |
 | **TXT** | `@` | `v=spf1 mx ip4:<YOUR_VPS_PUBLIC_IP> ~all` | Auto | — |
-| **TXT** | `stalwart._domainkey` | `v=DKIM1; k=ed25519; p=n8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q=` | Auto | — |
+| **TXT** | `ironid._domainkey` | `v=DKIM1; k=ed25519; p=n8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q=` | Auto | — |
 | **TXT** | `_dmarc` | `v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@iron-id.io` | Auto | — |
 | **TXT** | `_mta-sts` | `v=STSv1; id=20261005T01` | Auto | — |
 
@@ -110,7 +110,7 @@ chmod +x /opt/iron-id/deploy/vps-setup.sh
 
 **What the setup script automatically does:**
 1. Installs Node.js LTS, system dependencies, and opens firewall ports (`25`, `80`, `443`, `465`, `587`, `993`, `3001`).
-2. Downloads the Linux Stalwart Mail Server binary and sets permissions.
+2. Downloads the Linux IRON ID Sovereign Mail Engine binary and sets permissions.
 3. Automatically sets up automated Let's Encrypt TLS certificates (ACME) for `mail.iron-id.io`.
 4. Creates systemd daemons (`stalwart-mail.service` and `iron-webmail.service`) configured to restart automatically on boot.
 

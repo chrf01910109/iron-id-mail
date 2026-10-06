@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # IRON ID Sovereign Mail — Master Automated VPS Bootstrap & Deployment Script
-# Target Stack: PostgreSQL 16 + OpenSearch 2 + SeaweedFS + Stalwart + Webmail
+# Target Stack: PostgreSQL 16 + OpenSearch 2 + SeaweedFS + IRON ID Mail Engine + Webmail
 # Platform OS: Ubuntu 24.04 LTS (x86_64)
 # ==============================================================================
 
@@ -12,7 +12,7 @@ PROJECT_ROOT="$(dirname "${DEPLOY_DIR}")"
 
 echo "===================================================================="
 echo " [IRON ID] Deploying 100% Permissive Sovereign Enterprise Mail Stack"
-echo " Services: PostgreSQL 16 + OpenSearch 2 + SeaweedFS + Stalwart Rust"
+echo " Services: PostgreSQL 16 + OpenSearch 2 + SeaweedFS + IRON ID Mail Engine"
 echo "===================================================================="
 
 # 1. Install Docker & Docker Compose if missing
@@ -69,7 +69,7 @@ echo "--> [5/5] Running database migrations & initializing stores..."
 sleep 8
 
 # Execute PostgreSQL schema
-docker exec -i iron-id-postgres psql -U stalwart -d stalwart_mail < "${DEPLOY_DIR}/init.sql" || true
+docker exec -i iron-id-postgres psql -U ironid -d ironid_mail < "${DEPLOY_DIR}/init.sql" || true
 
 echo "===================================================================="
 echo " ✔ All 5 Sovereign Services are running successfully!"
@@ -78,5 +78,5 @@ echo "   Admin Console:        http://localhost:3001/admin"
 echo "   PostgreSQL 16:        127.0.0.1:5432"
 echo "   OpenSearch 2:         127.0.0.1:9200"
 echo "   SeaweedFS S3 Store:   127.0.0.1:8333 (Filer: :8888)"
-echo "   Stalwart Mail Engine: 127.0.0.1:8080 (MTA: :25, IMAPS: :993)"
+echo "   IRON ID Mail Engine:  127.0.0.1:8080 (MTA: :25, IMAPS: :993)"
 echo "===================================================================="

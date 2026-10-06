@@ -13,7 +13,7 @@ class DnsValidator {
    */
   async verifyDomain(domain, options = {}) {
     const cleanDomain = (domain || '').trim().toLowerCase();
-    const selector = options.selector || 'stalwart';
+    const selector = options.selector || 'ironid';
     const expectedMx = options.expectedMx || 'mail.iron-id.io';
     const vpsIp = options.vpsIp || '127.0.0.1';
 
@@ -54,7 +54,7 @@ class DnsValidator {
         host: '@',
         value: expectedMx,
         priority: 10,
-        purpose: 'Directs inbound server-to-server emails to your Stalwart MTA.'
+        purpose: 'Directs inbound server-to-server emails to your IRON ID MTA.'
       };
       results.remediationPlan.push({
         record: 'MX',
@@ -87,7 +87,7 @@ class DnsValidator {
         type: 'TXT',
         host: '@',
         value: `v=spf1 mx ip4:${vpsIp} ~all`,
-        purpose: 'Authorizes your Stalwart VPS IP to transmit emails for your domain.'
+        purpose: 'Authorizes your IRON ID VPS IP to transmit emails for your domain.'
       };
       results.remediationPlan.push({
         record: 'SPF',
@@ -95,25 +95,36 @@ class DnsValidator {
       });
     }
 
-    // 3. Audit DKIM Record
-    const dkimHost = `${selector}._domainkey.${cleanDomain}`;
-    try {
-      const dkimRecords = await dns.resolveTxt(dkimHost);
-      const dkimFlattened = dkimRecords.map(chunk => chunk.join('')).join('');
-      if (dkimFlattened.includes('v=DKIM1') && (dkimFlattened.includes('p=') || dkimFlattened.includes('k='))) {
-        results.checks.dkim.status = 'pass';
-        results.checks.dkim.details = {
-          host: dkimHost,
-          raw: dkimFlattened.slice(0, 50) + '...',
-          message: 'Valid cryptographic DKIM public key published.'
-        };
-        results.score += 25;
-      } else {
-        throw new Error('DKIM record malformed');
-      }
-    } catch (err) {
+    // 3. Audit DKIM Record (Checks ironid._domainkey)
+    const selectorsToTry = [selector || 'ironid', 'ironid'].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
+    let dkimFound = false;
+    let successfulSelector = selector;
+
+    for (const sel of selectorsToTry) {
+      const curHost = `${sel}._domainkey.${cleanDomain}`;
+      try {
+        const dkimRecords = await dns.resolveTxt(curHost);
+        const dkimFlattened = dkimRecords.map(chunk => chunk.join('')).join('');
+        if (dkimFlattened.includes('v=DKIM1') && (dkimFlattened.includes('p=') || dkimFlattened.includes('k='))) {
+          results.checks.dkim.status = 'pass';
+          results.checks.dkim.details = {
+            host: curHost,
+            selector: sel,
+            raw: dkimFlattened.slice(0, 50) + '...',
+            message: `Valid cryptographic DKIM public key published under selector "${sel}".`
+          };
+          results.score += 25;
+          dkimFound = true;
+          successfulSelector = sel;
+          break;
+        }
+      } catch (e) {}
+    }
+
+    if (!dkimFound) {
+      const primaryHost = `${selector}._domainkey.${cleanDomain}`;
       results.checks.dkim.status = 'fail';
-      results.checks.dkim.details = { host: dkimHost, error: err.code || err.message, message: 'DKIM public key TXT record missing.' };
+      results.checks.dkim.details = { host: primaryHost, message: `DKIM public key TXT record missing under "${selector}._domainkey".` };
       results.checks.dkim.recommended = {
         type: 'TXT',
         host: `${selector}._domainkey`,

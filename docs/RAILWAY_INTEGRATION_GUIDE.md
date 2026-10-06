@@ -1,7 +1,7 @@
 # 🚂 IRON ID Sovereign Mail — Railway Integration & Deployment Guide
 
 > **Target Platform:** Railway.app  
-> **Components:** PostgreSQL 16 + OpenSearch 2 + SeaweedFS + Stalwart Rust + Webmail Gateway  
+> **Components:** PostgreSQL 16 + OpenSearch 2 + SeaweedFS + IRON ID Core Engine Rust + Webmail Gateway  
 > **Date:** October 5, 2026
 
 ---
@@ -30,8 +30,8 @@ Before deploying, it is essential to understand the technical boundary between *
   3. **SeaweedFS** (Object Storage with Railway Persistent Volume).
   4. **Webmail Gateway & Admin Console** (Hosted at `mail.iron-id.io` with free automatic SSL).
 * **Small Linux VPS (€4/mo on Hetzner/OVH) Hosts**:
-  * **Stalwart Mail Engine** (The lightweight Rust binary running on port 25 with a dedicated IP and Reverse DNS / PTR record).
-  * Stalwart connects directly to Railway's PostgreSQL, OpenSearch, and SeaweedFS!
+  * **IRON ID Sovereign Mail Engine** (The lightweight Rust binary running on port 25 with a dedicated IP and Reverse DNS / PTR record).
+  * IRON ID Core Engine connects directly to Railway's PostgreSQL, OpenSearch, and SeaweedFS!
 * **Why this is best**: You get 100% zero-maintenance databases and web apps on Railway, while keeping a clean dedicated IP for 10/10 Google & Microsoft inbox deliverability.
 
 ---
@@ -41,7 +41,7 @@ If you want **every service running exclusively inside Railway**:
 * Deploy all 5 containers directly within a single Railway Project.
 * All internal services communicate over **Railway Private Networking** (`.railway.internal`).
 * Access Webmail and the JMAP Admin API over Railway public HTTPS.
-* For outbound email delivery to external consumer inboxes (Gmail/Yahoo), configure Stalwart to relay outbound traffic through a sovereign relay or transactional service.
+* For outbound email delivery to external consumer inboxes (Gmail/Yahoo), configure IRON ID Core Engine to relay outbound traffic through a sovereign relay or transactional service.
 
 ---
 
@@ -104,12 +104,12 @@ If you want **every service running exclusively inside Railway**:
 
 ---
 
-### Step 6: Deploy Stalwart Mail Engine
-If deploying Stalwart directly on Railway:
+### Step 6: Deploy IRON ID Sovereign Mail Engine
+If deploying IRON ID Core Engine directly on Railway:
 1. Click **"New"** ➔ **"Docker Image"**.
 2. Image: `stalwartlabs/mail-server:v0.16.23`
 3. Mount a volume at `/opt/stalwart-mail/data`.
-4. Point Stalwart's `config.toml` to:
+4. Point IRON ID Core Engine's `config.toml` to:
    * PostgreSQL: `postgres.railway.internal:5432`
    * OpenSearch: `http://opensearch.railway.internal:9200`
    * SeaweedFS: `http://seaweedfs.railway.internal:8333`
@@ -123,5 +123,5 @@ If deploying Stalwart directly on Railway:
 | **PostgreSQL 16** | `postgres.railway.internal:5432` | Private (Secured) |
 | **OpenSearch 2** | `opensearch.railway.internal:9200` | Private (Secured) |
 | **SeaweedFS S3** | `seaweedfs.railway.internal:8333` | Private (Secured) |
-| **Stalwart Engine** | `stalwart.railway.internal:8080` | JMAP HTTP / Proxy |
+| **IRON ID Sovereign Engine** | `stalwart.railway.internal:8080` | JMAP HTTP / Proxy |
 | **Webmail & Admin** | `webmail.railway.internal:3001` | 🌐 **https://mail.iron-id.io** |

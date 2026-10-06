@@ -1,6 +1,6 @@
 # ==============================================================================
 # IRON ID Sovereign Mail — All-in-One Railway Virtual VPS Container
-# Runs: PostgreSQL 16 + Stalwart Mail Server (Rust) + Node.js Webmail Gateway
+# Runs: PostgreSQL 16 + IRON ID Sovereign Mail Engine (Rust) + Node.js Webmail Gateway
 # ==============================================================================
 
 FROM ubuntu:24.04
@@ -23,10 +23,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Download and Install Stalwart Mail Server (Rust)
+# 2. Download and Install IRON ID Sovereign Mail Engine (Rust)
 RUN curl -fsSL https://github.com/stalwartlabs/stalwart/releases/download/v0.16.23/stalwart-x86_64-unknown-linux-gnu.tar.gz \
     | tar -xz -C /usr/local/bin/ \
     && chmod +x /usr/local/bin/stalwart \
+    && ln -sf /usr/local/bin/stalwart /usr/local/bin/ironid-engine \
     && ln -sf /usr/local/bin/stalwart /usr/local/bin/stalwart-mail
 
 # 3. Set up Application Workspace
@@ -45,6 +46,6 @@ RUN chmod +x /opt/iron-id/entrypoint.sh \
     && ln -sf /opt/iron-id/server.js /app/server.js \
     && cd /opt/iron-id/webmail && npm install --production || true
 
-EXPOSE 3001 8080 5432
+EXPOSE 3001
 
 ENTRYPOINT ["/opt/iron-id/entrypoint.sh"]

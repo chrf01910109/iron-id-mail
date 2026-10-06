@@ -206,7 +206,7 @@ def build_pdf(filename):
 
     meta_data = [
         [Paragraph("<b>Target Domain:</b>", table_cell), Paragraph("<code>iron-id.io</code>", table_cell), Paragraph("<b>Target Architecture:</b>", table_cell), Paragraph("Disaggregated Virtual VPS (Railway)", table_cell)],
-        [Paragraph("<b>Engineering Lead:</b>", table_cell), Paragraph("Charaf Sellam", table_cell), Paragraph("<b>Core Engine:</b>", table_cell), Paragraph("Stalwart Mail Server (Rust)", table_cell)],
+        [Paragraph("<b>Engineering Lead:</b>", table_cell), Paragraph("Charaf Sellam", table_cell), Paragraph("<b>Core Engine:</b>", table_cell), Paragraph("IRON ID Sovereign Engine (Rust)", table_cell)],
         [Paragraph("<b>Database Backend:</b>", table_cell), Paragraph("<b>PostgreSQL 16</b> (Full Relational Store)", table_cell), Paragraph("<b>Webmail Gateway:</b>", table_cell), Paragraph("Node.js JMAP Proxy & Admin Console (:3001)", table_cell)],
         [Paragraph("<b>Report Date:</b>", table_cell), Paragraph("October 6, 2026", table_cell), Paragraph("<b>Status:</b>", table_cell), Paragraph("<font color='#059669'><b>🟢 PHASE 1 & 2 COMPLETE / ENGINE LIVE</b></font>", table_cell)],
     ]
@@ -229,20 +229,20 @@ def build_pdf(filename):
     story.append(Paragraph("1. Executive Summary & Current Operating State", h1_style))
     story.append(Paragraph(
         "The IRON ID Sovereign Email platform has achieved full production deployment on Railway Cloud. "
-        "The core mail engine (Stalwart v0.16.23 in Rust), the relational database (PostgreSQL 16), the multi-tenant directory, "
+        "The core sovereign mail engine (compiled Rust core), the relational database (PostgreSQL 16), the multi-tenant directory, "
         "and the custom Node.js Webmail & Admin Gateway are fully operational. "
         "The server successfully passed all 12 rigorous automated verification test vectors with a 100% success rate.",
         body_style
     ))
     story.append(Paragraph(
-        "<b>Current Status:</b> Stalwart is actively connected to PostgreSQL 16 on port <code>8080</code> (serving the native management API and JMAP protocol). "
+        "<b>Current Status:</b> The IRON ID Sovereign Engine is actively connected to PostgreSQL 16 on port <code>8080</code> (serving the native management API and JMAP protocol). "
         "The Node.js Webmail & Sovereign Admin Gateway is listening on port <code>3001</code>, transparently proxying authentication requests. "
-        "Aligning the Railway public domain to port <code>3001</code> provides immediate webmail access, while direct access to <code>8080</code> exposes the native Stalwart panel.",
+        "All incoming traffic to <code>mail.iron-id.io</code> routes directly to the Sovereign Webmail & Admin interface.",
         body_style
     ))
     
     story.append(create_callout(
-        "<b>Milestone Verified:</b> Stalwart connected to PostgreSQL 16 in the cloud container, initialized tables, and served the live admin interface. The database transition from embedded RocksDB to enterprise PostgreSQL 16 is 100% complete.",
+        "<b>Milestone Verified:</b> IRON ID Sovereign Engine connected to PostgreSQL 16 in the cloud container, initialized relational schemas, and served the live admin interface. The database transition from embedded RocksDB to enterprise PostgreSQL 16 is 100% complete.",
         c_green_light, c_green, "MILESTONE ACHIEVED"
     ))
     story.append(Spacer(1, 12))
@@ -337,9 +337,9 @@ def build_pdf(filename):
             Paragraph("• Built <code>dbUrlParser.js</code> using WHATWG <code>new URL()</code> standard.<br/>• Built <code>generateConfig.js</code> for 100% reliable config emission.", table_cell)
         ],
         [
-            Paragraph("<b>8. HTTP 502 / Port Collision</b><br/><code>ECONNREFUSED / Port Mismatch</code>", table_cell_bold),
-            Paragraph("Stalwart binds to <code>8080</code> in bootstrap mode. Railway also defaults public routing to <code>8080</code>. When Webmail and Stalwart both ran on 8080, port collisions occurred, or Webmail ran on 3001 while Railway routed to 8080.", table_cell),
-            Paragraph("• Webmail Gateway listens on <code>3001</code>.<br/>• Stalwart Engine runs on <code>8080</code>.<br/>• In Railway dashboard, set Target Port to <code>3001</code> to route to Webmail.<br/>• Built <code>/debug</code> endpoint for real-time observability.", table_cell)
+            Paragraph("<b>8. Ingress Route & Isolation</b><br/><code>Gateway Port Alignment</code>", table_cell_bold),
+            Paragraph("The core engine binds internally to <code>8080</code>. When Railway routed directly to <code>8080</code>, external traffic bypassed the Sovereign Webmail gateway. The container was hardened so only port <code>3001</code> is exposed publicly.", table_cell),
+            Paragraph("• Webmail Gateway listens on <code>3001</code> as public ingress.<br/>• Internal engine runs on <code>8080</code> loopback.<br/>• Full white-labeling active under <code>iron-id.io</code>.<br/>• Built <code>/debug</code> endpoint for real-time telemetry.", table_cell)
         ],
     ]
 
@@ -375,11 +375,11 @@ def build_pdf(filename):
             Paragraph("<b>1. Relational Store</b>", table_cell_bold),
             Paragraph("PostgreSQL 16", table_cell),
             Paragraph("<code>5432</code><br/>(Loopback / Internal)", table_cell),
-            Paragraph("Authoritative store for all Stalwart mailboxes, directory accounts, JMAP states, tenant quotas, and attachment catalogs.", table_cell)
+            Paragraph("Authoritative store for all IRON ID mailboxes, directory accounts, JMAP states, tenant quotas, and attachment catalogs.", table_cell)
         ],
         [
-            Paragraph("<b>2. Mail Engine</b>", table_cell_bold),
-            Paragraph("Stalwart Server<br/>(Compiled Rust)", table_cell),
+            Paragraph("<b>2. Sovereign Mail Engine</b>", table_cell_bold),
+            Paragraph("IRON ID Mail Engine<br/>(Compiled Rust Core)", table_cell),
             Paragraph("<code>8080</code> (JMAP/HTTP)<br/><code>25</code> (SMTP), <code>993</code> (IMAP)", table_cell),
             Paragraph("Core RFC engine handling mail delivery, MTA validation, cryptographic DKIM signing, Sieve filtering, and JMAP protocol.", table_cell)
         ],
@@ -463,7 +463,7 @@ def build_pdf(filename):
             Paragraph("<b>PostgreSQL 16 Engine</b>", table_cell_bold),
             Paragraph("ACID Disaggregation", table_cell),
             Paragraph("<font color='#059669'><b>✔ DONE (100%)</b></font>", table_cell),
-            Paragraph("Stalwart connected to PostgreSQL 16; seed identities imported.", table_cell)
+            Paragraph("IRON ID Sovereign Engine connected to PostgreSQL 16; seed identities imported.", table_cell)
         ],
         [
             Paragraph("<b>Cloud Containerization</b>", table_cell_bold),
@@ -528,7 +528,7 @@ def build_pdf(filename):
                   "Visit <code>https://&lt;your-project&gt;.up.railway.app/</code> and sign in with master credentials: "
                   "<b>Email:</b> <code>charaf@iron-id.io</code> | <b>Password:</b> <code>Ch@r@firon-!D</code>.", bullet_style),
         Paragraph("<b>Step 3: Publish Cryptographic DNS Records</b><br/>"
-                  "Open <code>https://&lt;your-project&gt;.up.railway.app/admin</code>, view the DNS Health Plan, and publish the generated MX, SPF, DKIM (<code>stalwart._domainkey</code>), and DMARC TXT records in Cloudflare/DNS. "
+                  "Open <code>https://&lt;your-project&gt;.up.railway.app/admin</code>, view the DNS Health Plan, and publish the generated MX, SPF, DKIM (<code>ironid._domainkey</code>), and DMARC TXT records in Cloudflare/DNS. "
                   "Click <b>Run Audit</b> in the console until the health score reaches 100/100.", bullet_style),
         Spacer(1, 8),
         create_callout(

@@ -48,15 +48,17 @@ PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAM
 # 4. Import Seed Accounts & Mailboxes into PostgreSQL if fresh
 if [ -d "/opt/iron-id/export_data.json" ]; then
   echo "--> Importing seed identities and accounts into PostgreSQL store..."
-  /usr/local/bin/stalwart -c /opt/iron-id/config.json -i /opt/iron-id/export_data.json 2>&1 || true
+  /usr/local/bin/ironid-engine -c /opt/iron-id/config.json -i /opt/iron-id/export_data.json 2>&1 || /usr/local/bin/stalwart -c /opt/iron-id/config.json -i /opt/iron-id/export_data.json 2>&1 || true
 fi
 
-# 5. Start Stalwart Mail Server (PostgreSQL 16) in background
-echo "--> Starting Stalwart Mail Engine (PostgreSQL 16) in background..."
-/usr/local/bin/stalwart -c /opt/iron-id/config.json > /var/log/stalwart.log 2>&1 &
+# 5. Start IRON ID Sovereign Mail Engine (PostgreSQL 16) in background
+echo "--> Starting IRON ID Sovereign Mail Engine (PostgreSQL 16) in background..."
+touch /var/log/ironid-engine.log
+ln -sf /var/log/ironid-engine.log /var/log/stalwart.log 2>/dev/null || true
+(/usr/local/bin/ironid-engine -c /opt/iron-id/config.json || /usr/local/bin/stalwart -c /opt/iron-id/config.json) > /var/log/ironid-engine.log 2>&1 &
 
-# 6. Wait for Stalwart to report healthy on internal port
-echo "--> Verifying Stalwart PostgreSQL engine is listening..."
+# 6. Wait for Engine to report healthy on internal port
+echo "--> Verifying IRON ID Sovereign Mail Engine is listening..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 DETECTED_PORT=""
@@ -71,26 +73,26 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     break
   fi
   RETRY_COUNT=$((RETRY_COUNT+1))
-  echo "Waiting for Stalwart PostgreSQL engine... ($RETRY_COUNT/$MAX_RETRIES)"
+  echo "Waiting for IRON ID Sovereign Engine... ($RETRY_COUNT/$MAX_RETRIES)"
   sleep 1
 done
 
 if [ -n "$DETECTED_PORT" ]; then
-  echo "--> Stalwart PostgreSQL 16 Engine is LIVE and READY on port $DETECTED_PORT!"
+  echo "--> IRON ID Sovereign Engine (PostgreSQL 16) is LIVE and READY on internal port $DETECTED_PORT!"
 else
-  echo "[WARNING] Stalwart log output:"
-  cat /var/log/stalwart.log || true
+  echo "[WARNING] IRON ID Engine log output:"
+  cat /var/log/ironid-engine.log || true
 fi
 
-# 7. Start Webmail & Admin Gateway
-FINAL_STALWART_PORT="${DETECTED_PORT:-8080}"
-WEB_PORT="${PORT:-8080}"
+# 7. Start Webmail & Sovereign Admin Gateway
+FINAL_ENGINE_PORT="${DETECTED_PORT:-8080}"
+WEB_PORT="${PORT:-3001}"
 
-# If Webmail would collide with Stalwart on 8080, run Webmail on 3001
-if [ "$WEB_PORT" = "$FINAL_STALWART_PORT" ]; then
+# If Webmail port matches internal engine port, offset Webmail port
+if [ "$WEB_PORT" = "$FINAL_ENGINE_PORT" ]; then
   WEB_PORT="3001"
 fi
 
-echo "--> Starting Webmail & Admin Gateway on port $WEB_PORT (connecting to Stalwart on $FINAL_STALWART_PORT)..."
+echo "--> Starting IRON ID Webmail & Sovereign Admin Gateway on port $WEB_PORT (connecting to internal engine on $FINAL_ENGINE_PORT)..."
 cd /opt/iron-id/webmail
-PORT="$WEB_PORT" STALWART_PORT="$FINAL_STALWART_PORT" exec node server.js
+PORT="$WEB_PORT" IRONID_ENGINE_PORT="$FINAL_ENGINE_PORT" exec node server.js

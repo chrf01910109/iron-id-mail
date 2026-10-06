@@ -21,9 +21,9 @@ function getPostgresConfig() {
   return {
     host: process.env.PGHOST || '127.0.0.1',
     port: parseInt(process.env.PGPORT, 10) || 5432,
-    user: process.env.PGUSER || 'stalwart',
-    password: process.env.PGPASSWORD || 'StalwartSecretPass2026!',
-    database: process.env.PGDATABASE || 'stalwart_mail'
+    user: process.env.PGUSER || 'ironid',
+    password: process.env.PGPASSWORD || 'IronIdSecretPass2026!',
+    database: process.env.PGDATABASE || 'ironid_mail'
   };
 }
 

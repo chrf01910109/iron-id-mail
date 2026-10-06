@@ -1,6 +1,6 @@
 # IRON ID Sovereign Mail Workspace
 
-Consolidated, self-contained environment for the **IRON ID Mail Engine & Webmail UI**, utilizing the local **Stalwart Mail Server (v0.16.23)** over RFC 8620 / RFC 8621 JMAP protocol with zero-hop intra-server delivery.
+Consolidated, self-contained environment for the **IRON ID Mail Engine & Webmail UI**, utilizing the native **IRON ID Sovereign Mail Engine (Rust)** over RFC 8620 / RFC 8621 JMAP protocol with zero-hop intra-server delivery.
 
 ---
 
@@ -8,19 +8,18 @@ Consolidated, self-contained environment for the **IRON ID Mail Engine & Webmail
 
 ```
 iron-id-workspace/
-├── engine/                      # Stalwart Mail Server & RocksDB Store
-│   ├── stalwart.exe             # Stalwart 0.16.23 Windows x86_64 binary
-│   ├── config.json              # RocksDB store pointer
-│   ├── config.toml              # Stalwart TOML configuration reference
-│   └── data/                    # RocksDB directory containing accounts & mailboxes
+├── engine/                      # IRON ID Core Mail Engine (Rust) & PostgreSQL / Data Store
+│   ├── stalwart.exe             # Core Engine binary (Windows x86_64)
+│   ├── config.json              # Relational store configuration pointer
+│   ├── config.toml              # Engine TOML configuration reference
+│   └── data/                    # Data directory containing accounts & mailboxes
 ├── webmail/                     # Frontend Client & JMAP Gateway
 │   ├── server.js                # Node.js transparent proxy & SPA webmail UI
 │   └── package.json             # Service definition
 ├── docs/                        # Specifications, Reports & Briefs
 │   ├── ANTIGRAVITY_SPEC.md      # Integration specification
 │   ├── IRON_ID_Group_Partner_Brief.pdf
-│   ├── Stalwart Mail Server Evaluation Report for IRON ID.pdf
-│   └── Rapport d'Évaluation Stalwart pour IRON ID.pdf
+│   └── IRON_ID_Sovereign_Mail_Full_Project_Report.pdf
 ├── start-all.bat                # 1-click batch launcher
 ├── start-all.ps1                # 1-click PowerShell launcher
 └── README.md                    # Workspace guide
@@ -40,16 +39,16 @@ iron-id-workspace/
 ## How to Run
 
 ### Option 1: 1-Click Launcher
-Double-click `start-all.bat` (or run `start-all.ps1` in PowerShell). This launches both Stalwart and the Webmail client, then opens `http://localhost:3001` in your browser.
+Double-click `start-all.bat` (or run `start-all.ps1` in PowerShell). This launches both the IRON ID Engine and the Webmail client, then opens `http://localhost:3001` in your browser.
 
 ### Option 2: Manual Start
 
-**Step 1: Start Stalwart**
+**Step 1: Start IRON ID Core Engine**
 ```powershell
 cd engine
 .\stalwart.exe -c config.json
 ```
-*Note: In Stalwart v0.16, the `-c` flag requires the store JSON config (`config.json`), because accounts, directory, and listener settings are stored inside RocksDB.*
+*Note: The `-c` flag requires the store JSON config (`config.json`), which configures the underlying data store.*
 
 **Step 2: Start Webmail Gateway**
 ```powershell

@@ -8,11 +8,11 @@ const path = require('path');
 const { handleApiRequest } = require('./routes/api');
 
 let PORT = parseInt(process.env.PORT, 10) || 3001;
-const STALWART_HOST = process.env.STALWART_HOST || '127.0.0.1';
-const STALWART_PORT = parseInt(process.env.STALWART_PORT, 10) || 8080;
+const ENGINE_HOST = process.env.IRONID_ENGINE_HOST || process.env.MAIL_ENGINE_HOST || '127.0.0.1';
+const ENGINE_PORT = parseInt(process.env.IRONID_ENGINE_PORT || process.env.MAIL_ENGINE_PORT, 10) || 8080;
 
-// Prevent port collision with Stalwart
-if (PORT === STALWART_PORT) {
+// Prevent port collision with internal mail engine
+if (PORT === ENGINE_PORT) {
   PORT = 3001;
 }
 const HTML_FILE = path.join(__dirname, 'client.html');
@@ -57,13 +57,13 @@ const server = http.createServer(async (req, res) => {
   if (reqUrl.pathname.startsWith('/proxy/')) {
     const targetPath = reqUrl.pathname.replace('/proxy', '');
     const options = {
-      hostname: STALWART_HOST,
-      port: STALWART_PORT,
+      hostname: ENGINE_HOST,
+      port: ENGINE_PORT,
       path: targetPath,
       method: req.method,
       headers: {
         ...req.headers,
-        host: STALWART_HOST + ':' + STALWART_PORT
+        host: ENGINE_HOST + ':' + ENGINE_PORT
       }
     };
 
@@ -75,17 +75,18 @@ const server = http.createServer(async (req, res) => {
     proxyReq.on('error', (err) => {
       let logSnippet = '';
       try {
-        const logContent = fs.readFileSync('/var/log/stalwart.log', 'utf8');
+        const logPath = '/var/log/ironid-engine.log';
+        let logContent = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';
         logSnippet = logContent.split('\n').slice(-15).join('\n');
       } catch (e) {
         logSnippet = 'Log not available: ' + e.message;
       }
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
-        error: 'Stalwart proxy connection failed',
+        error: 'IRON ID Sovereign Mail Engine connection failed',
         details: err.message,
-        target: `${STALWART_HOST}:${STALWART_PORT}${targetPath}`,
-        stalwartLog: logSnippet
+        target: `${ENGINE_HOST}:${ENGINE_PORT}${targetPath}`,
+        engineLog: logSnippet
       }));
     });
 
@@ -96,7 +97,10 @@ const server = http.createServer(async (req, res) => {
   // 5. System Diagnostic Debug Route
   if (reqUrl.pathname === '/debug') {
     let logContent = '';
-    try { logContent = fs.readFileSync('/var/log/stalwart.log', 'utf8'); } catch(e) { logContent = e.message; }
+    try {
+      const logPath = '/var/log/ironid-engine.log';
+      if (fs.existsSync(logPath)) logContent = fs.readFileSync(logPath, 'utf8');
+    } catch(e) { logContent = e.message; }
     let cfgContent = '';
     try { cfgContent = fs.readFileSync('/opt/iron-id/config.json', 'utf8'); } catch(e) { cfgContent = e.message; }
     let pgLogContent = '';
@@ -104,12 +108,13 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ok',
+      product: 'IRON ID Sovereign Mail',
       env: {
         PORT: process.env.PORT,
-        STALWART_PORT: process.env.STALWART_PORT,
+        ENGINE_PORT: ENGINE_PORT,
         DATABASE_URL_SET: !!process.env.DATABASE_URL
       },
-      stalwartLog: logContent.slice(-4000),
+      engineLog: logContent.slice(-4000),
       postgresLog: pgLogContent.slice(-2000),
       configJson: cfgContent
     }, null, 2));

@@ -1,14 +1,15 @@
 -- ==============================================================================
 -- IRON ID Sovereign Mail — PostgreSQL 16 Schema Migration
--- Database: stalwart_mail
+-- Database: ironid_mail
 -- ==============================================================================
 
 CREATE TABLE IF NOT EXISTS tenants (
     id SERIAL PRIMARY KEY,
     domain VARCHAR(255) UNIQUE NOT NULL,
-    display_name VARCHAR(255) NOT NULL,
+    displayName VARCHAR(255),
+    display_name VARCHAR(255),
     status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
-    dkim_selector VARCHAR(50) DEFAULT 'stalwart',
+    dkim_selector VARCHAR(50) DEFAULT 'ironid',
     dkim_key_type VARCHAR(50) DEFAULT 'ed25519',
     dkim_public_key TEXT NOT NULL,
     dkim_dns_txt TEXT NOT NULL,
@@ -75,7 +76,7 @@ VALUES
     'iron-id.io', 
     'IRON ID Sovereign HQ', 
     'active', 
-    'stalwart', 
+    'ironid', 
     'ed25519', 
     '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAn8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q=\n-----END PUBLIC KEY-----', 
     'v=DKIM1; k=ed25519; p=n8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q=', 
@@ -86,7 +87,7 @@ VALUES
     'client.dz', 
     'Client DZ Partner Tenant', 
     'active', 
-    'stalwart', 
+    'ironid', 
     'ed25519', 
     '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAd5X8J2eQ3uY9kP+M4tL1mQ8vZ3bX2vW1qO9sT8yU7X8=\n-----END PUBLIC KEY-----', 
     'v=DKIM1; k=ed25519; p=d5X8J2eQ3uY9kP+M4tL1mQ8vZ3bX2vW1qO9sT8yU7X8=', 

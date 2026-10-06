@@ -21,9 +21,9 @@ In traditional email servers (like Postfix or basic Dovecot), emails and attachm
 
 ---
 
-## 2. Stalwart 4-Tier Storage Disaggregation Topology
+## 2. IRON ID Core Engine 4-Tier Storage Disaggregation Topology
 
-Stalwart separates every incoming email into 4 isolated subsystems:
+IRON ID Core Engine separates every incoming email into 4 isolated subsystems:
 
 ```
                          [ INCOMING EMAIL PAYLOAD ]
@@ -50,9 +50,9 @@ Stalwart separates every incoming email into 4 isolated subsystems:
 
 ---
 
-## 3. Stalwart Native S3 Configuration (`config.toml`)
+## 3. IRON ID Core Engine Native S3 Configuration (`config.toml`)
 
-Stalwart features high-performance native async S3 drivers with **on-the-fly LZ4 / ZSTD compression**:
+IRON ID Core Engine features high-performance native async S3 drivers with **on-the-fly LZ4 / ZSTD compression**:
 
 ```toml
 # ------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ max-connections = 64
 ## 4. The Two Deployment Options for IRON ID
 
 ### Option A: Sovereign Self-Hosted MinIO (Recommended for Air-Gapped / National Hosting)
-* **What it is**: High-performance, S3-compatible object storage server running directly alongside Stalwart in Docker Compose.
+* **What it is**: High-performance, S3-compatible object storage server running directly alongside IRON ID Core Engine in Docker Compose.
 * **Benefits**: 
   * 100% data sovereignty within Algerian national borders.
   * Zero third-party cloud dependencies.

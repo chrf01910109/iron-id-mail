@@ -6,9 +6,9 @@ echo ===================================================
 
 set BASE_DIR=%~dp0
 
-echo [1/2] Starting Stalwart Mail Server on port 8080...
+echo [1/2] Starting IRON ID Mail Engine on port 8080...
 cd /d "%BASE_DIR%engine"
-start "Stalwart Mail Engine" /min stalwart.exe -c config.json
+start "IRON ID Mail Engine" /min stalwart.exe -c config.json
 
 timeout /t 2 /nobreak >nul
 
@@ -25,7 +25,7 @@ echo.
 echo ===================================================
 echo  Both services are running!
 echo  Webmail UI: http://localhost:3001
-echo  Stalwart JMAP: http://127.0.0.1:8080/jmap
+echo  IRON ID JMAP: http://127.0.0.1:8080/jmap
 echo ===================================================
 echo Press any key to exit this launcher window (services keep running).
 pause >nul

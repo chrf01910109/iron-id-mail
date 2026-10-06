@@ -30,7 +30,7 @@ const DEFAULT_STORE = {
       status: 'active',
       createdAt: '2026-09-23T18:00:00.000Z',
       dkim: {
-        selector: 'stalwart',
+        selector: 'ironid',
         keyType: 'ed25519',
         publicKeyPem: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAn8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q=\n-----END PUBLIC KEY-----',
         dnsTxt: 'v=DKIM1; k=ed25519; p=n8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q='
@@ -50,7 +50,7 @@ const DEFAULT_STORE = {
       status: 'active',
       createdAt: '2026-09-23T18:30:00.000Z',
       dkim: {
-        selector: 'stalwart',
+        selector: 'ironid',
         keyType: 'ed25519',
         publicKeyPem: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAd5X8J2eQ3uY9kP+M4tL1mQ8vZ3bX2vW1qO9sT8yU7X8=\n-----END PUBLIC KEY-----',
         dnsTxt: 'v=DKIM1; k=ed25519; p=d5X8J2eQ3uY9kP+M4tL1mQ8vZ3bX2vW1qO9sT8yU7X8='
@@ -208,7 +208,7 @@ class TenantService {
       status: 'active',
       createdAt: new Date().toISOString(),
       dkim: {
-        selector: 'stalwart',
+        selector: 'ironid',
         keyType: 'ed25519',
         publicKeyPem: pubPem,
         dnsTxt: `v=DKIM1; k=ed25519; p=${rawPubBase64}`

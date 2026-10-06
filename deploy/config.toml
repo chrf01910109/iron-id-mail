@@ -1,5 +1,5 @@
 # ==============================================================================
-# IRON ID Sovereign Mail — Production Stalwart Configuration
+# IRON ID Sovereign Mail — Core Configuration
 # Stack: PostgreSQL 16 + OpenSearch 2 + SeaweedFS (S3)
 # ==============================================================================
 
@@ -22,9 +22,9 @@ blob = "s3"              # Attachment blobs in SeaweedFS (S3 API)
 type = "postgres"
 host = "postgres"
 port = 5432
-database = "stalwart_mail"
-user = "stalwart"
-password = "StalwartSecretPass2026!"
+database = "ironid_mail"
+user = "ironid"
+password = "IronIdSecretPass2026!"
 max-connections = 32
 
 # ------------------------------------------------------------------------------

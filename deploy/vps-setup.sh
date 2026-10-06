@@ -51,8 +51,8 @@ ufw allow 4190/tcp comment 'ManageSieve Rule Engine'
 ufw allow 3001/tcp comment 'IRON ID Webmail & Admin Gateway'
 ufw --force enable
 
-# 4. Install Stalwart Mail Server
-echo "--> [4/7] Downloading and installing Stalwart Mail Engine v${STALWART_VERSION}..."
+# 4. Install IRON ID Sovereign Mail Engine
+echo "--> [4/7] Downloading and installing IRON ID Sovereign Mail Engine v${STALWART_VERSION}..."
 mkdir -p "${INSTALL_DIR}/engine/data"
 mkdir -p "${INSTALL_DIR}/webmail"
 
@@ -71,11 +71,12 @@ echo "Downloading from: ${STALWART_URL}"
 curl -sSL "${STALWART_URL}" | tar -xz -C "${INSTALL_DIR}/engine"
 
 chmod +x "${INSTALL_DIR}/engine/stalwart"
+ln -sf "${INSTALL_DIR}/engine/stalwart" /usr/local/bin/ironid-engine
 ln -sf "${INSTALL_DIR}/engine/stalwart" /usr/local/bin/stalwart-mail
 ln -sf "${INSTALL_DIR}/engine/stalwart" /usr/local/bin/stalwart
 
 # 5. Production Configuration (config.toml)
-echo "--> [5/7] Writing Stalwart production configuration..."
+echo "--> [5/7] Writing IRON ID Sovereign production configuration..."
 cat << 'EOF' > "${INSTALL_DIR}/engine/config.toml"
 [server]
 hostname = "mail.iron-id.io"
@@ -142,17 +143,17 @@ EOF
 # 6. Set up Systemd Services
 echo "--> [6/7] Setting up Systemd services (Auto-start on boot)..."
 
-# Stalwart Mail Engine Service
-cat << EOF > /etc/systemd/system/stalwart-mail.service
+# IRON ID Sovereign Mail Engine Service
+cat << EOF > /etc/systemd/system/ironid-engine.service
 [Unit]
-Description=Stalwart Sovereign Mail Engine
+Description=IRON ID Sovereign Mail Engine
 After=network.target
 
 [Service]
 Type=simple
 User=root
 WorkingDirectory=${INSTALL_DIR}/engine
-ExecStart=${INSTALL_DIR}/engine/stalwart-mail -c ${INSTALL_DIR}/engine/config.toml
+ExecStart=${INSTALL_DIR}/engine/stalwart -c ${INSTALL_DIR}/engine/config.toml
 Restart=always
 RestartSec=5
 LimitNOFILE=65535
@@ -165,7 +166,7 @@ EOF
 cat << EOF > /etc/systemd/system/iron-webmail.service
 [Unit]
 Description=IRON ID Sovereign Webmail & Admin Gateway
-After=stalwart-mail.service
+After=ironid-engine.service
 
 [Service]
 Type=simple
@@ -182,13 +183,13 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable stalwart-mail.service
+systemctl enable ironid-engine.service
 systemctl enable iron-webmail.service
 
 echo "--> [7/7] Deployment script prepared successfully."
 echo "================================================================"
 echo " Installation blueprint is ready at /opt/iron-id."
 echo " Start services when DNS records propagate:"
-echo "   systemctl start stalwart-mail"
+echo "   systemctl start ironid-engine"
 echo "   systemctl start iron-webmail"
 echo "================================================================"
