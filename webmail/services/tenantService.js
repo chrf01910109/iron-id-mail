@@ -230,6 +230,85 @@ class TenantService {
     return newTenant;
   }
 
+  updateTenantDns(domain, updates = {}) {
+    const cleanDomain = (domain || '').trim().toLowerCase();
+    const tenant = this.store.tenants[cleanDomain];
+    if (!tenant) {
+      throw new Error(`Tenant domain "${cleanDomain}" not found.`);
+    }
+
+    if (!tenant.dnsPlan) tenant.dnsPlan = {};
+    if (!tenant.dkim) tenant.dkim = {};
+
+    if (updates.selector) {
+      tenant.dkim.selector = updates.selector.trim();
+    }
+    if (updates.mxHost) {
+      tenant.dnsPlan.mx = {
+        host: updates.mxHost.trim(),
+        priority: parseInt(updates.mxPriority, 10) || 10
+      };
+    }
+    if (updates.spf !== undefined) {
+      tenant.dnsPlan.spf = updates.spf.trim();
+    }
+    if (updates.dmarc !== undefined) {
+      tenant.dnsPlan.dmarc = updates.dmarc.trim();
+    }
+    if (updates.mtaSts !== undefined) {
+      tenant.dnsPlan.mtaSts = updates.mtaSts.trim();
+    }
+    if (updates.displayName) {
+      tenant.displayName = updates.displayName.trim();
+    }
+
+    tenant.updatedAt = new Date().toISOString();
+    this.logAudit('DNS_UPDATED', cleanDomain, `Customized DNS plan (Selector: ${tenant.dkim.selector}, MX: ${tenant.dnsPlan.mx?.host}).`);
+    this.saveStore();
+
+    return tenant;
+  }
+
+  regenerateDkim(domain, keyType = 'ed25519') {
+    const cleanDomain = (domain || '').trim().toLowerCase();
+    const tenant = this.store.tenants[cleanDomain];
+    if (!tenant) {
+      throw new Error(`Tenant domain "${cleanDomain}" not found.`);
+    }
+
+    let pubPem, rawPubBase64;
+    if (keyType === 'rsa' || keyType === 'rsa2048') {
+      const { publicKey } = crypto.generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+        publicKeyEncoding: { type: 'spki', format: 'pem' },
+        privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+      });
+      pubPem = publicKey;
+      rawPubBase64 = pubPem.replace(/-----BEGIN PUBLIC KEY-----|\n|-----END PUBLIC KEY-----/g, '').trim();
+      tenant.dkim = {
+        selector: tenant.dkim?.selector || 'ironid',
+        keyType: 'rsa2048',
+        publicKeyPem: pubPem,
+        dnsTxt: `v=DKIM1; k=rsa; p=${rawPubBase64}`
+      };
+    } else {
+      const { publicKey } = crypto.generateKeyPairSync('ed25519');
+      pubPem = publicKey.export({ type: 'spki', format: 'pem' });
+      rawPubBase64 = pubPem.replace(/-----BEGIN PUBLIC KEY-----|\n|-----END PUBLIC KEY-----/g, '').trim();
+      tenant.dkim = {
+        selector: tenant.dkim?.selector || 'ironid',
+        keyType: 'ed25519',
+        publicKeyPem: pubPem,
+        dnsTxt: `v=DKIM1; k=ed25519; p=${rawPubBase64}`
+      };
+    }
+
+    this.logAudit('DKIM_REGENERATED', cleanDomain, `Re-keyed cryptographic DKIM (${tenant.dkim.keyType}) under selector "${tenant.dkim.selector}".`);
+    this.saveStore();
+
+    return tenant;
+  }
+
   // --- Mailbox Methods ---
 
   listMailboxes(domainFilter = null) {

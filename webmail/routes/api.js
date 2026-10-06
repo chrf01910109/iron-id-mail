@@ -86,6 +86,34 @@ async function handleApiRequest(req, res, pathname) {
       return true;
     }
 
+    // 4b. PATCH /api/tenants/:domain/dns (Update and customize DNS records & plan)
+    const tenantDnsMatch = pathname.match(/^\/api\/tenants\/([a-zA-Z0-9.-]+)\/dns$/);
+    if (req.method === 'PATCH' && tenantDnsMatch) {
+      const domain = tenantDnsMatch[1];
+      const payload = await parseBody(req);
+      const updated = tenantService.updateTenantDns(domain, payload);
+      sendJson(res, 200, {
+        success: true,
+        message: `DNS records and plan updated for ${domain}.`,
+        tenant: updated
+      });
+      return true;
+    }
+
+    // 4c. POST /api/tenants/:domain/regenerate-dkim (Re-key cryptographic DKIM)
+    const tenantDkimMatch = pathname.match(/^\/api\/tenants\/([a-zA-Z0-9.-]+)\/regenerate-dkim$/);
+    if (req.method === 'POST' && tenantDkimMatch) {
+      const domain = tenantDkimMatch[1];
+      const payload = await parseBody(req);
+      const updated = tenantService.regenerateDkim(domain, payload.keyType || 'ed25519');
+      sendJson(res, 200, {
+        success: true,
+        message: `Cryptographic DKIM regenerated for ${domain}.`,
+        dkim: updated.dkim
+      });
+      return true;
+    }
+
     // 5. GET /api/tenants/:domain/mailboxes
     const tenantMbMatch = pathname.match(/^\/api\/tenants\/([a-zA-Z0-9.-]+)\/mailboxes$/);
     if (req.method === 'GET' && tenantMbMatch) {

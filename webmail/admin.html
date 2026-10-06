@@ -604,9 +604,19 @@
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
           Runs real-time cryptographic DNS resolution for MX, SPF, DKIM, DMARC, and MTA-STS records to guarantee 100% global deliverability.
         </p>
-        <div style="display: flex; gap: 12px; max-width: 600px;">
-          <select id="dnsDomainSelect" class="form-select"></select>
+        <div style="display: flex; gap: 12px; max-width: 650px; flex-wrap: wrap;">
+          <select id="dnsDomainSelect" class="form-select" style="flex: 1; min-width: 220px;"></select>
           <button class="btn btn-primary" onclick="runDnsAudit()">🔍 Run Live Audit</button>
+          <button class="btn btn-secondary" onclick="openEditDnsFromSelect()">⚙️ Edit DNS Records</button>
+        </div>
+
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 14px 18px; margin-top: 18px; display: flex; align-items: flex-start; gap: 14px;">
+          <div style="font-size: 22px; line-height: 1;">📌</div>
+          <div style="font-size: 13px; line-height: 1.5; color: var(--text-main);">
+            <strong>How DNS Record Management Works:</strong><br>
+            • <strong>In this Console:</strong> Click <strong>⚙️ Edit DNS Records</strong> to customize your DKIM selector (default: <code>ironid</code>), re-generate cryptographic keypairs, adjust MX hostname, or modify SPF and DMARC policies.<br>
+            • <strong>At your Domain Registrar (Cloudflare, Namecheap, GoDaddy):</strong> The public internet queries your authoritative DNS provider. Once configured here, copy these records into your DNS registrar portal to achieve a 100/100 deliverability score.
+          </div>
         </div>
       </div>
 
@@ -754,7 +764,85 @@
         </div>
       </form>
     </div>
+  <!-- Modal: Edit DNS Records & Plan -->
+  <div id="modalEditDns" class="modal-overlay">
+    <div class="modal-card" style="max-width: 680px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Configure & Edit DNS Records: <span id="editDnsDomain" style="color: var(--color-primary);"></span></div>
+        <button class="btn btn-secondary" onclick="closeModal('modalEditDns')">✕</button>
+      </div>
+
+      <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: var(--text-main); line-height: 1.4;">
+        <strong>Sovereign Record Authority:</strong> Changes saved here configure the mail engine's cryptographic signing and validation. Once saved, copy and publish these records in your DNS registrar (Cloudflare / Namecheap / GoDaddy) to go live.
+      </div>
+
+      <form onsubmit="handleSaveDns(event)">
+        <input type="hidden" id="editDnsDomainHidden">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">DKIM Selector *</label>
+            <input id="editDnsSelector" class="form-input mono" placeholder="e.g. ironid" required>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Host: <span class="mono" id="editDnsSelectorHost">selector._domainkey</span></div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Cryptographic Algorithm</label>
+            <div style="display: flex; gap: 8px;">
+              <select id="editDnsKeyType" class="form-select">
+                <option value="ed25519">Ed25519 (Modern, 256-bit, High-Speed)</option>
+                <option value="rsa2048">RSA (2048-bit, Legacy Compatible)</option>
+              </select>
+              <button type="button" class="btn btn-secondary" style="white-space: nowrap; padding: 6px 10px; font-size: 11px;" onclick="handleRegenDkim()">🔄 Re-key</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0;">DKIM Public Key DNS TXT Record</label>
+            <button type="button" class="btn btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="copyDkimTxt()">📋 Copy TXT</button>
+          </div>
+          <textarea id="editDnsTxt" class="form-input mono" rows="3" readonly style="font-size: 11px; word-break: break-all; resize: none; background: rgba(0,0,0,0.2);"></textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">MX Host (Mail Exchanger) *</label>
+            <input id="editDnsMxHost" class="form-input mono" placeholder="e.g. mail.iron-id.io" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">MX Priority</label>
+            <input id="editDnsMxPriority" type="number" class="form-input mono" value="10">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">SPF Record (Sender Policy Framework) *</label>
+          <input id="editDnsSpf" class="form-input mono" placeholder="v=spf1 mx include:secureserver.net ~all" required>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Defines authorized outgoing MTAs. Include <code>mx</code> and any partner relays.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">DMARC Policy TXT Record *</label>
+          <input id="editDnsDmarc" class="form-input mono" placeholder="v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@iron-id.io" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">MTA-STS Strict Transport Security TXT</label>
+          <input id="editDnsMtaSts" class="form-input mono" placeholder="v=STSv1; id=20261006T01; mode=enforce; max_age=86400">
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="copyAllDnsRecords()">📋 Copy All 5 DNS Records</button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditDns')">Cancel</button>
+            <button type="submit" class="btn btn-primary">💾 Save & Apply Records</button>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
+
 
   <script>
     let tenants = [];
@@ -813,7 +901,10 @@
           </td>
           <td><span class="badge badge-active">${t.dkim.keyType.toUpperCase()}</span></td>
           <td>
-            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="quickDnsCheck('${t.domain}')">🔍 Check DNS</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="openEditDnsModal('${t.domain}')">⚙️ Edit Records</button>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="quickDnsCheck('${t.domain}')">🔍 Check DNS</button>
+            </div>
           </td>
         </tr>
       `).join('');
@@ -1033,6 +1124,164 @@
       } catch (err) {
         alert('DNS Audit failed: ' + err.message);
       }
+    }
+
+    function openEditDnsFromSelect() {
+      const domain = document.getElementById('dnsDomainSelect').value;
+      if (!domain) return alert('Please select a domain first.');
+      openEditDnsModal(domain);
+    }
+
+    async function openEditDnsModal(domain) {
+      try {
+        const res = await fetch(`/api/tenants/${encodeURIComponent(domain)}`).then(r => r.json());
+        if (!res.success || !res.tenant) {
+          return alert('Could not load tenant data: ' + (res.error || 'Unknown'));
+        }
+        const t = res.tenant;
+        document.getElementById('editDnsDomain').innerText = t.domain;
+        document.getElementById('editDnsDomainHidden').value = t.domain;
+
+        const sel = t.dkim?.selector || 'ironid';
+        document.getElementById('editDnsSelector').value = sel;
+        document.getElementById('editDnsSelectorHost').innerText = `${sel}._domainkey.${t.domain}`;
+        document.getElementById('editDnsKeyType').value = t.dkim?.keyType || 'ed25519';
+        document.getElementById('editDnsTxt').value = t.dkim?.dnsTxt || '';
+
+        const plan = t.dnsPlan || {};
+        document.getElementById('editDnsMxHost').value = plan.mx?.host || 'mail.iron-id.io';
+        document.getElementById('editDnsMxPriority').value = plan.mx?.priority || 10;
+        document.getElementById('editDnsSpf').value = plan.spf || 'v=spf1 mx include:secureserver.net ~all';
+        document.getElementById('editDnsDmarc').value = plan.dmarc || `v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@${t.domain}`;
+        document.getElementById('editDnsMtaSts').value = plan.mtaSts || `v=STSv1; id=20261006T01; mode=enforce; max_age=86400`;
+
+        document.getElementById('editDnsSelector').oninput = function() {
+          const s = this.value.trim() || 'selector';
+          document.getElementById('editDnsSelectorHost').innerText = `${s}._domainkey.${t.domain}`;
+        };
+
+        openModal('modalEditDns');
+      } catch (err) {
+        alert('Failed loading DNS config: ' + err.message);
+      }
+    }
+
+    async function handleSaveDns(e) {
+      e.preventDefault();
+      const domain = document.getElementById('editDnsDomainHidden').value;
+      const selector = document.getElementById('editDnsSelector').value.trim();
+      const mxHost = document.getElementById('editDnsMxHost').value.trim();
+      const mxPriority = parseInt(document.getElementById('editDnsMxPriority').value, 10) || 10;
+      const spf = document.getElementById('editDnsSpf').value.trim();
+      const dmarc = document.getElementById('editDnsDmarc').value.trim();
+      const mtaSts = document.getElementById('editDnsMtaSts').value.trim();
+
+      try {
+        const res = await fetch(`/api/tenants/${encodeURIComponent(domain)}/dns`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ selector, mxHost, mxPriority, spf, dmarc, mtaSts })
+        }).then(r => r.json());
+
+        if (res.success) {
+          alert(`DNS records and plan updated for ${domain}!\n\nRemember to publish any changed records in your DNS provider (Cloudflare / Registrar).`);
+          closeModal('modalEditDns');
+          loadData();
+          if (document.getElementById('dnsDomainSelect').value === domain) {
+            runDnsAudit();
+          }
+        } else {
+          alert('Error: ' + res.error);
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    }
+
+    async function handleRegenDkim() {
+      const domain = document.getElementById('editDnsDomainHidden').value;
+      const keyType = document.getElementById('editDnsKeyType').value;
+      if (!confirm(`Are you sure you want to regenerate the cryptographic DKIM key (${keyType}) for ${domain}?\n\nThis will invalidate any previous public key published in DNS until you update it.`)) return;
+
+      try {
+        const res = await fetch(`/api/tenants/${encodeURIComponent(domain)}/regenerate-dkim`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keyType })
+        }).then(r => r.json());
+
+        if (res.success && res.dkim) {
+          document.getElementById('editDnsTxt').value = res.dkim.dnsTxt;
+          alert(`New ${res.dkim.keyType.toUpperCase()} DKIM Key generated!\n\nNew DNS TXT record:\n${res.dkim.dnsTxt}`);
+          loadData();
+        } else {
+          alert('Error: ' + res.error);
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    }
+
+    function copyDkimTxt() {
+      const txt = document.getElementById('editDnsTxt').value;
+      navigator.clipboard.writeText(txt).then(() => {
+        alert('Copied DKIM TXT record to clipboard!');
+      }).catch(() => {
+        prompt('Copy your DKIM TXT record:', txt);
+      });
+    }
+
+    function copyAllDnsRecords() {
+      const domain = document.getElementById('editDnsDomainHidden').value;
+      const sel = document.getElementById('editDnsSelector').value.trim() || 'ironid';
+      const dkimTxt = document.getElementById('editDnsTxt').value;
+      const mxHost = document.getElementById('editDnsMxHost').value.trim();
+      const mxPri = document.getElementById('editDnsMxPriority').value.trim();
+      const spf = document.getElementById('editDnsSpf').value.trim();
+      const dmarc = document.getElementById('editDnsDmarc').value.trim();
+      const mtaSts = document.getElementById('editDnsMtaSts').value.trim();
+
+      const table = `=====================================================
+DNS RECORDS BLUEPRINT FOR ${domain.toUpperCase()}
+=====================================================
+
+1. DKIM Public Key Record:
+   Type:  TXT
+   Host:  ${sel}._domainkey
+   Value: ${dkimTxt}
+
+2. SPF Sender Policy:
+   Type:  TXT
+   Host:  @ (or ${domain})
+   Value: ${spf}
+
+3. MX Mail Exchanger:
+   Type:  MX
+   Host:  @ (or ${domain})
+   Priority: ${mxPri}
+   Value: ${mxHost}
+
+4. DMARC Authentication Policy:
+   Type:  TXT
+   Host:  _dmarc
+   Value: ${dmarc}
+
+5. MTA-STS Strict Transport Security:
+   Type:  TXT
+   Host:  _mta-sts
+   Value: ${mtaSts}
+
+6. Webmail Ingress:
+   Type:  CNAME
+   Host:  mail
+   Value: <your-project>.up.railway.app
+=====================================================`;
+
+      navigator.clipboard.writeText(table).then(() => {
+        alert('Copied complete DNS Records Blueprint to clipboard!');
+      }).catch(() => {
+        prompt('Copy all DNS records:', table);
+      });
     }
 
     // Initial Load
