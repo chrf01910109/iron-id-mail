@@ -1849,7 +1849,7 @@
       btn.disabled = true;
       btn.innerText = 'Transmitting…';
 
-      const sentMailbox = state.mailboxes.find(b => b.role === 'sent' || b.name.toLowerCase() === 'sent items');
+      const sentMailbox = state.mailboxes.find(b => b.role === 'sent' || b.name.toLowerCase() === 'sent items' || b.name.toLowerCase() === 'sent') || state.mailboxes[0];
       const mailboxIds = {};
       if (sentMailbox) mailboxIds[sentMailbox.id] = true;
 
