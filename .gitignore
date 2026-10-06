@@ -7,9 +7,7 @@ engine/stalwart.exe
 *.exe
 
 # Local database runtime stores
-engine/data/LOCK
-engine/data/*.log
-engine/data/LOG*
+engine/data/
 /data/
 *.log
 

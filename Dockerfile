@@ -1,6 +1,6 @@
 # ==============================================================================
 # IRON ID Sovereign Mail — All-in-One Railway Virtual VPS Container
-# Runs: Stalwart Mail Server (Rust + RocksDB) + Node.js Webmail Gateway
+# Runs: PostgreSQL 16 + Stalwart Mail Server (Rust) + Node.js Webmail Gateway
 # ==============================================================================
 
 FROM ubuntu:24.04
@@ -9,13 +9,16 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PORT=8080
 ENV NODE_ENV=production
 
-# 1. Install System Dependencies and Node.js LTS
+# 1. Install System Dependencies, PostgreSQL 16, and Node.js LTS
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
     tar \
     ca-certificates \
     tzdata \
+    postgresql \
+    postgresql-contrib \
+    postgresql-client \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
@@ -31,8 +34,8 @@ WORKDIR /opt/iron-id
 
 COPY webmail /opt/iron-id/webmail
 COPY engine /opt/iron-id/engine
-COPY engine/data /opt/iron-id/data
-COPY deploy/railway/config.all-in-one.toml /opt/iron-id/config.toml
+COPY engine/export_data.json /opt/iron-id/export_data.json
+COPY deploy/init.sql /opt/iron-id/init.sql
 COPY deploy/railway/entrypoint.sh /opt/iron-id/entrypoint.sh
 COPY server.js /opt/iron-id/server.js
 COPY package.json /opt/iron-id/package.json
@@ -42,6 +45,6 @@ RUN chmod +x /opt/iron-id/entrypoint.sh \
     && ln -sf /opt/iron-id/server.js /app/server.js \
     && cd /opt/iron-id/webmail && npm install --production || true
 
-EXPOSE 8080 8085 25 465 587 993
+EXPOSE 8080 8085 25 465 587 993 5432
 
 ENTRYPOINT ["/opt/iron-id/entrypoint.sh"]
