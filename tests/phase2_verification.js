@@ -234,6 +234,59 @@ async function runTests() {
     assert.ok(res.body.error.includes('Only the master administrator (admin@iron-id.io)'));
   });
 
+  // --- Test 10e: DNS Zone Manager: List, Add, and modify MX priorities and host targets ---
+  await test('DNS Zone Manager: List, Add, and modify MX priorities and host targets', async () => {
+    const domain = 'iron-id.io';
+
+    // 1. Fetch records list
+    const listRes = await requestJson('GET', `/api/tenants/${domain}/records`);
+    assert.strictEqual(listRes.status, 200);
+    assert.ok(Array.isArray(listRes.body.records));
+    assert.ok(listRes.body.records.some(r => r.type === 'MX' && r.priority === 10));
+
+    // 2. Add Secondary Backup MX record with Priority 20
+    const addRes = await requestJson('POST', `/api/tenants/${domain}/records`, {
+      type: 'MX',
+      host: '@',
+      priority: 20,
+      value: 'backup-mx.iron-id.io',
+      ttl: 3600,
+      purpose: 'Secondary Redundant MX'
+    }, { 'X-Admin-Account': 'admin@iron-id.io' });
+    assert.strictEqual(addRes.status, 201);
+    assert.strictEqual(addRes.body.success, true);
+    assert.strictEqual(addRes.body.record.priority, 20);
+    assert.strictEqual(addRes.body.record.value, 'backup-mx.iron-id.io');
+
+    const newRecId = addRes.body.record.id;
+
+    // 3. Update Priority from 20 to 25 and host to mx2.iron-id.io
+    const patchRes = await requestJson('PATCH', `/api/tenants/${domain}/records/${newRecId}`, {
+      priority: 25,
+      value: 'mx2.iron-id.io'
+    }, { 'X-Admin-Account': 'admin@iron-id.io' });
+    assert.strictEqual(patchRes.status, 200);
+    assert.strictEqual(patchRes.body.record.priority, 25);
+    assert.strictEqual(patchRes.body.record.value, 'mx2.iron-id.io');
+
+    // 4. Delete the test record
+    const delRes = await requestJson('DELETE', `/api/tenants/${domain}/records/${newRecId}`, null, { 'X-Admin-Account': 'admin@iron-id.io' });
+    assert.strictEqual(delRes.status, 200);
+  });
+
+  // --- Test 10f: DNS Zone Manager: Non-admin rejected with 403 Forbidden ---
+  await test('DNS Zone Manager: Non-admin rejected from creating records (403 Forbidden)', async () => {
+    const res = await requestJson('POST', '/api/tenants/iron-id.io/records', {
+      type: 'MX',
+      host: '@',
+      priority: 50,
+      value: 'rogue-mx.external.com'
+    }, { 'X-Admin-Account': 'anis@client.dz' });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+    assert.ok(res.body.error.includes('Only the master administrator (admin@iron-id.io)'));
+  });
+
   // --- Test 11: SeaweedFS S3 Blob Storage & IRON ID Box Vaulting ---
   await test('SeaweedFS: Attachment upload & 1-click evidentiary transfer to IRON ID Box', async () => {
     const seaweedStorage = require('../webmail/services/seaweedStorage');

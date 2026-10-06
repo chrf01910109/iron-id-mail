@@ -213,15 +213,340 @@ class TenantService {
     if (this.store.auditLog.length > 200) this.store.auditLog.pop();
   }
 
+  // --- DNS Zone & Record Management Methods ---
+
+  buildDefaultRecords(tenant) {
+    const domain = tenant.domain;
+    const mxHost = tenant.dnsPlan?.mx?.host || 'mail.iron-id.io';
+    const mxPriority = tenant.dnsPlan?.mx?.priority ?? 10;
+    const spf = tenant.dnsPlan?.spf || 'v=spf1 mx ip4:127.0.0.1 ~all';
+    const sel = tenant.dkim?.selector || 'ironid';
+    const dkimTxt = tenant.dkim?.dnsTxt || '';
+    const dmarc = tenant.dnsPlan?.dmarc || `v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@${domain}`;
+    const mtaSts = tenant.dnsPlan?.mtaSts || `v=STSv1; id=20261006T01; mode=enforce; max_age=86400`;
+
+    return [
+      {
+        id: 'rec_mx_10',
+        type: 'MX',
+        host: '@',
+        priority: Number(mxPriority) || 10,
+        value: mxHost,
+        ttl: 3600,
+        purpose: 'Primary Sovereign Mail Exchanger'
+      },
+      {
+        id: 'rec_txt_spf',
+        type: 'TXT',
+        host: '@',
+        priority: null,
+        value: spf,
+        ttl: 3600,
+        purpose: 'Sender Policy Framework (SPF Policy)'
+      },
+      {
+        id: 'rec_txt_dkim',
+        type: 'TXT',
+        host: `${sel}._domainkey`,
+        priority: null,
+        value: dkimTxt,
+        ttl: 3600,
+        purpose: `Cryptographic DKIM Signature (Selector: ${sel})`
+      },
+      {
+        id: 'rec_txt_dmarc',
+        type: 'TXT',
+        host: '_dmarc',
+        priority: null,
+        value: dmarc,
+        ttl: 3600,
+        purpose: 'DMARC Sovereign Alignment Policy'
+      },
+      {
+        id: 'rec_txt_mtasts',
+        type: 'TXT',
+        host: '_mta-sts',
+        priority: null,
+        value: mtaSts,
+        ttl: 86400,
+        purpose: 'Strict Transport Security (MTA-STS)'
+      },
+      {
+        id: 'rec_cname_mail',
+        type: 'CNAME',
+        host: 'mail',
+        priority: null,
+        value: 'iron-id.io',
+        ttl: 3600,
+        purpose: 'Webmail Ingress & MTA Endpoint'
+      },
+      {
+        id: 'rec_cname_autoconfig',
+        type: 'CNAME',
+        host: 'autoconfig',
+        priority: null,
+        value: 'mail.iron-id.io',
+        ttl: 3600,
+        purpose: 'Thunderbird / K-9 Client Auto-Discovery'
+      },
+      {
+        id: 'rec_cname_autodiscover',
+        type: 'CNAME',
+        host: 'autodiscover',
+        priority: null,
+        value: 'mail.iron-id.io',
+        ttl: 3600,
+        purpose: 'Exchange ActiveSync / Outlook Auto-Discovery'
+      }
+    ];
+  }
+
+  ensureTenantRecords(tenant) {
+    if (!tenant.records || !Array.isArray(tenant.records) || tenant.records.length === 0) {
+      tenant.records = this.buildDefaultRecords(tenant);
+      this.saveStore();
+    }
+    return tenant.records;
+  }
+
+  syncDnsPlanFromRecords(tenant) {
+    if (!tenant.records) return;
+    const mxRecords = tenant.records
+      .filter(r => r.type === 'MX')
+      .sort((a, b) => (Number(a.priority) || 10) - (Number(b.priority) || 10));
+    if (mxRecords.length > 0) {
+      if (!tenant.dnsPlan) tenant.dnsPlan = {};
+      tenant.dnsPlan.mx = {
+        host: mxRecords[0].value,
+        priority: Number(mxRecords[0].priority) || 10
+      };
+    }
+    const spfRec = tenant.records.find(r => r.type === 'TXT' && (r.host === '@' || r.host === '') && String(r.value).startsWith('v=spf1'));
+    if (spfRec) {
+      if (!tenant.dnsPlan) tenant.dnsPlan = {};
+      tenant.dnsPlan.spf = spfRec.value;
+    }
+    const dkimRec = tenant.records.find(r => r.type === 'TXT' && String(r.host).includes('._domainkey'));
+    if (dkimRec) {
+      const match = String(dkimRec.host).match(/^([^.]+)\._domainkey/);
+      if (match && match[1]) {
+        if (!tenant.dkim) tenant.dkim = {};
+        tenant.dkim.selector = match[1];
+      }
+      if (tenant.dkim) tenant.dkim.dnsTxt = dkimRec.value;
+    }
+    const dmarcRec = tenant.records.find(r => r.type === 'TXT' && String(r.host) === '_dmarc');
+    if (dmarcRec) {
+      if (!tenant.dnsPlan) tenant.dnsPlan = {};
+      tenant.dnsPlan.dmarc = dmarcRec.value;
+    }
+    const stsRec = tenant.records.find(r => r.type === 'TXT' && String(r.host) === '_mta-sts');
+    if (stsRec) {
+      if (!tenant.dnsPlan) tenant.dnsPlan = {};
+      tenant.dnsPlan.mtaSts = stsRec.value;
+    }
+  }
+
+  syncRecordsFromDnsPlan(tenant) {
+    if (!tenant.records) {
+      tenant.records = this.buildDefaultRecords(tenant);
+      return;
+    }
+    if (tenant.dnsPlan?.mx) {
+      const mx = tenant.records.find(r => r.type === 'MX');
+      if (mx) {
+        mx.value = tenant.dnsPlan.mx.host;
+        mx.priority = Number(tenant.dnsPlan.mx.priority) || 10;
+      }
+    }
+    if (tenant.dnsPlan?.spf) {
+      const spf = tenant.records.find(r => r.type === 'TXT' && (r.host === '@' || r.host === '') && String(r.value).startsWith('v=spf1'));
+      if (spf) spf.value = tenant.dnsPlan.spf;
+    }
+    if (tenant.dkim) {
+      const dkim = tenant.records.find(r => r.type === 'TXT' && String(r.host).includes('._domainkey'));
+      if (dkim) {
+        dkim.host = `${tenant.dkim.selector || 'ironid'}._domainkey`;
+        dkim.value = tenant.dkim.dnsTxt;
+      }
+    }
+    if (tenant.dnsPlan?.dmarc) {
+      const dmarc = tenant.records.find(r => r.type === 'TXT' && String(r.host) === '_dmarc');
+      if (dmarc) dmarc.value = tenant.dnsPlan.dmarc;
+    }
+    if (tenant.dnsPlan?.mtaSts) {
+      const sts = tenant.records.find(r => r.type === 'TXT' && String(r.host) === '_mta-sts');
+      if (sts) sts.value = tenant.dnsPlan.mtaSts;
+    }
+  }
+
+  getTenantRecords(domain) {
+    const cleanDomain = (domain || '').trim().toLowerCase();
+    const tenant = this.store.tenants[cleanDomain];
+    if (!tenant) throw new Error(`Tenant domain "${cleanDomain}" not found.`);
+    return this.ensureTenantRecords(tenant);
+  }
+
+  addTenantRecord(domain, recordData, requesterEmail = 'admin@iron-id.io') {
+    if (!this.isMasterAdmin(requesterEmail)) {
+      throw new Error(`Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.`);
+    }
+    const cleanDomain = (domain || '').trim().toLowerCase();
+    const tenant = this.store.tenants[cleanDomain];
+    if (!tenant) throw new Error(`Tenant domain "${cleanDomain}" not found.`);
+    this.ensureTenantRecords(tenant);
+
+    const type = (recordData.type || 'TXT').toUpperCase().trim();
+    const host = (recordData.host || '@').trim();
+    const value = (recordData.value || '').trim();
+    if (!value) throw new Error('Record target/value cannot be empty.');
+
+    let priority = null;
+    if (type === 'MX' || type === 'SRV') {
+      priority = parseInt(recordData.priority, 10);
+      if (isNaN(priority)) priority = 10;
+    }
+
+    const ttl = parseInt(recordData.ttl, 10) || 3600;
+    const newRecord = {
+      id: 'rec_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      type,
+      host,
+      priority,
+      value,
+      ttl,
+      purpose: recordData.purpose || (type === 'MX' ? `Mail Exchanger (Priority ${priority})` : `${type} Record`)
+    };
+
+    tenant.records.push(newRecord);
+    this.syncDnsPlanFromRecords(tenant);
+    tenant.updatedAt = new Date().toISOString();
+    this.logAudit('RECORD_ADDED', cleanDomain, `Added ${type} record (${host} -> ${value}, priority: ${priority ?? 'N/A'}) by ${requesterEmail}.`);
+    this.saveStore();
+    return newRecord;
+  }
+
+  updateTenantRecord(domain, recordId, updates, requesterEmail = 'admin@iron-id.io') {
+    if (!this.isMasterAdmin(requesterEmail)) {
+      throw new Error(`Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.`);
+    }
+    const cleanDomain = (domain || '').trim().toLowerCase();
+    const tenant = this.store.tenants[cleanDomain];
+    if (!tenant) throw new Error(`Tenant domain "${cleanDomain}" not found.`);
+    this.ensureTenantRecords(tenant);
+
+    const record = tenant.records.find(r => r.id === recordId);
+    if (!record) throw new Error(`Record ID "${recordId}" not found in domain "${cleanDomain}".`);
+
+    if (updates.type) record.type = updates.type.toUpperCase().trim();
+    if (updates.host !== undefined) record.host = updates.host.trim();
+    if (updates.value !== undefined) record.value = updates.value.trim();
+    if (updates.ttl !== undefined) record.ttl = parseInt(updates.ttl, 10) || 3600;
+    if (updates.purpose !== undefined) record.purpose = updates.purpose.trim();
+
+    if (record.type === 'MX' || record.type === 'SRV') {
+      if (updates.priority !== undefined && updates.priority !== null && updates.priority !== '') {
+        record.priority = parseInt(updates.priority, 10);
+        if (isNaN(record.priority)) record.priority = 10;
+      }
+    } else {
+      record.priority = null;
+    }
+
+    this.syncDnsPlanFromRecords(tenant);
+    tenant.updatedAt = new Date().toISOString();
+    this.logAudit('RECORD_UPDATED', cleanDomain, `Updated ${record.type} record (${record.host}) host: ${record.value}, priority: ${record.priority ?? 'N/A'} by ${requesterEmail}.`);
+    this.saveStore();
+    return record;
+  }
+
+  deleteTenantRecord(domain, recordId, requesterEmail = 'admin@iron-id.io') {
+    if (!this.isMasterAdmin(requesterEmail)) {
+      throw new Error(`Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.`);
+    }
+    const cleanDomain = (domain || '').trim().toLowerCase();
+    const tenant = this.store.tenants[cleanDomain];
+    if (!tenant) throw new Error(`Tenant domain "${cleanDomain}" not found.`);
+    this.ensureTenantRecords(tenant);
+
+    const idx = tenant.records.findIndex(r => r.id === recordId);
+    if (idx === -1) throw new Error(`Record ID "${recordId}" not found in domain "${cleanDomain}".`);
+
+    const deleted = tenant.records.splice(idx, 1)[0];
+    this.syncDnsPlanFromRecords(tenant);
+    tenant.updatedAt = new Date().toISOString();
+    this.logAudit('RECORD_DELETED', cleanDomain, `Deleted ${deleted.type} record (${deleted.host}) by ${requesterEmail}.`);
+    this.saveStore();
+    return { success: true, deletedRecord: deleted };
+  }
+
+  applyMailPreset(domain, presetName = 'single-mx', requesterEmail = 'admin@iron-id.io') {
+    if (!this.isMasterAdmin(requesterEmail)) {
+      throw new Error(`Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.`);
+    }
+    const cleanDomain = (domain || '').trim().toLowerCase();
+    const tenant = this.store.tenants[cleanDomain];
+    if (!tenant) throw new Error(`Tenant domain "${cleanDomain}" not found.`);
+
+    if (presetName === 'dual-mx') {
+      const nonMx = (tenant.records || this.buildDefaultRecords(tenant)).filter(r => r.type !== 'MX');
+      tenant.records = [
+        {
+          id: 'rec_mx_10',
+          type: 'MX',
+          host: '@',
+          priority: 10,
+          value: 'mail.iron-id.io',
+          ttl: 3600,
+          purpose: 'Primary Sovereign Mail Exchanger'
+        },
+        {
+          id: 'rec_mx_20',
+          type: 'MX',
+          host: '@',
+          priority: 20,
+          value: 'backup-mx.iron-id.io',
+          ttl: 3600,
+          purpose: 'High-Availability Redundant Fallback MX'
+        },
+        ...nonMx
+      ];
+    } else if (presetName === 'single-mx') {
+      const nonMx = (tenant.records || this.buildDefaultRecords(tenant)).filter(r => r.type !== 'MX');
+      tenant.records = [
+        {
+          id: 'rec_mx_10',
+          type: 'MX',
+          host: '@',
+          priority: 10,
+          value: 'mail.iron-id.io',
+          ttl: 3600,
+          purpose: 'Primary Sovereign Mail Exchanger'
+        },
+        ...nonMx
+      ];
+    } else if (presetName === 'reset-all') {
+      tenant.records = this.buildDefaultRecords(tenant);
+    }
+
+    this.syncDnsPlanFromRecords(tenant);
+    tenant.updatedAt = new Date().toISOString();
+    this.logAudit('PRESET_APPLIED', cleanDomain, `Applied mail preset "${presetName}" by ${requesterEmail}.`);
+    this.saveStore();
+    return tenant.records;
+  }
+
   // --- Tenant Domain Methods ---
 
   listTenants() {
     return Object.values(this.store.tenants).map(tenant => {
+      this.ensureTenantRecords(tenant);
       const tenantMailboxes = Object.values(this.store.mailboxes).filter(m => m.domain === tenant.domain);
       const totalUsedStorage = tenantMailboxes.reduce((acc, m) => acc + (m.usedStorageMb || 0), 0);
       const totalAllocatedQuota = tenantMailboxes.reduce((acc, m) => acc + (m.storageQuotaMb || 0), 0);
       return {
         ...tenant,
+        records: tenant.records,
         mailboxCount: tenantMailboxes.length,
         totalUsedStorageMb: parseFloat(totalUsedStorage.toFixed(2)),
         totalAllocatedQuotaMb: totalAllocatedQuota
@@ -234,9 +559,11 @@ class TenantService {
     const tenant = this.store.tenants[cleanDomain];
     if (!tenant) return null;
 
+    this.ensureTenantRecords(tenant);
     const mailboxes = Object.values(this.store.mailboxes).filter(m => m.domain === cleanDomain);
     return {
       ...tenant,
+      records: tenant.records,
       mailboxes: mailboxes.map(m => {
         const { passwordHash, ...safe } = m;
         return safe;
@@ -282,6 +609,7 @@ class TenantService {
       defaultDailyLimit: Number(defaultDailyLimit) || 250
     };
 
+    newTenant.records = this.buildDefaultRecords(newTenant);
     this.store.tenants[cleanDomain] = newTenant;
     this.logAudit('TENANT_CREATED', cleanDomain, `Provisioned new tenant domain by ${requesterEmail} with Ed25519 DKIM keys.`);
     this.saveStore();
@@ -324,8 +652,9 @@ class TenantService {
       tenant.displayName = updates.displayName.trim();
     }
 
+    this.syncRecordsFromDnsPlan(tenant);
     tenant.updatedAt = new Date().toISOString();
-    this.logAudit('DNS_UPDATED', cleanDomain, `Customized DNS plan by ${requesterEmail} (Selector: ${tenant.dkim.selector}, MX: ${tenant.dnsPlan.mx?.host}).`);
+    this.logAudit('DNS_UPDATED', cleanDomain, `Customized DNS plan by ${requesterEmail} (Selector: ${tenant.dkim.selector}, MX: ${tenant.dnsPlan.mx?.host}, Priority: ${tenant.dnsPlan.mx?.priority}).`);
     this.saveStore();
 
     return tenant;
@@ -368,6 +697,7 @@ class TenantService {
       };
     }
 
+    this.syncRecordsFromDnsPlan(tenant);
     this.logAudit('DKIM_REGENERATED', cleanDomain, `Re-keyed cryptographic DKIM (${tenant.dkim.keyType}) under selector "${tenant.dkim.selector}".`);
     this.saveStore();
 

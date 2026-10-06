@@ -22,7 +22,90 @@
       },
       "defaultQuotaMb": 10240,
       "defaultDailyLimit": 1000,
-      "updatedAt": "2026-10-06T18:56:38.909Z"
+      "updatedAt": "2026-10-06T20:06:13.667Z",
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=n8D9QO7Kq7rT+Lp/bK2lK8gJ+7Z1X9X0mP6q8Q4bX0Q=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@iron-id.io; ruf=mailto:dmarc@iron-id.io; fo=1",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20260923T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        },
+        {
+          "id": "rec_1791316593375_697g",
+          "type": "MX",
+          "host": "backup",
+          "priority": 20,
+          "value": "backup-mx.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Secondary Redundant MX"
+        }
+      ]
     },
     "client.dz": {
       "domain": "client.dz",
@@ -45,7 +128,81 @@
         "mtaSts": "v=STSv1; id=20260923T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 5120,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=d5X8J2eQ3uY9kP+M4tL1mQ8vZ3bX2vW1qO9sT8yU7X8=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@client.dz",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20260923T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791230511376.com": {
       "domain": "api-tenant-1791230511376.com",
@@ -68,7 +225,81 @@
         "mtaSts": "v=STSv1; id=20261005T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAlBz8gB+gj+fenzvtuUFeeplSLsO5ROieTfXpKXQWbEE=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791230511376.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261005T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791232983097.com": {
       "domain": "api-tenant-1791232983097.com",
@@ -91,7 +322,81 @@
         "mtaSts": "v=STSv1; id=20261005T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEABkfC4NZA4gBiyLiuOUzWDrI+uaEjalnww0zhAqXgDVM=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791232983097.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261005T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791288825768.com": {
       "domain": "api-tenant-1791288825768.com",
@@ -114,7 +419,81 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAbykQUw6a4mOLGgEfX4HtH5726mgGv61Cnp9BRgUOMyM=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791288825768.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791291228743.com": {
       "domain": "api-tenant-1791291228743.com",
@@ -137,7 +516,81 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAFIDu2qq5jrabgtZpwfWc7n/In4FEc8m6uqnAz4tgC48=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791291228743.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791291684292.com": {
       "domain": "api-tenant-1791291684292.com",
@@ -160,7 +613,81 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEApg6eQKeuTIMCBQeCVKfqN8mG/oSC1KlI6xfY3+grL1A=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791291684292.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791294015153.com": {
       "domain": "api-tenant-1791294015153.com",
@@ -183,7 +710,81 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEA2xywEV2M5IQyFTU/SZoMBerGCXsZVb9mCL2w8OfS1Eg=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791294015153.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791295769857.com": {
       "domain": "api-tenant-1791295769857.com",
@@ -206,7 +807,81 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAuJr0U9JPlpcPLkakek1ZZm3THPjHQ0zl5QX5ZgL5bc8=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791295769857.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791298976420.com": {
       "domain": "api-tenant-1791298976420.com",
@@ -229,7 +904,81 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAW3JvT2UvZmRFoeJcI+jZuVTlRzXKyJi20XviSRrD2Hw=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791298976420.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791300457591.com": {
       "domain": "api-tenant-1791300457591.com",
@@ -252,7 +1001,81 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEATBmBsjc+rkQ+Gbd09eVxP9c6LMR5/zYBHjskzc6wMow=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791300457591.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791301204807.com": {
       "domain": "api-tenant-1791301204807.com",
@@ -275,7 +1098,81 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAp+23q3EzJfc+eZgVWKIJzKWu87YQdyji3R7AwqZjzjA=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791301204807.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791302774080.com": {
       "domain": "api-tenant-1791302774080.com",
@@ -298,7 +1195,81 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAtmuCVQ1DlsODvq4d+KD7BgsRFOjVAxFiAMwAOJbwUE8=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791302774080.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     },
     "api-tenant-1791312998494.com": {
       "domain": "api-tenant-1791312998494.com",
@@ -321,7 +1292,372 @@
         "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
       },
       "defaultQuotaMb": 10240,
-      "defaultDailyLimit": 250
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAhiAKFUeKxo8etIDGC4AIsdQ0Ne/WW/8f4/PiHn34m18=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791312998494.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
+    },
+    "api-tenant-1791316055973.com": {
+      "domain": "api-tenant-1791316055973.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-06T19:47:35.977Z",
+      "dkim": {
+        "selector": "ironid",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA8c9gJQDVXb6oTEhalcZqHV0Xt7yfgflcVmc2OJb/K5U=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEA8c9gJQDVXb6oTEhalcZqHV0Xt7yfgflcVmc2OJb/K5U="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791316055973.com",
+        "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEA8c9gJQDVXb6oTEhalcZqHV0Xt7yfgflcVmc2OJb/K5U=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791316055973.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
+    },
+    "api-tenant-1791316081258.com": {
+      "domain": "api-tenant-1791316081258.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-06T19:48:01.259Z",
+      "dkim": {
+        "selector": "ironid",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAaZSBGIkEpbPJ+i5aMaz0FIO5BMLYeVXJlYBVnJUfUeI=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAaZSBGIkEpbPJ+i5aMaz0FIO5BMLYeVXJlYBVnJUfUeI="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791316081258.com",
+        "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAaZSBGIkEpbPJ+i5aMaz0FIO5BMLYeVXJlYBVnJUfUeI=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791316081258.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
+    },
+    "api-tenant-1791317173353.com": {
+      "domain": "api-tenant-1791317173353.com",
+      "displayName": "API Provisioned Corp",
+      "status": "active",
+      "createdAt": "2026-10-06T20:06:13.359Z",
+      "dkim": {
+        "selector": "ironid",
+        "keyType": "ed25519",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAWJhT7fnUEEtK3oFp4tVia8d4p8srUO88KSTAh6W5pwU=\n-----END PUBLIC KEY-----\n",
+        "dnsTxt": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAWJhT7fnUEEtK3oFp4tVia8d4p8srUO88KSTAh6W5pwU="
+      },
+      "dnsPlan": {
+        "mx": {
+          "host": "mail.iron-id.io",
+          "priority": 10
+        },
+        "spf": "v=spf1 mx ip4:127.0.0.1 ~all",
+        "dmarc": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791317173353.com",
+        "mtaSts": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400"
+      },
+      "defaultQuotaMb": 10240,
+      "defaultDailyLimit": 250,
+      "records": [
+        {
+          "id": "rec_mx_10",
+          "type": "MX",
+          "host": "@",
+          "priority": 10,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Primary Sovereign Mail Exchanger"
+        },
+        {
+          "id": "rec_txt_spf",
+          "type": "TXT",
+          "host": "@",
+          "priority": null,
+          "value": "v=spf1 mx ip4:127.0.0.1 ~all",
+          "ttl": 3600,
+          "purpose": "Sender Policy Framework (SPF Policy)"
+        },
+        {
+          "id": "rec_txt_dkim",
+          "type": "TXT",
+          "host": "ironid._domainkey",
+          "priority": null,
+          "value": "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAWJhT7fnUEEtK3oFp4tVia8d4p8srUO88KSTAh6W5pwU=",
+          "ttl": 3600,
+          "purpose": "Cryptographic DKIM Signature (Selector: ironid)"
+        },
+        {
+          "id": "rec_txt_dmarc",
+          "type": "TXT",
+          "host": "_dmarc",
+          "priority": null,
+          "value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@api-tenant-1791317173353.com",
+          "ttl": 3600,
+          "purpose": "DMARC Sovereign Alignment Policy"
+        },
+        {
+          "id": "rec_txt_mtasts",
+          "type": "TXT",
+          "host": "_mta-sts",
+          "priority": null,
+          "value": "v=STSv1; id=20261006T01; mode=enforce; max_age=86400",
+          "ttl": 86400,
+          "purpose": "Strict Transport Security (MTA-STS)"
+        },
+        {
+          "id": "rec_cname_mail",
+          "type": "CNAME",
+          "host": "mail",
+          "priority": null,
+          "value": "iron-id.io",
+          "ttl": 3600,
+          "purpose": "Webmail Ingress & MTA Endpoint"
+        },
+        {
+          "id": "rec_cname_autoconfig",
+          "type": "CNAME",
+          "host": "autoconfig",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Thunderbird / K-9 Client Auto-Discovery"
+        },
+        {
+          "id": "rec_cname_autodiscover",
+          "type": "CNAME",
+          "host": "autodiscover",
+          "priority": null,
+          "value": "mail.iron-id.io",
+          "ttl": 3600,
+          "purpose": "Exchange ActiveSync / Outlook Auto-Discovery"
+        }
+      ]
     }
   },
   "mailboxes": {
@@ -375,6 +1711,102 @@
     }
   },
   "auditLog": [
+    {
+      "timestamp": "2026-10-06T20:06:13.667Z",
+      "action": "RECORD_DELETED",
+      "domain": "iron-id.io",
+      "details": "Deleted MX record (@) by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T20:06:13.663Z",
+      "action": "RECORD_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Updated MX record (@) host: mx2.iron-id.io, priority: 25 by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T20:06:13.657Z",
+      "action": "RECORD_ADDED",
+      "domain": "iron-id.io",
+      "details": "Added MX record (@ -> backup-mx.iron-id.io, priority: 20) by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T20:06:13.645Z",
+      "action": "DNS_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Customized DNS plan by admin@iron-id.io (Selector: ironid, MX: mail.iron-id.io, Priority: 10)."
+    },
+    {
+      "timestamp": "2026-10-06T20:06:13.369Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-06T20:06:13.359Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791317173353.com",
+      "details": "Provisioned new tenant domain by admin@iron-id.io with Ed25519 DKIM keys."
+    },
+    {
+      "timestamp": "2026-10-06T19:56:33.375Z",
+      "action": "RECORD_ADDED",
+      "domain": "iron-id.io",
+      "details": "Added MX record (backup -> backup-mx.iron-id.io, priority: 20) by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T19:48:02.013Z",
+      "action": "RECORD_DELETED",
+      "domain": "iron-id.io",
+      "details": "Deleted MX record (@) by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T19:48:02.008Z",
+      "action": "RECORD_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Updated MX record (@) host: mx2.iron-id.io, priority: 25 by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T19:48:02.002Z",
+      "action": "RECORD_ADDED",
+      "domain": "iron-id.io",
+      "details": "Added MX record (@ -> backup-mx.iron-id.io, priority: 20) by admin@iron-id.io."
+    },
+    {
+      "timestamp": "2026-10-06T19:48:01.985Z",
+      "action": "DNS_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Customized DNS plan by admin@iron-id.io (Selector: ironid, MX: mail.iron-id.io, Priority: 10)."
+    },
+    {
+      "timestamp": "2026-10-06T19:48:01.264Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-06T19:48:01.259Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791316081258.com",
+      "details": "Provisioned new tenant domain by admin@iron-id.io with Ed25519 DKIM keys."
+    },
+    {
+      "timestamp": "2026-10-06T19:47:36.855Z",
+      "action": "DNS_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Customized DNS plan by admin@iron-id.io (Selector: ironid, MX: mail.iron-id.io, Priority: 10)."
+    },
+    {
+      "timestamp": "2026-10-06T19:47:35.984Z",
+      "action": "QUOTA_UPDATED",
+      "domain": "iron-id.io",
+      "details": "Mailbox charaf@iron-id.io quota: 20480MB, sendLimit: 2000/day."
+    },
+    {
+      "timestamp": "2026-10-06T19:47:35.977Z",
+      "action": "TENANT_CREATED",
+      "domain": "api-tenant-1791316055973.com",
+      "details": "Provisioned new tenant domain by admin@iron-id.io with Ed25519 DKIM keys."
+    },
     {
       "timestamp": "2026-10-06T18:56:38.909Z",
       "action": "DNS_UPDATED",

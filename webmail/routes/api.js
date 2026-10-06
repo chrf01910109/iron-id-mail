@@ -146,6 +146,103 @@ async function handleApiRequest(req, res, pathname) {
       return true;
     }
 
+    // 4d. GET /api/tenants/:domain/records (List all DNS zone records)
+    const tenantRecordsMatch = pathname.match(/^\/api\/tenants\/([a-zA-Z0-9.-]+)\/records$/);
+    if (req.method === 'GET' && tenantRecordsMatch) {
+      const domain = tenantRecordsMatch[1];
+      const records = tenantService.getTenantRecords(domain);
+      sendJson(res, 200, { success: true, domain, count: records.length, records });
+      return true;
+    }
+
+    // 4e. POST /api/tenants/:domain/records (Add new DNS record - Restricted to Master Admin)
+    if (req.method === 'POST' && tenantRecordsMatch) {
+      const domain = tenantRecordsMatch[1];
+      const requester = getRequester(req);
+      if (!tenantService.isMasterAdmin(requester)) {
+        sendJson(res, 403, {
+          success: false,
+          error: 'Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.'
+        });
+        return true;
+      }
+      const payload = await parseBody(req);
+      const newRec = tenantService.addTenantRecord(domain, payload, requester);
+      sendJson(res, 201, {
+        success: true,
+        message: `Added ${newRec.type} record for ${domain}.`,
+        record: newRec,
+        records: tenantService.getTenantRecords(domain)
+      });
+      return true;
+    }
+
+    // 4f. POST /api/tenants/:domain/records/preset (Apply mail presets: single-mx | dual-mx | reset-all)
+    const tenantPresetMatch = pathname.match(/^\/api\/tenants\/([a-zA-Z0-9.-]+)\/records\/preset$/);
+    if (req.method === 'POST' && tenantPresetMatch) {
+      const domain = tenantPresetMatch[1];
+      const requester = getRequester(req);
+      if (!tenantService.isMasterAdmin(requester)) {
+        sendJson(res, 403, {
+          success: false,
+          error: 'Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.'
+        });
+        return true;
+      }
+      const payload = await parseBody(req);
+      const records = tenantService.applyMailPreset(domain, payload.preset || 'single-mx', requester);
+      sendJson(res, 200, {
+        success: true,
+        message: `Applied ${payload.preset || 'single-mx'} preset for ${domain}.`,
+        records
+      });
+      return true;
+    }
+
+    // 4g. PATCH & DELETE /api/tenants/:domain/records/:recordId
+    const recordItemMatch = pathname.match(/^\/api\/tenants\/([a-zA-Z0-9.-]+)\/records\/([^/]+)$/);
+    if (recordItemMatch) {
+      const domain = recordItemMatch[1];
+      const recordId = decodeURIComponent(recordItemMatch[2]);
+      const requester = getRequester(req);
+
+      if (req.method === 'PATCH') {
+        if (!tenantService.isMasterAdmin(requester)) {
+          sendJson(res, 403, {
+            success: false,
+            error: 'Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.'
+          });
+          return true;
+        }
+        const payload = await parseBody(req);
+        const updated = tenantService.updateTenantRecord(domain, recordId, payload, requester);
+        sendJson(res, 200, {
+          success: true,
+          message: `Record ${recordId} updated for ${domain}.`,
+          record: updated,
+          records: tenantService.getTenantRecords(domain)
+        });
+        return true;
+      }
+
+      if (req.method === 'DELETE') {
+        if (!tenantService.isMasterAdmin(requester)) {
+          sendJson(res, 403, {
+            success: false,
+            error: 'Access Denied: Only the master administrator (admin@iron-id.io) has authority to modify sovereign DNS records.'
+          });
+          return true;
+        }
+        tenantService.deleteTenantRecord(domain, recordId, requester);
+        sendJson(res, 200, {
+          success: true,
+          message: `Record ${recordId} deleted from ${domain}.`,
+          records: tenantService.getTenantRecords(domain)
+        });
+        return true;
+      }
+    }
+
     // 5. GET /api/tenants/:domain/mailboxes
     const tenantMbMatch = pathname.match(/^\/api\/tenants\/([a-zA-Z0-9.-]+)\/mailboxes$/);
     if (req.method === 'GET' && tenantMbMatch) {

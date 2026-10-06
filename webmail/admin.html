@@ -338,6 +338,66 @@
       border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
+    /* Record Types & Priority Pills */
+    .badge-type-mx {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38BDF8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      font-weight: 700;
+    }
+    .badge-type-txt {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10B981;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      font-weight: 700;
+    }
+    .badge-type-cname {
+      background: rgba(245, 158, 11, 0.15);
+      color: #F59E0B;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      font-weight: 700;
+    }
+    .badge-type-a {
+      background: rgba(168, 85, 247, 0.2);
+      color: #A855F7;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      font-weight: 700;
+    }
+    .badge-type-srv {
+      background: rgba(236, 72, 153, 0.2);
+      color: #EC4899;
+      border: 1px solid rgba(236, 72, 153, 0.4);
+      font-weight: 700;
+    }
+    .priority-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .priority-pill-primary {
+      background: rgba(56, 189, 248, 0.25);
+      color: #7DD3FC;
+      border: 1px solid rgba(56, 189, 248, 0.5);
+    }
+    .priority-pill-secondary {
+      background: rgba(168, 85, 247, 0.25);
+      color: #C084FC;
+      border: 1px solid rgba(168, 85, 247, 0.5);
+    }
+    .priority-pill-none {
+      color: var(--text-muted);
+    }
+    .rec-filter.active {
+      background: var(--color-primary) !important;
+      color: #fff !important;
+      border-color: var(--color-primary) !important;
+    }
+
     /* Progress Bar */
     .progress-track {
       width: 100px;
@@ -624,19 +684,77 @@
           Runs real-time cryptographic DNS resolution for MX, SPF, DKIM, DMARC, and MTA-STS records to guarantee 100% global deliverability.
         </p>
         <div style="display: flex; gap: 12px; max-width: 650px; flex-wrap: wrap;">
-          <select id="dnsDomainSelect" class="form-select" style="flex: 1; min-width: 220px;"></select>
+          <select id="dnsDomainSelect" class="form-select" style="flex: 1; min-width: 220px;" onchange="handleDnsDomainSelectChange(this.value)"></select>
           <button class="btn btn-primary" onclick="runDnsAudit()">🔍 Run Live Audit</button>
-          <button id="btnDnsTabEdit" class="btn btn-secondary" onclick="openEditDnsFromSelect()">⚙️ Edit DNS Records</button>
+          <button id="btnDnsTabEdit" class="btn btn-secondary" onclick="openEditDnsFromSelect()">⚙️ Classic DNS Blueprint</button>
         </div>
 
         <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 14px 18px; margin-top: 18px; display: flex; align-items: flex-start; gap: 14px;">
           <div style="font-size: 22px; line-height: 1;">📌</div>
           <div style="font-size: 13px; line-height: 1.5; color: var(--text-main);">
-            <strong>How DNS Record Management Works:</strong><br>
-            • <strong>In this Console:</strong> Click <strong>⚙️ Edit DNS Records</strong> to customize your DKIM selector (default: <code>ironid</code>), re-generate cryptographic keypairs, adjust MX hostname, or modify SPF and DMARC policies.<br>
-            • <strong>At your Domain Registrar (Cloudflare, Namecheap, GoDaddy):</strong> The public internet queries your authoritative DNS provider. Once configured here, copy these records into your DNS registrar portal to achieve a 100/100 deliverability score.
+            <strong>Mail Server DNS & Routing Control:</strong><br>
+            • Modify record <strong>hosts</strong>, <strong>types</strong>, and <strong>MX priorities</strong> directly in the Zone Editor below.<br>
+            • For high availability, configure primary MX (priority 10) and secondary/backup MX (priority 20).<br>
+            • Master administrator (<code>admin@iron-id.io</code>) can add, modify, or delete any zone record in real time.
           </div>
         </div>
+      </div>
+
+      <!-- Sovereign DNS Zone & Mail Routing Records Manager Table -->
+      <div class="table-container" style="margin-top: 24px; margin-bottom: 24px;">
+        <div class="table-header-row" style="flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <span>🌐 DNS Zone Editor & Mail Routing</span>
+              <span id="zoneDomainBadge" class="badge badge-active" style="font-size: 11px;">iron-id.io</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
+              Full mail server zone control: manage Mail Exchangers (MX hosts & priorities), SPF, DKIM, DMARC, and client discovery hosts.
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <select id="presetSelect" class="form-select" style="font-size: 12px; padding: 6px 10px; width: auto;" onchange="handlePresetSelect(this.value)">
+              <option value="" disabled selected>⚡ Mail Presets...</option>
+              <option value="single-mx">Single Sovereign MX (Priority 10)</option>
+              <option value="dual-mx">Dual-MX Redundancy (Priority 10 & 20)</option>
+              <option value="reset-all">Reset to Sovereign Blueprint</option>
+            </select>
+            <button id="btnExportZone" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="openExportZoneModal()">📋 Export BIND Zone</button>
+            <button id="btnAddRecord" class="btn btn-primary" style="font-size: 12px; padding: 6px 14px;" onclick="openAddRecordModal()">➕ Add Record</button>
+          </div>
+        </div>
+
+        <!-- Filter & Search bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: rgba(0,0,0,0.15); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Filter:</span>
+            <button class="btn btn-secondary rec-filter active" style="padding: 2px 8px; font-size: 11px;" onclick="filterZoneRecords('ALL', this)">All (<span id="countAll">0</span>)</button>
+            <button class="btn btn-secondary rec-filter" style="padding: 2px 8px; font-size: 11px;" onclick="filterZoneRecords('MX', this)">MX (<span id="countMx">0</span>)</button>
+            <button class="btn btn-secondary rec-filter" style="padding: 2px 8px; font-size: 11px;" onclick="filterZoneRecords('TXT', this)">TXT (<span id="countTxt">0</span>)</button>
+            <button class="btn btn-secondary rec-filter" style="padding: 2px 8px; font-size: 11px;" onclick="filterZoneRecords('CNAME', this)">CNAME (<span id="countCname">0</span>)</button>
+            <button class="btn btn-secondary rec-filter" style="padding: 2px 8px; font-size: 11px;" onclick="filterZoneRecords('A', this)">A/AAAA (<span id="countA">0</span>)</button>
+          </div>
+          <div>
+            <input id="searchZoneRecords" class="form-input" style="padding: 4px 10px; font-size: 12px; width: 220px;" placeholder="Search host or value..." oninput="renderZoneTable()">
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 80px;">Type</th>
+              <th style="width: 180px;">Host / Name</th>
+              <th style="width: 115px;">Priority</th>
+              <th>Destination / Host Target / RDATA</th>
+              <th style="width: 75px;">TTL</th>
+              <th style="width: 200px;">Purpose / Routing</th>
+              <th style="width: 140px; text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="zoneRecordsTableBody">
+            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Select a domain to inspect and modify zone records.</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <div id="dnsResultSection" style="display: none;">
@@ -868,11 +986,110 @@
     </div>
   </div>
 
+  <!-- Modal: Add / Edit DNS Record (Hosts & Priorities) -->
+  <div id="modalRecordForm" class="modal-overlay">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <div id="modalRecordFormTitle" class="modal-title">➕ Add DNS Record: <span id="recModalDomain" style="color: var(--color-primary);"></span></div>
+        <button class="btn btn-secondary" onclick="closeModal('modalRecordForm')">✕</button>
+      </div>
 
+      <div id="recFormRbacWarning" style="display: none; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: #FCA5A5;">
+        🔒 <strong>Access Restricted:</strong> Only the master sovereign administrator (<strong>admin@iron-id.io</strong>) is authorized to modify DNS records and host priorities. Form controls are locked.
+      </div>
+
+      <form onsubmit="handleSaveRecordForm(event)">
+        <input type="hidden" id="recFormId">
+        <input type="hidden" id="recFormDomain">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Record Type *</label>
+            <select id="recFormType" class="form-select" onchange="handleRecordTypeChange(this.value)" required>
+              <option value="MX">MX (Mail Exchanger)</option>
+              <option value="TXT">TXT (SPF, DKIM, Policies)</option>
+              <option value="CNAME">CNAME (Canonical Alias)</option>
+              <option value="A">A (IPv4 Address)</option>
+              <option value="AAAA">AAAA (IPv6 Address)</option>
+              <option value="SRV">SRV (Service Locator)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Host / Subdomain *</label>
+            <input id="recFormHost" class="form-input mono" placeholder="@ (for root) or mail" required oninput="updateFqdnPreview()">
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Host FQDN: <span id="recFormFqdnPreview" class="mono" style="color: var(--color-primary);">@</span></div>
+          </div>
+        </div>
+
+        <div id="recPriorityContainer" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0; color: #38BDF8; font-weight: 600;">MX Priority (Preference Level) *</label>
+            <span class="badge badge-active" style="font-size: 10px;">LOWER = HIGHER PREFERENCE</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <input id="recFormPriority" type="number" class="form-input mono" style="max-width: 140px; font-weight: 700; font-size: 14px;" placeholder="10" min="0" max="65535" value="10">
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.3;">
+              Standard mail server setup: <strong>10</strong> for Primary MX, <strong>20</strong> for Backup Fallback Relay.
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="recFormValueLabel" class="form-label">Target Host / Destination Value *</label>
+          <textarea id="recFormValue" class="form-input mono" rows="3" placeholder="e.g. mail.iron-id.io" required style="resize: vertical; font-size: 12px;"></textarea>
+          <div id="recFormValueHint" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">For MX records: Enter the mail server hostname (e.g. mail.iron-id.io).</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px; margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">TTL (Time To Live)</label>
+            <select id="recFormTtl" class="form-select">
+              <option value="300">300 (5 mins - Testing)</option>
+              <option value="3600" selected>3600 (1 hour - Standard)</option>
+              <option value="14400">14400 (4 hours)</option>
+              <option value="86400">86400 (1 day - Production)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Purpose / Description (Optional)</label>
+            <input id="recFormPurpose" class="form-input" placeholder="e.g. Primary Inbound Mail Gateway">
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalRecordForm')">Cancel</button>
+          <button id="btnSubmitRecordForm" type="submit" class="btn btn-primary">💾 Save Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Export RFC BIND Zone File -->
+  <div id="modalExportZone" class="modal-overlay">
+    <div class="modal-card" style="max-width: 720px;">
+      <div class="modal-header">
+        <div class="modal-title">📋 Export RFC BIND Zone File: <span id="exportZoneDomainTitle" style="color: var(--color-primary);"></span></div>
+        <button class="btn btn-secondary" onclick="closeModal('modalExportZone')">✕</button>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+        Standard RFC 1035 BIND zone file format. Directly importable into Cloudflare Zone Import, BIND9, PowerDNS, or domain registrars:
+      </p>
+      <textarea id="exportZoneTextarea" class="form-input mono" rows="14" readonly style="font-size: 11px; line-height: 1.45; background: rgba(0,0,0,0.3); resize: none;"></textarea>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <span style="font-size: 12px; color: var(--text-muted);">Compatible with Cloudflare, Route53, cPanel, and Plesk.</span>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalExportZone')">Close</button>
+          <button type="button" class="btn btn-primary" onclick="copyZoneFileToClipboard()">📋 Copy Zone File</button>
+        </div>
+      </div>
+    </div>
   <script>
     let tenants = [];
     let mailboxes = [];
     let currentOperator = localStorage.getItem('ironid_operator_email') || 'admin@iron-id.io';
+    let currentZoneDomain = 'iron-id.io';
+    let activeZoneRecords = [];
+    let selectedZoneFilter = 'ALL';
 
     function isMasterAdmin(email) {
       if (!email) return false;
@@ -888,6 +1105,7 @@
       currentOperator = newEmail;
       localStorage.setItem('ironid_operator_email', newEmail);
       updateOperatorUI();
+      renderZoneTable();
     }
 
     function showAdminOnlyAlert() {
@@ -939,15 +1157,28 @@
       const btnDnsTabEdit = document.getElementById('btnDnsTabEdit');
       if (btnDnsTabEdit) {
         if (isMaster) {
-          btnDnsTabEdit.innerHTML = '⚙️ Edit DNS Records';
+          btnDnsTabEdit.innerHTML = '⚙️ Classic DNS Blueprint';
           btnDnsTabEdit.className = 'btn btn-secondary';
         } else {
-          btnDnsTabEdit.innerHTML = '🔒 Edit DNS Records (Admin Only)';
+          btnDnsTabEdit.innerHTML = '🔒 Classic Blueprint (Admin Only)';
           btnDnsTabEdit.className = 'btn btn-secondary';
         }
       }
 
+      const btnAddRec = document.getElementById('btnAddRecord');
+      if (btnAddRec) {
+        if (isMaster) {
+          btnAddRec.innerHTML = '➕ Add Record';
+          btnAddRec.className = 'btn btn-primary';
+        } else {
+          btnAddRec.innerHTML = '🔒 Add Record (Locked)';
+          btnAddRec.className = 'btn btn-secondary';
+          btnAddRec.style.opacity = '0.6';
+        }
+      }
+
       renderTenants();
+      renderZoneTable();
     }
 
     async function loadData() {
@@ -970,6 +1201,11 @@
           tenants = tRes.tenants;
           renderTenants();
           populateDomainSelects();
+          if (tenants.length > 0) {
+            const initialDom = document.getElementById('dnsDomainSelect').value || tenants[0].domain;
+            currentZoneDomain = initialDom;
+            loadZoneRecords(initialDom);
+          }
         }
 
         const mbRes = await fetch('/api/mailboxes').then(r => r.json());
@@ -989,6 +1225,7 @@
 
     function renderTenants() {
       const tb = document.getElementById('tenantsTableBody');
+      if (!tb) return;
       if (!tenants.length) {
         tb.innerHTML = '<tr><td colspan="7" style="text-align: center;">No tenants provisioned.</td></tr>';
         return;
@@ -1007,15 +1244,413 @@
           <td><span class="badge badge-active">${t.dkim.keyType.toUpperCase()}</span></td>
           <td>
             <div style="display: flex; gap: 6px;">
+              <button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="openZoneEditorForDomain('${t.domain}')">🌐 Zone & Hosts</button>
               ${isMaster
-                ? `<button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="openEditDnsModal('${t.domain}')">⚙️ Edit Records</button>`
-                : `<button class="btn btn-secondary" style="opacity: 0.6; cursor: not-allowed; padding: 4px 8px; font-size: 11px;" title="🔒 Restricted: Only admin@iron-id.io can modify sovereign DNS records" onclick="showAdminOnlyAlert()">🔒 Edit Records</button>`
+                ? `<button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="openEditDnsModal('${t.domain}')">⚙️ Blueprint</button>`
+                : `<button class="btn btn-secondary" style="opacity: 0.6; cursor: not-allowed; padding: 4px 8px; font-size: 11px;" title="🔒 Restricted: Only admin@iron-id.io can modify sovereign DNS records" onclick="showAdminOnlyAlert()">🔒 Blueprint</button>`
               }
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="quickDnsCheck('${t.domain}')">🔍 Check DNS</button>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="quickDnsCheck('${t.domain}')">🔍 Audit</button>
             </div>
           </td>
         </tr>
       `).join('');
+    }
+
+    // --- DNS Zone Editor & Mail Routing Methods ---
+
+    function openZoneEditorForDomain(domain) {
+      switchTab('tabDns');
+      const sel = document.getElementById('dnsDomainSelect');
+      if (sel) sel.value = domain;
+      handleDnsDomainSelectChange(domain);
+    }
+
+    function handleDnsDomainSelectChange(domain) {
+      currentZoneDomain = domain;
+      const badge = document.getElementById('zoneDomainBadge');
+      if (badge) badge.innerText = domain;
+      loadZoneRecords(domain);
+    }
+
+    async function loadZoneRecords(domain) {
+      const tb = document.getElementById('zoneRecordsTableBody');
+      if (tb) tb.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 18px;">Loading zone records for <strong>${domain}</strong>...</td></tr>`;
+
+      try {
+        const res = await fetch(`/api/tenants/${encodeURIComponent(domain)}/records`).then(r => r.json());
+        if (res.success) {
+          activeZoneRecords = res.records || [];
+          renderZoneTable();
+        } else {
+          if (tb) tb.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--color-danger); padding: 18px;">Failed loading records: ${res.error}</td></tr>`;
+        }
+      } catch (err) {
+        if (tb) tb.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--color-danger); padding: 18px;">Network error loading records: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderZoneTable() {
+      const tb = document.getElementById('zoneRecordsTableBody');
+      if (!tb) return;
+
+      const badge = document.getElementById('zoneDomainBadge');
+      if (badge) badge.innerText = currentZoneDomain;
+
+      const searchTerm = (document.getElementById('searchZoneRecords')?.value || '').toLowerCase().trim();
+      const isMaster = isMasterAdmin(currentOperator);
+
+      // Counts
+      const countAll = activeZoneRecords.length;
+      const countMx = activeZoneRecords.filter(r => r.type === 'MX').length;
+      const countTxt = activeZoneRecords.filter(r => r.type === 'TXT').length;
+      const countCname = activeZoneRecords.filter(r => r.type === 'CNAME').length;
+      const countA = activeZoneRecords.filter(r => r.type === 'A' || r.type === 'AAAA').length;
+
+      if (document.getElementById('countAll')) document.getElementById('countAll').innerText = countAll;
+      if (document.getElementById('countMx')) document.getElementById('countMx').innerText = countMx;
+      if (document.getElementById('countTxt')) document.getElementById('countTxt').innerText = countTxt;
+      if (document.getElementById('countCname')) document.getElementById('countCname').innerText = countCname;
+      if (document.getElementById('countA')) document.getElementById('countA').innerText = countA;
+
+      let filtered = [...activeZoneRecords];
+      if (selectedZoneFilter !== 'ALL') {
+        if (selectedZoneFilter === 'A') {
+          filtered = filtered.filter(r => r.type === 'A' || r.type === 'AAAA');
+        } else {
+          filtered = filtered.filter(r => r.type === selectedZoneFilter);
+        }
+      }
+
+      if (searchTerm) {
+        filtered = filtered.filter(r => 
+          (r.host && r.host.toLowerCase().includes(searchTerm)) ||
+          (r.value && r.value.toLowerCase().includes(searchTerm)) ||
+          (r.type && r.type.toLowerCase().includes(searchTerm)) ||
+          (r.purpose && r.purpose.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      if (!filtered.length) {
+        tb.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No records found matching criteria for <strong>${currentZoneDomain}</strong>.</td></tr>`;
+        return;
+      }
+
+      // Sort: MX first by priority, then other types
+      filtered.sort((a, b) => {
+        if (a.type === 'MX' && b.type === 'MX') return (Number(a.priority) || 10) - (Number(b.priority) || 10);
+        if (a.type === 'MX') return -1;
+        if (b.type === 'MX') return 1;
+        return a.type.localeCompare(b.type);
+      });
+
+      tb.innerHTML = filtered.map(r => {
+        const typeClass = `badge-type-${r.type.toLowerCase()}`;
+        const hasPriority = (r.type === 'MX' || r.type === 'SRV') && r.priority !== null && r.priority !== undefined;
+        const priorityHtml = hasPriority
+          ? `<span class="priority-pill ${Number(r.priority) <= 10 ? 'priority-pill-primary' : 'priority-pill-secondary'}">Priority ${r.priority}</span>`
+          : `<span class="priority-pill-none mono">—</span>`;
+
+        const displayHost = r.host === '@' ? `@ (${currentZoneDomain})` : r.host;
+
+        return `
+          <tr>
+            <td><span class="badge ${typeClass}">${r.type}</span></td>
+            <td><strong class="mono" style="color: var(--text-main); font-size: 12px;">${escapeHtml(displayHost)}</strong></td>
+            <td>${priorityHtml}</td>
+            <td>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <span class="mono" style="word-break: break-all; font-size: 11px; max-width: 480px; color: ${r.type === 'MX' ? 'var(--color-primary)' : 'var(--text-main)'};">${escapeHtml(r.value)}</span>
+                <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 10px; opacity: 0.75;" title="Copy value" onclick="copyTextToClipboard('${escapeJs(r.value)}')">📋</button>
+              </div>
+            </td>
+            <td class="mono" style="font-size: 11px; color: var(--text-muted);">${r.ttl || 3600}s</td>
+            <td style="font-size: 12px; color: var(--text-muted);">${escapeHtml(r.purpose || '—')}</td>
+            <td style="text-align: right;">
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                ${isMaster
+                  ? `<button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="openEditRecordModal('${r.id}')">✏️ Edit</button>
+                     <button class="btn btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="deleteZoneRecord('${r.id}')">🗑️</button>`
+                  : `<button class="btn btn-secondary" style="opacity: 0.5; cursor: not-allowed; padding: 3px 8px; font-size: 11px;" title="🔒 Restricted to admin@iron-id.io" onclick="showAdminOnlyAlert()">🔒 Edit</button>
+                     <button class="btn btn-secondary" style="opacity: 0.5; cursor: not-allowed; padding: 3px 8px; font-size: 11px;" title="🔒 Restricted to admin@iron-id.io" onclick="showAdminOnlyAlert()">🔒</button>`
+                }
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterZoneRecords(type, btn) {
+      selectedZoneFilter = type;
+      document.querySelectorAll('.rec-filter').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderZoneTable();
+    }
+
+    function openAddRecordModal() {
+      const isMaster = isMasterAdmin(currentOperator);
+      document.getElementById('recModalDomain').innerText = currentZoneDomain;
+      document.getElementById('modalRecordFormTitle').innerText = '➕ Add DNS Record: ' + currentZoneDomain;
+      document.getElementById('recFormId').value = '';
+      document.getElementById('recFormDomain').value = currentZoneDomain;
+      document.getElementById('recFormType').value = 'MX';
+      document.getElementById('recFormHost').value = '@';
+      document.getElementById('recFormPriority').value = '10';
+      document.getElementById('recFormValue').value = '';
+      document.getElementById('recFormTtl').value = '3600';
+      document.getElementById('recFormPurpose').value = 'Mail Exchanger';
+
+      const warning = document.getElementById('recFormRbacWarning');
+      const submitBtn = document.getElementById('btnSubmitRecordForm');
+      if (warning) warning.style.display = isMaster ? 'none' : 'block';
+      if (submitBtn) {
+        submitBtn.disabled = !isMaster;
+        submitBtn.style.opacity = isMaster ? '1' : '0.5';
+        submitBtn.innerText = isMaster ? '💾 Save Record' : '🔒 Locked (Master Admin Only)';
+      }
+
+      handleRecordTypeChange('MX');
+      openModal('modalRecordForm');
+    }
+
+    function openEditRecordModal(recordId) {
+      const record = activeZoneRecords.find(r => r.id === recordId);
+      if (!record) return alert('Record not found.');
+
+      const isMaster = isMasterAdmin(currentOperator);
+      document.getElementById('recModalDomain').innerText = currentZoneDomain;
+      document.getElementById('modalRecordFormTitle').innerText = `✏️ Edit ${record.type} Record: ${record.host}`;
+      document.getElementById('recFormId').value = record.id;
+      document.getElementById('recFormDomain').value = currentZoneDomain;
+      document.getElementById('recFormType').value = record.type;
+      document.getElementById('recFormHost').value = record.host;
+      document.getElementById('recFormPriority').value = record.priority ?? 10;
+      document.getElementById('recFormValue').value = record.value;
+      document.getElementById('recFormTtl').value = String(record.ttl || 3600);
+      document.getElementById('recFormPurpose').value = record.purpose || '';
+
+      const warning = document.getElementById('recFormRbacWarning');
+      const submitBtn = document.getElementById('btnSubmitRecordForm');
+      if (warning) warning.style.display = isMaster ? 'none' : 'block';
+      if (submitBtn) {
+        submitBtn.disabled = !isMaster;
+        submitBtn.style.opacity = isMaster ? '1' : '0.5';
+        submitBtn.innerText = isMaster ? '💾 Update Record' : '🔒 Locked (Master Admin Only)';
+      }
+
+      handleRecordTypeChange(record.type);
+      openModal('modalRecordForm');
+    }
+
+    function handleRecordTypeChange(type) {
+      const prioContainer = document.getElementById('recPriorityContainer');
+      const valLabel = document.getElementById('recFormValueLabel');
+      const valHint = document.getElementById('recFormValueHint');
+      const hostInput = document.getElementById('recFormHost');
+
+      if (type === 'MX' || type === 'SRV') {
+        prioContainer.style.display = 'block';
+        valLabel.innerText = 'Mail Server Host Target (FQDN) *';
+        valHint.innerText = 'Enter the target mail exchanger hostname (e.g. mail.iron-id.io or backup-mx.iron-id.io).';
+        if (!hostInput.value) hostInput.value = '@';
+      } else {
+        prioContainer.style.display = 'none';
+        if (type === 'TXT') {
+          valLabel.innerText = 'TXT Record Value / Policy Text *';
+          valHint.innerText = 'Enter SPF string, DKIM public key data, or DMARC policy string.';
+        } else if (type === 'CNAME') {
+          valLabel.innerText = 'Canonical Target Hostname (FQDN) *';
+          valHint.innerText = 'e.g. mail.iron-id.io or cluster-ingress.railway.app';
+        } else if (type === 'A') {
+          valLabel.innerText = 'Target IPv4 Address *';
+          valHint.innerText = 'e.g. 185.199.108.153';
+        } else {
+          valLabel.innerText = 'Record Target Value *';
+          valHint.innerText = '';
+        }
+      }
+      updateFqdnPreview();
+    }
+
+    function updateFqdnPreview() {
+      const host = (document.getElementById('recFormHost')?.value || '@').trim();
+      const preview = document.getElementById('recFormFqdnPreview');
+      if (!preview) return;
+      if (host === '@' || host === '') {
+        preview.innerText = currentZoneDomain;
+      } else {
+        preview.innerText = `${host}.${currentZoneDomain}`;
+      }
+    }
+
+    async function handleSaveRecordForm(e) {
+      e.preventDefault();
+      if (!isMasterAdmin(currentOperator)) {
+        return showAdminOnlyAlert();
+      }
+
+      const recId = document.getElementById('recFormId').value;
+      const type = document.getElementById('recFormType').value;
+      const host = document.getElementById('recFormHost').value.trim();
+      const priority = document.getElementById('recFormPriority').value;
+      const value = document.getElementById('recFormValue').value.trim();
+      const ttl = parseInt(document.getElementById('recFormTtl').value, 10) || 3600;
+      const purpose = document.getElementById('recFormPurpose').value.trim();
+
+      const payload = { type, host, priority, value, ttl, purpose };
+
+      try {
+        let res;
+        if (recId) {
+          // Update
+          res = await fetch(`/api/tenants/${encodeURIComponent(currentZoneDomain)}/records/${encodeURIComponent(recId)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Account': currentOperator },
+            body: JSON.stringify(payload)
+          }).then(r => r.json());
+        } else {
+          // Create
+          res = await fetch(`/api/tenants/${encodeURIComponent(currentZoneDomain)}/records`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Account': currentOperator },
+            body: JSON.stringify(payload)
+          }).then(r => r.json());
+        }
+
+        if (res.success) {
+          alert(`Record successfully saved for ${currentZoneDomain}!`);
+          closeModal('modalRecordForm');
+          loadZoneRecords(currentZoneDomain);
+          loadData();
+        } else {
+          alert('Error saving record: ' + res.error);
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    }
+
+    async function deleteZoneRecord(recordId) {
+      if (!isMasterAdmin(currentOperator)) {
+        return showAdminOnlyAlert();
+      }
+      const rec = activeZoneRecords.find(r => r.id === recordId);
+      const desc = rec ? `${rec.type} (${rec.host}) -> ${rec.value}` : recordId;
+      if (!confirm(`Are you sure you want to permanently delete this record?\n\n${desc}`)) return;
+
+      try {
+        const res = await fetch(`/api/tenants/${encodeURIComponent(currentZoneDomain)}/records/${encodeURIComponent(recordId)}`, {
+          method: 'DELETE',
+          headers: { 'X-Admin-Account': currentOperator }
+        }).then(r => r.json());
+
+        if (res.success) {
+          loadZoneRecords(currentZoneDomain);
+          loadData();
+        } else {
+          alert('Error deleting record: ' + res.error);
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    }
+
+    async function handlePresetSelect(preset) {
+      if (!preset) return;
+      document.getElementById('presetSelect').value = '';
+      if (!isMasterAdmin(currentOperator)) {
+        return showAdminOnlyAlert();
+      }
+
+      const presetNames = {
+        'single-mx': 'Single Sovereign MX (Priority 10)',
+        'dual-mx': 'Dual-MX Redundancy (Priority 10 & 20)',
+        'reset-all': 'Reset to Standard Sovereign Cluster'
+      };
+
+      if (!confirm(`Apply preset "${presetNames[preset] || preset}" to ${currentZoneDomain}?\n\nThis will adjust your mail routing records and priorities.`)) return;
+
+      try {
+        const res = await fetch(`/api/tenants/${encodeURIComponent(currentZoneDomain)}/records/preset`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Account': currentOperator },
+          body: JSON.stringify({ preset })
+        }).then(r => r.json());
+
+        if (res.success) {
+          alert(`Applied preset "${presetNames[preset] || preset}" to ${currentZoneDomain}!`);
+          loadZoneRecords(currentZoneDomain);
+          loadData();
+        } else {
+          alert('Error: ' + res.error);
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    }
+
+    function openExportZoneModal() {
+      document.getElementById('exportZoneDomainTitle').innerText = currentZoneDomain;
+      const zoneText = generateBindZone(currentZoneDomain, activeZoneRecords);
+      document.getElementById('exportZoneTextarea').value = zoneText;
+      openModal('modalExportZone');
+    }
+
+    function generateBindZone(domain, records) {
+      const now = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      let out = `; ====================================================================\n`;
+      out += `; RFC 1035 BIND ZONE BLUEPRINT FOR ${domain.toUpperCase()}\n`;
+      out += `; Exported from IRON ID Sovereign Mail Console\n`;
+      out += `; Serial: ${now}01\n`;
+      out += `; ====================================================================\n\n`;
+      out += `$ORIGIN ${domain}.\n`;
+      out += `$TTL 3600\n\n`;
+
+      for (const r of records) {
+        const host = r.host === '@' ? '@' : r.host;
+        const ttl = r.ttl || 3600;
+        if (r.type === 'MX') {
+          const target = r.value.endsWith('.') ? r.value : `${r.value}.`;
+          out += `${host.padEnd(24)} ${ttl.toString().padEnd(6)} IN  MX  ${String(r.priority || 10).padEnd(4)} ${target}\n`;
+        } else if (r.type === 'TXT') {
+          out += `${host.padEnd(24)} ${ttl.toString().padEnd(6)} IN  TXT "${r.value.replace(/"/g, '\\"')}"\n`;
+        } else if (r.type === 'CNAME') {
+          const target = r.value.endsWith('.') ? r.value : `${r.value}.`;
+          out += `${host.padEnd(24)} ${ttl.toString().padEnd(6)} IN  CNAME ${target}\n`;
+        } else {
+          out += `${host.padEnd(24)} ${ttl.toString().padEnd(6)} IN  ${r.type.padEnd(6)} ${r.value}\n`;
+        }
+      }
+      return out;
+    }
+
+    function copyZoneFileToClipboard() {
+      const text = document.getElementById('exportZoneTextarea').value;
+      copyTextToClipboard(text);
+      alert('Copied RFC BIND Zone File to clipboard!');
+    }
+
+    function copyTextToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escapeJs(str) {
+      if (!str) return '';
+      return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
     }
 
     function renderMailboxes() {
