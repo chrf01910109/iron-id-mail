@@ -73,11 +73,46 @@ const server = http.createServer(async (req, res) => {
     });
 
     proxyReq.on('error', (err) => {
+      let logSnippet = '';
+      try {
+        const logContent = fs.readFileSync('/var/log/stalwart.log', 'utf8');
+        logSnippet = logContent.split('\n').slice(-15).join('\n');
+      } catch (e) {
+        logSnippet = 'Log not available: ' + e.message;
+      }
       res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Stalwart proxy connection failed', details: err.message }));
+      res.end(JSON.stringify({
+        error: 'Stalwart proxy connection failed',
+        details: err.message,
+        target: `${STALWART_HOST}:${STALWART_PORT}${targetPath}`,
+        stalwartLog: logSnippet
+      }));
     });
 
     req.pipe(proxyReq);
+    return;
+  }
+
+  // 5. System Diagnostic Debug Route
+  if (reqUrl.pathname === '/debug') {
+    let logContent = '';
+    try { logContent = fs.readFileSync('/var/log/stalwart.log', 'utf8'); } catch(e) { logContent = e.message; }
+    let cfgContent = '';
+    try { cfgContent = fs.readFileSync('/opt/iron-id/config.json', 'utf8'); } catch(e) { cfgContent = e.message; }
+    let pgLogContent = '';
+    try { pgLogContent = fs.readFileSync('/var/log/postgresql/postgresql.log', 'utf8'); } catch(e) { pgLogContent = e.message; }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      env: {
+        PORT: process.env.PORT,
+        STALWART_PORT: process.env.STALWART_PORT,
+        DATABASE_URL_SET: !!process.env.DATABASE_URL
+      },
+      stalwartLog: logContent.slice(-4000),
+      postgresLog: pgLogContent.slice(-2000),
+      configJson: cfgContent
+    }, null, 2));
     return;
   }
 

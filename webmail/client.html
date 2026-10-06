@@ -1131,7 +1131,12 @@
         });
 
         if (!res.ok) {
-          throw new Error(res.status === 401 ? 'Invalid mailbox credentials' : 'HTTP ' + res.status + ': Failed to connect');
+          let errDetail = '';
+          try {
+            const errData = await res.json();
+            errDetail = errData.details || errData.error || '';
+          } catch(e) {}
+          throw new Error(res.status === 401 ? 'Invalid mailbox credentials' : `HTTP ${res.status}: ${errDetail || 'Failed to connect'}`);
         }
 
         const session = await res.json();
