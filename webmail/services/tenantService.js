@@ -7,7 +7,19 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const DATA_FILE = path.join(__dirname, '..', '..', 'engine', 'tenants.json');
+function resolveDataFile() {
+  const candidates = [
+    path.join(__dirname, '..', '..', 'engine', 'tenants.json'),
+    path.join('/opt/iron-id/engine/tenants.json'),
+    path.join(process.cwd(), 'engine', 'tenants.json'),
+    path.join(process.cwd(), '..', 'engine', 'tenants.json')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return candidates[0];
+}
+const DATA_FILE = resolveDataFile();
 
 // Default Seed Data
 const DEFAULT_STORE = {

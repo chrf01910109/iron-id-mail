@@ -1,57 +1,37 @@
 # ==============================================================================
 # IRON ID Sovereign Mail — All-in-One Railway VPS Container Configuration
-# All services run locally inside the single Railway container
+# Self-contained embedded RocksDB storage with pre-seeded accounts
 # ==============================================================================
 
 [server]
 hostname = "mail.iron-id.io"
 
+# ------------------------------------------------------------------------------
+# Storage Configuration (Embedded RocksDB)
+# ------------------------------------------------------------------------------
 [storage]
-data = "postgres"
-lookup = "postgres"
-blob = "s3"
-fts = "postgres"
+data = "rocksdb"
+blob = "rocksdb"
+lookup = "rocksdb"
+fts = "rocksdb"
 
-[store.postgres]
-type = "postgres"
-host = "127.0.0.1"
-port = 5432
-database = "stalwart_mail"
-user = "stalwart"
-password = "StalwartSecretPass2026!"
-max-connections = 32
-
-[store.s3]
-type = "s3"
-endpoint = "http://127.0.0.1:8333"
-region = "us-east-1"
-bucket = "iron-id-mail-blobs"
-access-key = "any"
-secret-key = "any"
-use-path-style = true
+[store.rocksdb]
+type = "rocksdb"
+path = "/opt/iron-id/data"
 compression = "lz4"
+cache-size = "128MB"
+write-buffer-size = "128MB"
 
+# ------------------------------------------------------------------------------
+# Directory Configuration (Internal Store)
+# ------------------------------------------------------------------------------
 [directory.internal]
 type = "internal"
-store = "postgres"
+store = "rocksdb"
 
+# ------------------------------------------------------------------------------
 # Network Listeners
-[server.listener."smtp"]
-bind = ["0.0.0.0:25", "[::]:25"]
-protocol = "smtp"
-
-[server.listener."submissions"]
-bind = ["0.0.0.0:465", "[::]:465"]
-protocol = "smtp"
-
-[server.listener."submission"]
-bind = ["0.0.0.0:587", "[::]:587"]
-protocol = "smtp"
-
-[server.listener."imaps"]
-bind = ["0.0.0.0:993", "[::]:993"]
-protocol = "imap"
-
+# ------------------------------------------------------------------------------
 [server.listener."http"]
 bind = ["127.0.0.1:8085"]
 protocol = "http"

@@ -7,8 +7,10 @@ engine/stalwart.exe
 *.exe
 
 # Local database runtime stores
-engine/data/
-data/
+engine/data/LOCK
+engine/data/*.log
+engine/data/LOG*
+/data/
 *.log
 
 # OS metadata
