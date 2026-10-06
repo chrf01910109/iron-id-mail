@@ -41,8 +41,12 @@ COPY webmail /opt/iron-id/webmail
 COPY deploy/init.sql /opt/iron-id/init.sql
 COPY deploy/railway/config.all-in-one.toml /opt/iron-id/config.toml
 COPY deploy/railway/entrypoint.sh /opt/iron-id/entrypoint.sh
+COPY server.js /opt/iron-id/server.js
+COPY package.json /opt/iron-id/package.json
 
 RUN chmod +x /opt/iron-id/entrypoint.sh \
+    && mkdir -p /app \
+    && ln -sf /opt/iron-id/server.js /app/server.js \
     && cd /opt/iron-id/webmail && npm install --production || true
 
 EXPOSE 3001 8080 25 465 587 993
