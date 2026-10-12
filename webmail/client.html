@@ -850,6 +850,7 @@
       <!-- Settings Tabs -->
       <div class="settings-tabs">
         <button onclick="switchSettingsTab('general')" id="stab-general" class="stab-btn active">Identity & Profile</button>
+        <button onclick="switchSettingsTab('security')" id="stab-security" class="stab-btn">Password</button>
         <button onclick="switchSettingsTab('preferences')" id="stab-preferences" class="stab-btn">Reading Preferences</button>
         <button onclick="switchSettingsTab('server')" id="stab-server" class="stab-btn">Server & Cryptography</button>
       </div>
@@ -877,6 +878,32 @@
               Save Profile Changes
             </button>
           </div>
+        </div>
+
+        <!-- TAB: Password -->
+        <div id="tab-security" class="tab-content">
+          <form id="pwForm" onsubmit="handleChangePassword(event)" style="display:flex; flex-direction:column; gap:12px;" autocomplete="on">
+            <input type="text" name="username" autocomplete="username" id="pwUsername" style="display:none;" readonly>
+            <div>
+              <label class="fl-label" for="pwCurrent">Current password</label>
+              <input id="pwCurrent" type="password" class="fl-input" autocomplete="current-password" required>
+            </div>
+            <div>
+              <label class="fl-label" for="pwNew">New password</label>
+              <input id="pwNew" type="password" class="fl-input" autocomplete="new-password" minlength="12" required>
+              <span style="font-size:11px; color:var(--color-text-faint);">At least 12 characters. A long passphrase is best.</span>
+            </div>
+            <div>
+              <label class="fl-label" for="pwConfirm">Confirm new password</label>
+              <input id="pwConfirm" type="password" class="fl-input" autocomplete="new-password" minlength="12" required>
+            </div>
+            <div id="pwStatus" role="status" style="display:none; font-size:12px; padding:8px 10px; border-radius:var(--radius-md);"></div>
+            <div style="padding-top:12px; border-top:1px solid var(--color-border-light);">
+              <button id="pwSubmitBtn" type="submit" class="act-btn" style="background:var(--color-accent); color:#fff; border:none;">
+                Change Password
+              </button>
+            </div>
+          </form>
         </div>
 
         <!-- TAB 2: Preferences -->
@@ -1776,6 +1803,8 @@
     /* ——— Settings Modal Operations ——— */
     function openSettings() {
       document.getElementById('settingsModal').classList.add('open');
+      const u = document.getElementById('pwUsername');
+      if (u) u.value = state.currentUser ? state.currentUser.email : '';
     }
 
     function closeSettings() {
@@ -1787,6 +1816,67 @@
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       document.getElementById('stab-' + tabName).classList.add('active');
       document.getElementById('tab-' + tabName).classList.add('active');
+    }
+
+    /* ——— Change Password (Stalwart x:AccountPassword/set) ——— */
+    function setPwStatus(msg, ok) {
+      const box = document.getElementById('pwStatus');
+      if (!msg) { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      box.textContent = msg;
+      box.style.color = ok ? 'var(--color-success)' : 'var(--color-danger)';
+      box.style.border = '1px solid ' + (ok ? 'var(--color-success)' : 'var(--color-danger)');
+    }
+
+    async function handleChangePassword(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const current = document.getElementById('pwCurrent').value;
+      const next = document.getElementById('pwNew').value;
+      const confirm = document.getElementById('pwConfirm').value;
+      const btn = document.getElementById('pwSubmitBtn');
+      setPwStatus('');
+
+      if (next.length < 12) return setPwStatus('New password must be at least 12 characters.', false);
+      if (next !== confirm) return setPwStatus('The two new passwords do not match.', false);
+      if (next === current) return setPwStatus('The new password must be different from the current one.', false);
+
+      btn.disabled = true;
+      btn.innerText = 'Changing…';
+      try {
+        const res = await fetch('/proxy/jmap', {
+          method: 'POST',
+          headers: { 'Authorization': state.authHeader, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            using: ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
+            methodCalls: [['x:AccountPassword/set', {
+              update: { singleton: { currentSecret: current, secret: next } }
+            }, 'pw1']]
+          })
+        });
+        if (res.status === 401) throw new Error('Your session has expired. Log in again, then retry.');
+        if (!res.ok) throw new Error('Server error (HTTP ' + res.status + '). Please try again.');
+
+        const data = await res.json();
+        const [name, result] = (data.methodResponses && data.methodResponses[0]) || [];
+        if (name === 'error') throw new Error((result && result.description) || 'The server rejected the request.');
+        if (result && result.updated && 'singleton' in result.updated) {
+          // Keep this session working with the new password.
+          const email = state.currentUser ? state.currentUser.email : '';
+          state.authHeader = 'Basic ' + btoa(email + ':' + next);
+          if (getStoredAuth()) saveAuth(email, next);
+          document.getElementById('pwForm').reset();
+          setPwStatus('Password changed. Use the new password next time you log in.', true);
+          showToast('Password changed', true);
+          return;
+        }
+        const failure = result && result.notUpdated && result.notUpdated.singleton;
+        throw new Error((failure && failure.description) || 'The password could not be changed.');
+      } catch (err) {
+        setPwStatus(String(err.message).replace(/secret/gi, 'password'), false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Change Password';
+      }
     }
 
     function saveProfileSettings() {
