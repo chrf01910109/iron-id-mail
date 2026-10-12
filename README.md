@@ -7,19 +7,24 @@ Consolidated, self-contained environment for the **IRON ID Mail Engine & Webmail
 ## Workspace Structure
 
 ```
-iron-id-workspace/
+iron-id-mail/
+├── server.js                    # Root entrypoint (Railway / `npm start`) → loads webmail/server.js
+├── package.json                 # Root scripts: `npm start`, `npm test`
 ├── engine/                      # IRON ID Core Mail Engine (Rust) & PostgreSQL / Data Store
-│   ├── stalwart.exe             # Core Engine binary (Windows x86_64)
+│   ├── stalwart.exe             # Core Engine binary (Windows x86_64) — local only, git-ignored
 │   ├── config.json              # Relational store configuration pointer
 │   ├── config.toml              # Engine TOML configuration reference
-│   └── data/                    # Data directory containing accounts & mailboxes
+│   ├── tenants.json             # Tenant / account seed definitions
+│   └── data/                    # Accounts & mailboxes — local only, git-ignored
 ├── webmail/                     # Frontend Client & JMAP Gateway
 │   ├── server.js                # Node.js transparent proxy & SPA webmail UI
+│   ├── client.html              # Webmail SPA
+│   ├── admin.html               # Admin console (requires ADMIN_TOKEN)
+│   ├── routes/ services/ scripts/
 │   └── package.json             # Service definition
-├── docs/                        # Specifications, Reports & Briefs
-│   ├── ANTIGRAVITY_SPEC.md      # Integration specification
-│   ├── IRON_ID_Group_Partner_Brief.pdf
-│   └── IRON_ID_Sovereign_Mail_Full_Project_Report.pdf
+├── deploy/                      # Docker Compose, Railway & VPS deployment scripts
+├── tests/                       # Verification & OpenSearch live test suites
+├── docs/                        # Specifications & architecture guides (PDF reports are git-ignored)
 ├── start-all.bat                # 1-click batch launcher
 ├── start-all.ps1                # 1-click PowerShell launcher
 └── README.md                    # Workspace guide
