@@ -28,13 +28,13 @@ Build and mount the IRON ID Workspace Webmail UI. Connect to the local IRON ID S
 
 &#x20;  - Email: charaf@iron-id.io
 
-&#x20;  - Password: Ch@r@firon-!D
+&#x20;  - Password: <your password>
 
 2\. Tenant Client:
 
 &#x20;  - Email: anis@client.dz
 
-&#x20;  - Password: anistestmail
+&#x20;  - Password: <password>
 
 
 

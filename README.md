@@ -29,10 +29,20 @@ iron-id-workspace/
 
 ## Verified User Directory
 
-| User | Email | Password | Account ID | Identity ID |
-| :--- | :--- | :--- | :--- | :--- |
-| **Tenant Primary** | `charaf@iron-id.io` | `Ch@r@firon-!D` | `c` | `b` |
-| **Client / Tenant** | `anis@client.dz` | `anistestmail` | `e` | `d` |
+| User | Email | Account ID | Identity ID |
+| :--- | :--- | :--- | :--- |
+| **Tenant Primary** | `charaf@iron-id.io` | `c` | `b` |
+| **Client / Tenant** | `anis@client.dz` | `e` | `d` |
+
+Passwords are not stored in this repo. Keep them in a password manager.
+
+## Required environment variables (Railway)
+
+| Variable | Purpose |
+| :--- | :--- |
+| `ADMIN_TOKEN` | Required. Long random secret; the `/admin` console asks for it. Without it the admin API is disabled. |
+| `DEBUG_TOKEN` | Optional. Enables `/debug?token=<DEBUG_TOKEN>`. Unset = `/debug` returns 404. |
+| `SEED_ADMIN_PASSWORD`, `SEED_CHARAF_PASSWORD`, `SEED_ANIS_PASSWORD` | Optional. Only used if `engine/tenants.json` has to be recreated. |
 
 ---
 

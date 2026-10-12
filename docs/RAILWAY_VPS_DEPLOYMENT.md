@@ -70,7 +70,7 @@ Railway will automatically build the Ubuntu 24.04 image, download IRON ID Core E
 
 1. **Access Webmail**:  
    Open `https://mail.iron-id.io` (or your `.up.railway.app` URL).  
-   Log in with `charaf@iron-id.io` / `Ch@r@firon-!D`.
+   Log in with `charaf@iron-id.io` / `<your password>`.
 2. **Access Admin Console**:  
    Open `https://mail.iron-id.io/admin`.  
    Provision new tenant domains, adjust mailbox quotas, and run live DNS checks.

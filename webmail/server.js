@@ -96,13 +96,24 @@ const server = http.createServer(async (req, res) => {
 
   // 5. System Diagnostic Debug Route
   if (reqUrl.pathname === '/debug') {
+    // Disabled unless DEBUG_TOKEN is set; then require ?token=<DEBUG_TOKEN>.
+    const debugToken = process.env.DEBUG_TOKEN || '';
+    if (!debugToken || reqUrl.searchParams.get('token') !== debugToken) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not Found');
+      return;
+    }
     let logContent = '';
     try {
       const logPath = '/var/log/ironid-engine.log';
       if (fs.existsSync(logPath)) logContent = fs.readFileSync(logPath, 'utf8');
     } catch(e) { logContent = e.message; }
     let cfgContent = '';
-    try { cfgContent = fs.readFileSync('/opt/iron-id/config.json', 'utf8'); } catch(e) { cfgContent = e.message; }
+    try {
+      const cfg = JSON.parse(fs.readFileSync('/opt/iron-id/config.json', 'utf8'));
+      if (cfg.authSecret) cfg.authSecret = '[REDACTED]';
+      cfgContent = JSON.stringify(cfg, null, 2);
+    } catch(e) { cfgContent = e.message; }
     let pgLogContent = '';
     try { pgLogContent = fs.readFileSync('/var/log/postgresql/postgresql.log', 'utf8'); } catch(e) { pgLogContent = e.message; }
     res.writeHead(200, { 'Content-Type': 'application/json' });

@@ -21,6 +21,11 @@ function resolveDataFile() {
 }
 const DATA_FILE = resolveDataFile();
 
+// Seed passwords come from env vars; if unset, a random one is used (never hardcoded).
+function seedPassword(envName) {
+  return process.env[envName] || crypto.randomBytes(18).toString('base64url');
+}
+
 // Default Seed Data
 const DEFAULT_STORE = {
   tenants: {
@@ -74,7 +79,7 @@ const DEFAULT_STORE = {
       displayName: 'IRON ID Master Administrator',
       role: 'superadmin',
       status: 'active',
-      passwordHash: hashPassword('AdminIronID2026!'),
+      passwordHash: hashPassword(seedPassword('SEED_ADMIN_PASSWORD')),
       storageQuotaMb: 51200,
       usedStorageMb: 0.1,
       dailySendLimit: 5000,
@@ -90,7 +95,7 @@ const DEFAULT_STORE = {
       displayName: 'Charaf Sellam',
       role: 'admin',
       status: 'active', // 'active' | 'suspended'
-      passwordHash: hashPassword('Ch@r@firon-!D'),
+      passwordHash: hashPassword(seedPassword('SEED_CHARAF_PASSWORD')),
       storageQuotaMb: 10240,
       usedStorageMb: 42.5,
       dailySendLimit: 1000,
@@ -106,7 +111,7 @@ const DEFAULT_STORE = {
       displayName: 'Anis Client',
       role: 'tenant_user',
       status: 'active',
-      passwordHash: hashPassword('anistestmail'),
+      passwordHash: hashPassword(seedPassword('SEED_ANIS_PASSWORD')),
       storageQuotaMb: 5120,
       usedStorageMb: 14.8,
       dailySendLimit: 250,
@@ -163,7 +168,7 @@ class TenantService {
             displayName: 'IRON ID Master Administrator',
             role: 'superadmin',
             status: 'active',
-            passwordHash: hashPassword('AdminIronID2026!'),
+            passwordHash: hashPassword(seedPassword('SEED_ADMIN_PASSWORD')),
             storageQuotaMb: 51200,
             usedStorageMb: 0.1,
             dailySendLimit: 5000,

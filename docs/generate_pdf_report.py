@@ -526,7 +526,7 @@ def build_pdf(filename):
                   "This routes incoming web traffic to the Sovereign Webmail Client and Admin Console instead of the raw engine.", bullet_style),
         Paragraph("<b>Step 2: Sign In & Verify Mailbox Hierarchy</b><br/>"
                   "Visit <code>https://&lt;your-project&gt;.up.railway.app/</code> and sign in with master credentials: "
-                  "<b>Email:</b> <code>charaf@iron-id.io</code> | <b>Password:</b> <code>Ch@r@firon-!D</code>.", bullet_style),
+                  "<b>Email:</b> <code>charaf@iron-id.io</code> | <b>Password:</b> <code><your password></code>.", bullet_style),
         Paragraph("<b>Step 3: Publish Cryptographic DNS Records</b><br/>"
                   "Open <code>https://&lt;your-project&gt;.up.railway.app/admin</code>, view the DNS Health Plan, and publish the generated MX, SPF, DKIM (<code>ironid._domainkey</code>), and DMARC TXT records in Cloudflare/DNS. "
                   "Click <b>Run Audit</b> in the console until the health score reaches 100/100.", bullet_style),

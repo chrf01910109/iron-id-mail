@@ -165,7 +165,7 @@ iron-id-workspace/
 | **Master Admin Account** | `admin@iron-id.io` | Full system privileges |
 | **User Mailbox 1** | `charaf@iron-id.io` | Sovereign user |
 | **User Mailbox 2** | `issam@iron-id.io` | Namecheap Private Email user |
-| **Default Password (Dev)** | `Sovereign2026!` (or provisioned per tenant) | Configured in seed |
+| **Default Password (Dev)** | (removed — kept in password manager) | Configured in seed |
 | **Engine Port (Internal)** | `8080` (JMAP HTTP) | Stalwart Rust engine |
 | **Gateway Port** | `3001` (HTTP/HTTPS) | Node.js reverse proxy |
 | **OpenSearch Port** | `9200` (HTTP) | OpenSearch 2.x |

@@ -134,6 +134,6 @@ Once running on the VPS:
    👉 `http://<YOUR_VPS_IP>:3001/admin`
 2. **Send Test Email to External Address**:
    * Open Webmail at `http://<YOUR_VPS_IP>:3001`
-   * Log in with `charaf@iron-id.io` / `Ch@r@firon-!D`
+   * Log in with `charaf@iron-id.io` / `<your password>`
    * Compose an email to a real Gmail or Outlook account.
    * Send to [Mail-Tester.com](https://www.mail-tester.com) to verify a **10/10 Deliverability Score**!

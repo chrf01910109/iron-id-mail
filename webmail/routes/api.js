@@ -6,6 +6,20 @@
 const tenantService = require('../services/tenantService');
 const dnsValidator = require('../services/dnsValidator');
 const openSearchService = require('../services/openSearchService');
+const crypto = require('crypto');
+
+// Every /api/* call must carry `Authorization: Bearer <ADMIN_TOKEN>`.
+// If ADMIN_TOKEN is not set on the server, the admin API stays closed.
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+
+function hasValidAdminToken(req) {
+  if (!ADMIN_TOKEN) return false;
+  const auth = req.headers['authorization'] || '';
+  if (!auth.startsWith('Bearer ')) return false;
+  const given = Buffer.from(auth.slice(7).trim());
+  const expected = Buffer.from(ADMIN_TOKEN);
+  return given.length === expected.length && crypto.timingSafeEqual(given, expected);
+}
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
@@ -28,12 +42,11 @@ function parseBody(req) {
   });
 }
 
+// Only called after the admin token has been verified. X-Admin-Account is just the
+// operator label chosen in the console (used for master/non-master permissions).
 function getRequester(req) {
   const fromHeader = req.headers['x-admin-account'] || req.headers['x-authenticated-user'] || '';
-  if (fromHeader) return fromHeader.trim().toLowerCase();
-  const auth = req.headers['authorization'] || '';
-  if (auth.startsWith('Bearer ')) return auth.slice(7).trim().toLowerCase();
-  return '';
+  return fromHeader ? fromHeader.trim().toLowerCase() : 'admin@iron-id.io';
 }
 
 function sendJson(res, statusCode, data) {
@@ -55,6 +68,16 @@ async function handleApiRequest(req, res, pathname) {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Account, X-Authenticated-User'
     });
     res.end();
+    return true;
+  }
+
+  if (!hasValidAdminToken(req)) {
+    sendJson(res, ADMIN_TOKEN ? 401 : 503, {
+      success: false,
+      error: ADMIN_TOKEN
+        ? 'Admin token missing or invalid.'
+        : 'Admin API disabled: set the ADMIN_TOKEN environment variable on the server.'
+    });
     return true;
   }
 

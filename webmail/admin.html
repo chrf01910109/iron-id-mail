@@ -1158,6 +1158,31 @@
       </div>
     </div>
   <script>
+    // Admin API authentication: token kept for this browser tab session only.
+    (function () {
+      const KEY = 'ironid_admin_token';
+      const nativeFetch = window.fetch.bind(window);
+      function readToken() { try { return sessionStorage.getItem(KEY); } catch (e) { return window.__ironidToken || null; } }
+      function saveToken(t) { try { sessionStorage.setItem(KEY, t); } catch (e) { window.__ironidToken = t; } }
+      function clearToken() { try { sessionStorage.removeItem(KEY); } catch (e) {} window.__ironidToken = null; }
+      function getToken() {
+        let t = readToken();
+        if (!t) {
+          t = (window.prompt('IRON ID admin token:') || '').trim();
+          if (t) saveToken(t);
+        }
+        return t || '';
+      }
+      window.fetch = async function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (!url.startsWith('/api/')) return nativeFetch(input, init);
+        init = Object.assign({}, init || {});
+        init.headers = Object.assign({}, init.headers || {}, { Authorization: 'Bearer ' + getToken() });
+        const res = await nativeFetch(input, init);
+        if (res.status === 401) clearToken();
+        return res;
+      };
+    })();
     let tenants = [];
     let mailboxes = [];
     let currentOperator = localStorage.getItem('ironid_operator_email') || 'admin@iron-id.io';

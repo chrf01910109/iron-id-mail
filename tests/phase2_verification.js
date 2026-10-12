@@ -21,6 +21,7 @@ function requestJson(method, path, body = null, customHeaders = {}) {
       headers: {
         'Content-Type': 'application/json',
         'X-Admin-Account': 'admin@iron-id.io',
+        'Authorization': 'Bearer ' + (process.env.ADMIN_TOKEN || ''),
         ...customHeaders
       }
     };
