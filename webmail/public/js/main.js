@@ -45,6 +45,10 @@ function pickedLang() {
 fetch('/signup-api/config', { credentials: 'same-origin' }).then(r => r.json())
   .then(c => { if (c && c.enabled) $('#loginSignup').classList.remove('hidden'); domains.setPlatformDomain(c && c.ownDomains ? c.domain : null); })
   .catch(() => domains.setPlatformDomain(null));
+// "Forgot your password?", only when recovery by email is open.
+fetch('/recover-api/config', { credentials: 'same-origin' }).then(r => r.json())
+  .then(c => { if (c && c.enabled) $('#loginForgot').classList.remove('hidden'); })
+  .catch(() => {});
 
 for (const b of document.querySelectorAll('.login-lang [data-lang]')) {
   b.setAttribute('aria-pressed', String(b.dataset.lang === pageLang));

@@ -232,7 +232,7 @@ function check(label, items, dict) {
 (async () => {
   const clientFr = await loadClientFr();
   const { found: jsFound, dynamic } = clientMessages();
-  const htmlFound = ['index.html', 'admin.html', 'signup.html'].flatMap(f => htmlMessages(path.join(PUB, f)));
+  const htmlFound = ['index.html', 'admin.html', 'signup.html', 'forgot.html'].flatMap(f => htmlMessages(path.join(PUB, f)));
   const client = check('client', [...jsFound, ...htmlFound], clientFr);
   const server = check('server', serverMessages(), serverFr);
 

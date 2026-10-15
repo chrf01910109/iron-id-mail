@@ -287,6 +287,31 @@
           </section>
 
           <section class="sec-card">
+            <h4>Recovery address</h4>
+            <p class="muted small">An address outside IRON ID (Gmail, Outlook…) where a link to choose a new password can be sent if you forget yours.</p>
+            <ul class="sec-list"><li><span class="grow muted">Current</span><b id="recCurrent" data-no-i18n></b></li></ul>
+            <p id="recNote" class="muted small hidden"></p>
+            <form id="recForm" class="stack">
+              <div class="two-col">
+                <div>
+                  <label class="fl-label" for="recEmail">Recovery address (empty to remove)</label>
+                  <input id="recEmail" class="fl-input" type="email" maxlength="254" autocomplete="email" placeholder="you@gmail.com" data-no-i18n>
+                </div>
+                <div>
+                  <label class="fl-label" for="recPassword">Your password</label>
+                  <input id="recPassword" class="fl-input" type="password" autocomplete="current-password" required>
+                </div>
+              </div>
+              <div id="recCodeRow" class="hidden">
+                <label class="fl-label" for="recCode">6-digit code from your authenticator app</label>
+                <input id="recCode" class="fl-input code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
+              </div>
+              <div id="recStatus" class="form-status" role="status"></div>
+              <div class="row-actions"><button id="recSubmitBtn" type="submit" class="act-btn">Save recovery address</button></div>
+            </form>
+          </section>
+
+          <section class="sec-card">
             <h4>Two-step sign-in <span id="twoStepBadge" class="sec-badge">Off</span></h4>
             <p class="muted small">After your password, sign-in asks for a 6-digit code from an authenticator app on your phone (Google Authenticator, Microsoft Authenticator, 2FAS…). A stolen password alone is then not enough.</p>
             <div id="twoStepOff">
@@ -478,6 +503,7 @@
         </div>
         <button id="loginSubmitBtn" type="submit" class="login-submit-btn"><span>Sign in</span></button>
       </form>
+      <div id="loginForgot" class="login-signup small muted hidden"><a href="/forgot" class="su-link">Forgot your password?</a></div>
       <div id="loginSignup" class="login-signup small muted hidden">No IRON ID mailbox yet? <a href="/signup" class="su-link">Create one</a></div>
       <div class="login-presets login-lang" role="group" aria-label="Language">
         <button type="button" class="preset-btn" data-lang="en" lang="en" data-no-i18n>English</button>

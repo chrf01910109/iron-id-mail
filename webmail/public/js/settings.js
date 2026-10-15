@@ -24,6 +24,7 @@ export function init({ profileChanged }) {
   for (const b of $$('.stab-btn')) b.addEventListener('click', () => tab(b.dataset.tab));
   $('#profileForm').addEventListener('submit', saveProfile);
   $('#pwForm').addEventListener('submit', changePassword);
+  $('#recForm').addEventListener('submit', saveRecovery);
   $('#vacationForm').addEventListener('submit', saveVacation);
   $('#prefsForm').addEventListener('submit', savePreferences);
   $('#twoStepStart').addEventListener('click', startTwoStep);
@@ -55,7 +56,7 @@ export function open(which = 'general') {
   $('#prefConfirmDelete').checked = !!p.confirmDelete;
   $('#prefRemoteImages').value = p.remoteImages === 'always' ? 'always' : 'ask';
   $('#prefLang').value = lang;
-  for (const id of ['profileStatus', 'pwStatus', 'vacStatus', 'twoStepStatus', 'sessionStatus', 'appPwStatus']) status(id, '');
+  for (const id of ['profileStatus', 'pwStatus', 'vacStatus', 'twoStepStatus', 'sessionStatus', 'appPwStatus', 'recStatus']) status(id, '');
   $('#appPwNew').classList.add('hidden'); $('#appPwSecret').textContent = '';
   $('#stab-vacation').classList.toggle('hidden', !api.hasCapability(api.CAP.vacation));
   tab(which);
@@ -68,7 +69,7 @@ export function open(which = 'general') {
 export function close() {
   modal().classList.remove('open');
   modal().setAttribute('aria-hidden', 'true');
-  for (const f of ['#pwForm', '#twoStepSetup', '#twoStepOn', '#appPwForm']) $(f).reset();
+  for (const f of ['#pwForm', '#twoStepSetup', '#twoStepOn', '#appPwForm', '#recForm']) $(f).reset();
   $('#appPwNew').classList.add('hidden'); $('#appPwSecret').textContent = '';
   setup = null;
 }
@@ -129,7 +130,41 @@ async function loadSecurity() {
     if (!(e instanceof api.SessionEndedError)) status('sessionStatus', t('Could not load security settings: {error}', { error: e.message }), false);
     return;
   }
-  renderTwoStep(); renderSessions(); renderAppPasswords(); renderSignIns();
+  renderTwoStep(); renderSessions(); renderAppPasswords(); renderSignIns(); renderRecovery();
+}
+
+/* ——— Recovery address ("Forgot password?") ——— */
+function renderRecovery() {
+  const r = security.recovery;
+  $('#recCurrent').textContent = r ? r.email : t('None');
+  if (!$('#recEmail').value) $('#recEmail').value = r ? r.email : '';
+  const note = security.twoStep ? t('With two-step sign-in on, a forgotten password is reset by an administrator, not by email.')
+    : !security.passwordReset ? t('"Forgot your password?" is not available yet; your recovery address is kept for when it is.') : '';
+  $('#recNote').textContent = note;
+  $('#recNote').classList.toggle('hidden', !note);
+}
+
+async function saveRecovery(e) {
+  e.preventDefault();
+  const recoveryEmail = $('#recEmail').value.trim(), currentPassword = $('#recPassword').value;
+  const code = $('#recCode').value.replace(/\s+/g, '');
+  status('recStatus', '');
+  if (security.twoStep && !/^\d{6}$/.test(code)) return status('recStatus', t('Enter the 6-digit code from your authenticator app.'), false);
+  const btn = $('#recSubmitBtn');
+  btn.disabled = true;
+  try {
+    const r = await api.account('recovery', { recoveryEmail, currentPassword, code });
+    security.recovery = r.recovery;
+    $('#recPassword').value = ''; $('#recCode').value = '';
+    $('#recEmail').value = r.recovery ? r.recovery.email : '';
+    renderRecovery();
+    status('recStatus', r.recovery ? t('Recovery address saved.') : t('Recovery address removed.'), true);
+  } catch (err) {
+    if (err.data && err.data.needCode) { security.twoStep = true; renderTwoStep(); }
+    status('recStatus', err.message, false);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function renderTwoStep() {
@@ -140,6 +175,7 @@ function renderTwoStep() {
   $('#twoStepOff').classList.toggle('hidden', on);
   $('#twoStepOn').classList.toggle('hidden', !on);
   $('#pwCodeRow').classList.toggle('hidden', !on);
+  $('#recCodeRow').classList.toggle('hidden', !on);
   if (!on && !setup) { $('#twoStepSetup').classList.add('hidden'); $('#twoStepStart').classList.remove('hidden'); }
 }
 

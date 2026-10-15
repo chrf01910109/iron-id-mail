@@ -90,6 +90,19 @@ async function get(path, opts = {}) {
   if (suCfg.enabled === false) check('sign-up is switched off: nothing can be created', suCreate.status === 403, 'HTTP ' + suCreate.status);
   else check('sign-up refuses a request without the security check', suCreate.status === 400, 'HTTP ' + suCreate.status + (suCfg.enabled ? ' (sign-up is ON here)' : ''));
 
+  // 8b. "Forgot password?": off, or on without telling which addresses exist
+  let fpCfg = {}; try { fpCfg = JSON.parse((await get('/recover-api/config')).text); } catch (e) { /* not JSON */ }
+  const fpAsk = email => fetch(base + '/recover-api/request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }) });
+  if (fpCfg.enabled === true) {
+    const [a, b] = [await fpAsk('nobody-' + Date.now() + '@iron-id.io'), await fpAsk('postmaster@iron-id.io')];
+    check('forgot-password gives the same answer for any address', a.status === 200 && b.status === 200 && (await a.text()) === (await b.text()), `HTTP ${a.status}/${b.status}`);
+  } else {
+    const fpReq = await fpAsk('nobody@iron-id.io');
+    check('forgot-password is switched off: no link can be asked for', fpReq.status === 403, 'HTTP ' + fpReq.status);
+  }
+  const fpEvil = await fetch(base + '/recover-api/reset', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.example' }, body: '{}' });
+  check('forgot-password refuses other websites', fpEvil.status === 403, 'HTTP ' + fpEvil.status);
+
   // 9. Health endpoint shows no secrets
   const hz = await get('/healthz');
   check('healthz has no secrets', hz.status === 200 && !/password|secret|token|postgres(ql)?:\/\//i.test(hz.text), hz.text.slice(0, 160));

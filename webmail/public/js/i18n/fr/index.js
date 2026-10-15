@@ -16,5 +16,6 @@ import settings from './settings.js';
 import admin from './admin.js';
 import signup from './signup.js';
 import domains from './domains.js';
+import forgot from './forgot.js';
 
-export default Object.freeze(Object.assign({}, common, indexhtml, adminhtml, main, api, util, mail, list, reader, sidebar, labels, safeHtml, compose, settings, admin, signup, domains));
+export default Object.freeze(Object.assign({}, common, indexhtml, adminhtml, main, api, util, mail, list, reader, sidebar, labels, safeHtml, compose, settings, admin, signup, domains, forgot));

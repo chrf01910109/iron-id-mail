@@ -151,6 +151,20 @@ CREATE TABLE IF NOT EXISTS cp.signup_puzzles (
   used_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- "Forgot password?" links (off unless PASSWORD_RESET_ENABLED=true). Only the SHA-256 of the
+-- link's secret is kept; a link works once, until expires_at.
+CREATE TABLE IF NOT EXISTS cp.password_resets (
+  id          BIGSERIAL PRIMARY KEY,
+  email       TEXT NOT NULL,
+  token_hash  TEXT NOT NULL UNIQUE,
+  sent_to     TEXT NOT NULL,
+  ip          TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS password_resets_email ON cp.password_resets (email, created_at);
+
 -- Billing (2026-10): personal customers own the domains a person connects or buys from the webmail.
 ALTER TABLE cp.customers ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'business';
 ALTER TABLE cp.customers ADD COLUMN IF NOT EXISTS owner_email TEXT;

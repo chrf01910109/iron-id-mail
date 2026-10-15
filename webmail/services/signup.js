@@ -404,4 +404,4 @@ async function handle(req, res, url, { readJson, sendJson, sendBodyError, isCros
   }
 }
 
-module.exports = { handle, enabled, networkOf, nameProblem, passwordProblem, check, challenge, usePuzzle, DOMAIN, TERMS_VERSION, WELCOME };
+module.exports = { handle, enabled, networkOf, brake, nameProblem, passwordProblem, check, challenge, usePuzzle, DOMAIN, TERMS_VERSION, WELCOME };

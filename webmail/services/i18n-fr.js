@@ -49,6 +49,13 @@ const FR = {
 
   /* ——— Sign-up (signup.js) ——— */
   'Sign-up is not open yet.': 'Les inscriptions ne sont pas encore ouvertes.',
+  /* ——— Forgot password (passwordReset.js) ——— */
+  'Password recovery is not open yet.': 'La récupération du mot de passe n’est pas encore ouverte.',
+  'Enter a valid email address.': 'Saisissez une adresse e-mail valide.',
+  'Use another address than this mailbox.': 'Utilisez une autre adresse que cette boîte mail.',
+  'This link has expired or was already used. Ask for a new one.': 'Ce lien a expiré ou a déjà été utilisé. Demandez-en un nouveau.',
+  'Your password can’t be reset this way. Ask your administrator.': 'Votre mot de passe ne peut pas être réinitialisé de cette façon. Demandez à votre administrateur.',
+  'Enter your full IRON ID address, like name@iron-id.io.': 'Saisissez votre adresse IRON ID complète, par exemple nom@iron-id.io.',
   'The security check did not work. Please run it again.': 'La vérification de sécurité n’a pas fonctionné. Veuillez la relancer.',
   'Too many requests. Please wait a few minutes and try again.': 'Trop de demandes. Veuillez patienter quelques minutes, puis réessayer.',
   'Enter your first name.': 'Saisissez votre prénom.',

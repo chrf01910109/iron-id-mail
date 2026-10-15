@@ -54,5 +54,11 @@ export default {
   'Automatic reply is on.': 'La réponse automatique est activée.',
   'Automatic reply is off.': 'La réponse automatique est désactivée.',
   // Preferences
-  'Preferences saved': 'Préférences enregistrées'
+  'Preferences saved': 'Préférences enregistrées',
+  // Recovery address
+  'None': 'Aucune',
+  'With two-step sign-in on, a forgotten password is reset by an administrator, not by email.': 'Avec la validation en deux étapes, un mot de passe oublié est réinitialisé par un administrateur, pas par e-mail.',
+  '"Forgot your password?" is not available yet; your recovery address is kept for when it is.': '« Mot de passe oublié ? » n’est pas encore disponible ; votre adresse de récupération est conservée pour le moment où il le sera.',
+  'Recovery address saved.': 'Adresse de récupération enregistrée.',
+  'Recovery address removed.': 'Adresse de récupération supprimée.'
 };

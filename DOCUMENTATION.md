@@ -201,6 +201,26 @@ Limits: 3 accounts a day per network (IPv4 address, or IPv6 /64) — `SIGNUP_PER
 (messages a day to outside addresses for new accounts — recorded per sign-up now, enforced when outgoing mail
 moves to the VPS). The sign-in card shows "No IRON ID mailbox yet? Create one" only while sign-up is on.
 
+### 4.5b "Forgot password?" — built, switched off in production
+On only with `PASSWORD_RESET_ENABLED=true` (and `PUBLIC_URL`, or Railway's public domain, for the link). It stays **off
+in production** until IRON ID's own server sends mail to outside addresses (the VPS): before that, the link would not
+arrive or would land in spam.
+- **Recovery address**: Settings → Security → Recovery address (confirmed with the password, and the code when two-step is
+  on); sign-up asks for it too. It must be outside IRON ID. Kept in `cp.recovery`; marked verified once a link sent there is used.
+- **Asking** (`/forgot`, link "Forgot your password?" on the sign-in card): the answer is always the same, whether or not the
+  address exists; the work happens after answering. At most 3 links per mailbox an hour, plus limits per network.
+- **The link** `/forgot#token=…` (32 random bytes, only the SHA-256 kept in `cp.password_resets`) works once, for 30 minutes;
+  a newer link replaces older ones. The token sits in the URL fragment (never sent to a server, removed from the address bar).
+- **After the reset**: the new password is checked like sign-up's (12+ characters, not common, not the name); every browser
+  and mail app of that mailbox is signed out (the credentials are replaced, which also removes app passwords).
+- **Left out**: admins (`cp.admins` / `PLATFORM_ADMINS`), engine-managed accounts (Admin role, special permissions),
+  suspended mailboxes and mailboxes with two-step sign-in (an email alone must not get past the second step). They ask an
+  administrator: admin console → Mailboxes → Reset sign-in.
+- **Sender**: the mailbox `no-reply@<platform domain>`, created by the gateway on first use (random password, encrypted in
+  `cp.settings`, 50 MB). The message is in the account's language.
+- Audit: `recovery.link_requested` (with the outcome, never shown to the requester), `recovery.password_reset`,
+  `account.recovery_set` / `account.recovery_removed`.
+
 ### 4.6 Own domains and payments ("Pro" mail) — built, switched off in production
 The offer (France): the free mailbox name@iron-id.io has **5 GB**. Addresses on the person's own domain
 (contact@company.fr) arrive in the **same mailbox** and share those 5 GB. On, only with `OWN_DOMAINS_ENABLED=true`.
@@ -300,6 +320,7 @@ are in the engine's own tables in the same database. `ironid_meta` (public schem
 | `TRUST_PROXY` | no | Default `true` (Railway). Set `false` if the gateway is reached directly, so clients can't choose their address for the sign-in brake |
 | `TOTP_ISSUER` | no | Name shown in authenticator apps (default IRON ID) |
 | `SIGNUP_ENABLED` | no | `true` opens `/signup` (name@iron-id.io). **Leave unset in production until the VPS and the iron-id.io MX move** |
+| `PASSWORD_RESET_ENABLED` | no | `true` opens "Forgot password?" (`/forgot`), sending a link to the recovery address. **Leave unset until outgoing mail works (the VPS)**; needs `PUBLIC_URL` or Railway's public domain |
 | `OWN_DOMAINS_ENABLED` | no | `true` shows "Your domains" in the webmail (connect €2 / buy €14). Leave unset until payments and the registrar are ready |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | for payments | Stripe keys (`sk_live_…`, `whsec_…`). Test keys (`sk_test_…`) only while trying it |
 | `PUBLIC_URL` | recommended | `https://<domain>` — return links from the payment page |

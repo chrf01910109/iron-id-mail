@@ -65,6 +65,7 @@ docker run -d --name "$APP" --network host \
   -e OPENSEARCH_PASSWORD="$OPENSEARCH_PASSWORD" \
   -e PLATFORM_ADMINS=e2e-platform-admin@iron-id.io \
   -e SIGNUP_ENABLED=true -e OWN_DOMAINS_ENABLED=true -e PAYMENTS_FAKE=true -e REGISTRAR=fake -e IRONID_MIGRATION_TEST=true \
+  -e PASSWORD_RESET_ENABLED=true -e PUBLIC_URL=http://127.0.0.1:3001 \
   -e IRONID_DNS_FAKE=/run/ironid-dns-fake.json -v "$DNS_FAKE_FILE:/run/ironid-dns-fake.json:ro" \
   ironid:e2e >/dev/null
 

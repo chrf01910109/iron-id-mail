@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light">
+  <title>Reset your IRON ID password</title>
+  <meta name="description" content="Get a link to choose a new password for your IRON ID mailbox.">
+  <link rel="icon" href="/app/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app/base.css">
+  <link rel="stylesheet" href="/app/app.css">
+  <script type="module" src="/app/js/forgot.js"></script>
+</head>
+<body class="signup-page">
+
+  <header class="header">
+    <a class="hdr-brand" href="/" style="text-decoration:none;color:inherit">
+      <div class="hdr-brand-icon">ID</div>
+      <span class="hdr-brand-name">IRON ID</span>
+      <span class="hdr-brand-badge">MAIL</span>
+    </a>
+  </header>
+
+  <main class="signup-wrap">
+    <div class="login-card signup-card">
+      <div class="login-brand">
+        <div class="hdr-brand-icon login-logo">ID</div>
+        <div>
+          <div class="login-title">IRON ID Mail</div>
+          <div class="muted small">Forgot your password?</div>
+        </div>
+      </div>
+
+      <div id="fpClosed" class="login-alert info hidden">Password recovery by email isn't available yet. Ask your administrator to reset your sign-in.</div>
+
+      <!-- 1. Ask for a link -->
+      <form id="fpAsk" class="stack hidden" novalidate>
+        <p class="small">Enter your IRON ID address. If it has a recovery address, we'll send a link there to choose a new password.</p>
+        <div>
+          <label class="fl-label" for="fpEmail">Your IRON ID address</label>
+          <input id="fpEmail" class="login-input" type="email" maxlength="254" autocomplete="username" placeholder="you@iron-id.io" data-no-i18n required>
+        </div>
+        <div id="fpAskError" class="hidden" role="alert"></div>
+        <button id="fpAskBtn" type="submit" class="login-submit-btn"><span>Send me a link</span></button>
+        <p class="muted small">Administrators and mailboxes with two-step sign-in can't reset this way: ask an administrator (Mailboxes → Reset sign-in).</p>
+      </form>
+      <div id="fpSent" class="login-alert info hidden" role="status">If that address has a recovery address, a link is on its way. It works for 30 minutes. Check the spam folder too.</div>
+
+      <!-- 2. Choose the new password (from the link) -->
+      <form id="fpReset" class="stack hidden" novalidate autocomplete="on">
+        <input id="fpUser" type="email" autocomplete="username" class="hidden" tabindex="-1" aria-hidden="true">
+        <ul class="sec-list"><li><span class="grow muted">Mailbox</span><b id="fpWho" data-no-i18n></b></li></ul>
+        <div>
+          <label class="fl-label" for="fpPw">New password (12+ characters)</label>
+          <input id="fpPw" class="login-input" type="password" maxlength="128" autocomplete="new-password" required>
+          <div class="muted small" style="margin-top:4px">A short sentence works well. Common and leaked passwords are refused.</div>
+        </div>
+        <div>
+          <label class="fl-label" for="fpPw2">Repeat new password</label>
+          <input id="fpPw2" class="login-input" type="password" maxlength="128" autocomplete="new-password" required>
+          <label class="check-row" style="margin-top:8px"><input id="fpShow" type="checkbox"> <span>Show password</span></label>
+        </div>
+        <div id="fpResetError" class="hidden" role="alert"></div>
+        <button id="fpResetBtn" type="submit" class="login-submit-btn"><span>Save the new password</span></button>
+        <p class="muted small">Every browser and mail app signed in to this mailbox will be signed out.</p>
+      </form>
+      <div id="fpBadLink" class="login-alert hidden" role="alert">This link has expired or was already used. Ask for a new one.</div>
+      <div id="fpDone" class="stack hidden" style="align-items:flex-start">
+        <div class="su-done-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <div>
+          <div class="login-title">Password changed</div>
+          <div class="muted">Sign in with your new password. Mail apps on your phone or computer need it too.</div>
+        </div>
+        <a class="login-submit-btn su-open" href="/">Sign in</a>
+      </div>
+
+      <div class="login-presets">
+        <div class="row-actions" style="justify-content:space-between">
+          <span class="small muted"><a href="/" class="su-link">Back to sign-in</a></span>
+          <span class="login-lang" role="group" aria-label="Language">
+            <button type="button" class="preset-btn" data-lang="en" lang="en" data-no-i18n>English</button>
+            <button type="button" class="preset-btn" data-lang="fr" lang="fr" data-no-i18n>Français</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -138,5 +138,12 @@ export default {
   'Language': 'Langue',
   'No IRON ID mailbox yet?': 'Pas encore de boîte mail IRON ID ?',
   'Create one': 'En créer une',
-  'Saved to your account: used on every device, in the admin console and for messages from IRON ID.': 'Enregistrée dans votre compte : utilisée sur tous vos appareils, dans la console d’administration et pour les messages d’IRON ID.'
+  'Saved to your account: used on every device, in the admin console and for messages from IRON ID.': 'Enregistrée dans votre compte : utilisée sur tous vos appareils, dans la console d’administration et pour les messages d’IRON ID.',
+  // Recovery address and "Forgot your password?"
+  'Recovery address': 'Adresse de récupération',
+  'An address outside IRON ID (Gmail, Outlook…) where a link to choose a new password can be sent if you forget yours.': 'Une adresse en dehors d’IRON ID (Gmail, Outlook…) où un lien pour choisir un nouveau mot de passe peut être envoyé si vous oubliez le vôtre.',
+  'Current': 'Actuelle',
+  'Recovery address (empty to remove)': 'Adresse de récupération (vide pour la supprimer)',
+  'Save recovery address': 'Enregistrer l’adresse de récupération',
+  'Forgot your password?': 'Mot de passe oublié ?'
 };

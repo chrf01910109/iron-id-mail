@@ -18,6 +18,7 @@ const billing = require('./services/billing');
 const domains = require('./services/domains');
 const migration = require('./services/migration');
 const registrar = require('./services/registrar');
+const passwordReset = require('./services/passwordReset');
 require('./services/adminBilling'); // adds the Payments routes to the admin console
 
 let PORT = parseInt(process.env.PORT, 10) || 3001;
@@ -33,6 +34,7 @@ const JMAP_MAX_REQUEST = 10 * 1024 * 1024; // the engine's own limit (maxSizeReq
 const HTML_FILE = path.join(PUBLIC_DIR, 'index.html');
 const ADMIN_HTML_FILE = path.join(PUBLIC_DIR, 'admin.html');
 const SIGNUP_HTML_FILE = path.join(PUBLIC_DIR, 'signup.html');
+const FORGOT_HTML_FILE = path.join(PUBLIC_DIR, 'forgot.html');
 const LEGAL_PAGES = new Set(['terms', 'acceptable-use', 'privacy', 'sale', 'notice']);
 
 // Webmail static files (/app/...). Only these types are served.
@@ -285,6 +287,23 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // 2c. "Forgot password?" (off unless PASSWORD_RESET_ENABLED=true): the page, and its API.
+  if ((reqUrl.pathname === '/forgot' || reqUrl.pathname === '/forgot/') && (req.method === 'GET' || req.method === 'HEAD')) {
+    try {
+      const html = i18n.htmlFor(fs.readFileSync(FORGOT_HTML_FILE, 'utf8'), res.ironLang);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': ADMIN_CSP, 'Cache-Control': 'no-cache', 'Vary': 'Cookie, Accept-Language' });
+      res.end(html);
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Error loading the page');
+    }
+    return;
+  }
+  if (reqUrl.pathname.startsWith('/recover-api/')) {
+    if (!schemaReady) return sendJson(res, 503, { error: 'The server is starting. Please try again in a moment.' });
+    return passwordReset.handle(req, res, reqUrl, { readJson, sendJson, sendBodyError, isCrossSite, ip: sessions.clientIp(req), lang: res.ironLang });
+  }
+
   // 3. Serve Webmail Client Single-Page App
   if (reqUrl.pathname.startsWith('/app/') && (req.method === 'GET' || req.method === 'HEAD')) {
     let ok = false;
@@ -389,18 +408,41 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST') {
       try { body = await readJson(req); } catch (e) { return sendBodyError(res, e); }
     }
-    const needsBrake = ['POST /account/password', 'POST /account/two-step/enable', 'POST /account/two-step/disable'].includes(route);
+    const needsBrake = ['POST /account/password', 'POST /account/two-step/enable', 'POST /account/two-step/disable', 'POST /account/recovery'].includes(route);
     if (needsBrake && sessions.isLoginBlocked(ip, current.email)) {
       return sendJson(res, 429, { error: 'Too many failed attempts. Please wait 15 minutes and try again.' });
     }
     try {
       if (route === 'GET /account/security') {
-        const [twoStep, appPasswords, list, recent] = await Promise.all([
+        const [twoStep, appPasswords, list, recent, recovery] = await Promise.all([
           security.twoStepEnabled(current.auth), security.mailAppPasswords(current.auth), sessions.listSessionsFor(current.email, sid),
           db.query(`SELECT at, action, ip, details->>'agent' AS agent, details->>'reason' AS reason FROM cp.audit_log
-                     WHERE target = $1 AND action LIKE 'signin.%' ORDER BY at DESC LIMIT 10`, [String(current.email).toLowerCase()]).then(r => r.rows).catch(() => [])
+                     WHERE target = $1 AND action LIKE 'signin.%' ORDER BY at DESC LIMIT 10`, [String(current.email).toLowerCase()]).then(r => r.rows).catch(() => []),
+          passwordReset.getRecovery(current.email).catch(() => null)
         ]);
-        return sendJson(res, 200, { twoStep, appPasswords, sessions: list, recentSignIns: recent.map(x => ({ at: x.at, ok: x.action === 'signin.ok', ip: x.ip, agent: x.agent, reason: x.reason })) });
+        return sendJson(res, 200, { twoStep, appPasswords, sessions: list, recentSignIns: recent.map(x => ({ at: x.at, ok: x.action === 'signin.ok', ip: x.ip, agent: x.agent, reason: x.reason })),
+          recovery, passwordReset: passwordReset.enabled() });
+      }
+
+      // Recovery address for "Forgot password?" (confirmed with the password, and the code when two-step is on).
+      if (route === 'POST /account/recovery') {
+        const password = String(body.currentPassword || '');
+        const code = String(body.code || '').replace(/\s+/g, '');
+        const twoStep = await security.twoStepEnabled(current.auth);
+        if (twoStep && !security.validCodeFormat(code)) return sendJson(res, 400, { needCode: true, error: 'Enter the current 6-digit code from your authenticator app.' });
+        if (twoStep && !(await security.claimCode(current.email, code))) return sendJson(res, 400, { needCode: true, error: 'That code was already used. Wait for the next one.' });
+        if (twoStep ? !(await security.signInWithCode(current.email, password, code)) : (await security.checkPassword(current.email, password)).result !== 'ok') {
+          sessions.recordFailedLogin(ip, current.email);
+          return sendJson(res, 400, { error: twoStep ? 'Your current password or the code is not right.' : 'Your current password is incorrect.' });
+        }
+        try {
+          const recovery = await passwordReset.setRecovery(current.email, body.recoveryEmail);
+          db.audit({ actor: current.email, action: recovery ? 'account.recovery_set' : 'account.recovery_removed', target: current.email, ip }).catch(() => {});
+          return sendJson(res, 200, { ok: true, recovery });
+        } catch (e) {
+          if (e.userError) return sendJson(res, e.status || 400, { error: e.message });
+          throw e;
+        }
       }
 
       // Who am I to the gateway: admin console access, teams (shared mailboxes) and labels.
@@ -743,7 +785,7 @@ const server = http.createServer(async (req, res) => {
 
   if (reqUrl.pathname === '/healthz' && req.method === 'GET') {
     const result = { gateway: 'ok', engine: 'down', database: 'down', schema: schemaReady ? 'ok' : 'pending', adminAccess: engineAdmin.getStatus(), recoveryAdminSet: engineAdmin.recoveryAdminSet(), search: searchBackend.getStatus(),
-      payments: billing.provider().name, registrar: registrar.kind() || 'off' };
+      payments: billing.provider().name, registrar: registrar.kind() || 'off', passwordReset: passwordReset.enabled() ? 'on' : 'off' };
     // Switches that must never be on in production show up here (the security probe fails on them).
     const testFeatures = [process.env.IRONID_DNS_FAKE && 'dns-fake', process.env.PAYMENTS_FAKE === 'true' && 'payments-fake',
       registrar.kind() === 'fake' && 'registrar-fake', process.env.IRONID_MIGRATION_TEST === 'true' && 'migration-test'].filter(Boolean);
