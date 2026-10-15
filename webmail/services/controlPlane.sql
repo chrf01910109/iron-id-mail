@@ -150,3 +150,76 @@ CREATE TABLE IF NOT EXISTS cp.signup_puzzles (
   challenge  TEXT PRIMARY KEY,
   used_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Billing (2026-10): personal customers own the domains a person connects or buys from the webmail.
+ALTER TABLE cp.customers ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'business';
+ALTER TABLE cp.customers ADD COLUMN IF NOT EXISTS owner_email TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS customers_personal_owner ON cp.customers (lower(owner_email)) WHERE kind = 'personal';
+
+-- Orders: one per thing sold. Amounts in cents, VAT as it was when ordered.
+CREATE TABLE IF NOT EXISTS cp.orders (
+  id               BIGSERIAL PRIMARY KEY,
+  customer_id      UUID REFERENCES cp.customers(id) ON DELETE SET NULL,
+  email            TEXT NOT NULL,
+  kind             TEXT NOT NULL CHECK (kind IN ('domain_connect', 'domain_register', 'domain_renew')),
+  domain           TEXT,
+  amount_cents     INTEGER NOT NULL,
+  amount_ht_cents  INTEGER NOT NULL,
+  vat_cents        INTEGER NOT NULL,
+  vat_rate         NUMERIC(5,2) NOT NULL,
+  currency         TEXT NOT NULL DEFAULT 'EUR',
+  status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'fulfilled', 'failed', 'cancelled', 'refunded')),
+  provider         TEXT,
+  provider_ref     TEXT,
+  payment_ref      TEXT,
+  details          JSONB NOT NULL DEFAULT '{}',
+  lang             TEXT,
+  error            TEXT,
+  invoice_number   TEXT UNIQUE,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  paid_at          TIMESTAMPTZ,
+  fulfilled_at     TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS orders_customer ON cp.orders (customer_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS orders_status ON cp.orders (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS orders_payment_ref ON cp.orders (payment_ref);
+
+-- Invoice numbers without gaps, per year (F2026-000001…).
+CREATE TABLE IF NOT EXISTS cp.invoice_seq (
+  year  INTEGER PRIMARY KEY,
+  last  INTEGER NOT NULL
+);
+
+-- Domains bought through IRON ID (registered at the registrar on the person's behalf).
+CREATE TABLE IF NOT EXISTS cp.registered_domains (
+  domain          TEXT PRIMARY KEY,
+  customer_id     UUID REFERENCES cp.customers(id) ON DELETE SET NULL,
+  registrar       TEXT NOT NULL,
+  registrar_ref   TEXT,
+  registered_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at      TIMESTAMPTZ NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired')),
+  reminded_at     TIMESTAMPTZ
+);
+
+-- Copies of old mailboxes into IRON ID (IMAP). The old password is encrypted and erased when the copy ends.
+CREATE TABLE IF NOT EXISTS cp.migrations (
+  id            BIGSERIAL PRIMARY KEY,
+  email         TEXT NOT NULL,
+  source_host   TEXT NOT NULL,
+  source_port   INTEGER NOT NULL,
+  source_user   TEXT NOT NULL,
+  secret_enc    TEXT,
+  status        TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'running', 'done', 'failed', 'cancelled')),
+  folders_total INTEGER NOT NULL DEFAULT 0,
+  folders_done  INTEGER NOT NULL DEFAULT 0,
+  messages_done INTEGER NOT NULL DEFAULT 0,
+  bytes_done    BIGINT NOT NULL DEFAULT 0,
+  skipped       INTEGER NOT NULL DEFAULT 0,
+  state         JSONB NOT NULL DEFAULT '{}',
+  error         TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  started_at    TIMESTAMPTZ,
+  finished_at   TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS migrations_email ON cp.migrations (email, created_at DESC);

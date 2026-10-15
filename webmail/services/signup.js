@@ -12,7 +12,7 @@
  *   - reserved names (postmaster, abuse, admin, support…) and names already in use, aliases included;
  *   - passwords: 12+ characters, not in a list of ~47,000 common long passwords, not the person's name
  *     or address.
- * Settings for later (cp.settings, empty = none): signup.quota_mb (storage per new mailbox) and
+ * Settings (cp.settings): signup.quota_mb (storage per new mailbox, default 5120 = 5 GB) and
  * signup.external_daily_limit (messages a day to outside addresses for new accounts; recorded now,
  * enforced when outgoing mail moves to the VPS).
  */
@@ -28,6 +28,7 @@ const adminConsole = require('./adminConsole');
 const DOMAIN = adminConsole.PLATFORM_DOMAIN;
 const TERMS_VERSION = '2026-10-draft';
 const MB = 1024 * 1024;
+const FREE_QUOTA_MB = 5120; // the free personal mailbox: 5 GB, shared with addresses on own domains
 
 class SignupError extends Error {
   constructor(message, status = 400, extra = {}) { super(message); this.status = status; this.userError = true; Object.assign(this, extra); }
@@ -326,7 +327,7 @@ async function createAccount({ email, local, first, last, password, recovery, la
     .find(x => x[2] === 'd');
   const domainRec = dom && dom[0] !== 'error' && (dom[1].list || []).find(d => d.name.toLowerCase() === DOMAIN);
   if (!domainRec) throw new Error('platform domain not found in the engine');
-  const quotaMb = await setting('signup.quota_mb');
+  const quotaMb = (await setting('signup.quota_mb')) || FREE_QUOTA_MB;
   const r = (await engineAdmin.call([['x:Account/set', { create: { u: {
     '@type': 'User', name: local, domainId: domainRec.id, description: [first, last].filter(Boolean).join(' '),
     roles: { '@type': 'User' }, permissions: { '@type': 'Inherit' }, encryptionAtRest: { '@type': 'Disabled' },

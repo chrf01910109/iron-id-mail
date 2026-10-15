@@ -14,6 +14,11 @@ const adminConsole = require('./services/adminConsole');
 const labels = require('./services/labels');
 const i18n = require('./services/i18n');
 const signup = require('./services/signup');
+const billing = require('./services/billing');
+const domains = require('./services/domains');
+const migration = require('./services/migration');
+const registrar = require('./services/registrar');
+require('./services/adminBilling'); // adds the Payments routes to the admin console
 
 let PORT = parseInt(process.env.PORT, 10) || 3001;
 const ENGINE_HOST = process.env.IRONID_ENGINE_HOST || process.env.MAIL_ENGINE_HOST || '127.0.0.1';
@@ -96,6 +101,27 @@ let schemaReady = false;
 // Reads a small JSON request body (login form). An oversized body is rejected with
 // status 413 and the rest is ignored; the reply then closes the connection (sendBodyError).
 // Destroying the socket instead would leave no reply, which Railway's proxy turns into a 502.
+/** The raw request body as text (for signed notifications such as Stripe's). */
+function readRaw(req, limit) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', c => { size += c.length; if (size > limit) { reject(Object.assign(new Error('too large'), { status: 413 })); req.resume(); return; } chunks.push(c); });
+    req.on('end', () => { if (size <= limit) resolve(Buffer.concat(chunks).toString('utf8')); });
+    req.on('error', reject);
+  });
+}
+
+// Domain searches ask the registrar: a few per minute per person.
+const searchHits = new Map();
+function domainSearchBrake(email) {
+  const now = Date.now(), list = (searchHits.get(email) || []).filter(t => now - t < 60000);
+  if (list.length >= 20) return true;
+  list.push(now); searchHits.set(email, list);
+  if (searchHits.size > 5000) searchHits.clear();
+  return false;
+}
+
 function readJson(req, limit = 10000) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -385,7 +411,43 @@ const server = http.createServer(async (req, res) => {
           labels.list(String(current.email).toLowerCase()),
           getLangPref(current.email)
         ]);
-        return sendJson(res, 200, { email: current.email, admin, teams, labels: myLabels, lang });
+        const domainNotices = await domains.notices(current.email).catch(() => []);
+        return sendJson(res, 200, { email: current.email, admin, teams, labels: myLabels, lang, domainNotices });
+      }
+
+      // Own domains (connect €2 / buy €14 a year), addresses on them, payments, and copies of old mail.
+      const domainCtx = { req, lang: res.ironLang, name: null };
+      if (route === 'GET /account/domains') return sendJson(res, 200, { ...(await domains.overview(current)), migrations: (await migration.list(current)).migrations });
+      if (route === 'GET /account/domains/dns') {
+        const cust = await domains.personalCustomer(current.email);
+        if (!cust) return sendJson(res, 404, { error: 'That domain was not found.' });
+        return sendJson(res, 200, await adminConsole.runRoute({ email: current.email, platform: false, customerIds: [cust.id], customers: [], ip }, 'GET', '/admin-api/domains/dns', {}, reqUrl));
+      }
+      if (route === 'GET /account/domains/search') {
+        if (domainSearchBrake(current.email)) return sendJson(res, 429, { error: 'Too many requests. Please wait a few minutes and try again.' });
+        return sendJson(res, 200, await domains.search(current.email, reqUrl.searchParams.get('q')));
+      }
+      if (route === 'POST /account/domains/check') return sendJson(res, 200, await domains.checkConnect(current.email, body));
+      if (route === 'POST /account/domains/connect') return sendJson(res, 200, await domains.connect(current.email, body, domainCtx));
+      if (route === 'POST /account/domains/buy') return sendJson(res, 200, await domains.buy(current.email, body, domainCtx));
+      if (route === 'POST /account/domains/renew') return sendJson(res, 200, await domains.renew(current.email, body, domainCtx));
+      if (route === 'POST /account/domains/verify') {
+        const cust = await domains.personalCustomer(current.email);
+        if (!cust) return sendJson(res, 404, { error: 'That domain was not found.' });
+        return sendJson(res, 200, await adminConsole.runRoute({ email: current.email, platform: false, customerIds: [cust.id], customers: [], ip }, 'POST', '/admin-api/domains/verify', { domain: body.domain }));
+      }
+      if (route === 'POST /account/domains/remove') return sendJson(res, 200, await domains.removeDomain(current, body));
+      if (route === 'POST /account/addresses') return sendJson(res, 200, await domains.addAddress(current, body));
+      if (route === 'POST /account/addresses/remove') return sendJson(res, 200, await domains.removeAddress(current, body));
+      if (route === 'GET /account/migrations') return sendJson(res, 200, await migration.list(current));
+      if (route === 'POST /account/migrations') return sendJson(res, 200, await migration.start(current, body));
+      if (route === 'POST /account/migrations/cancel') return sendJson(res, 200, await migration.cancel(current, body));
+      if (route === 'GET /account/invoice') {
+        const o = await billing.order(Number(reqUrl.searchParams.get('id')));
+        const cust = await domains.personalCustomer(current.email);
+        if (!o || !cust || o.customer_id !== cust.id || !o.invoice_number) return sendJson(res, 404, { error: 'Not found' });
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': ADMIN_CSP, 'Cache-Control': 'no-store' });
+        return res.end(await billing.invoiceHtml(o, res.ironLang));
       }
       if (route === 'POST /account/labels') return sendJson(res, 200, await labels.create(String(current.email).toLowerCase(), body));
       if (route === 'POST /account/labels/update') return sendJson(res, 200, await labels.update(String(current.email).toLowerCase(), body));
@@ -508,7 +570,7 @@ const server = http.createServer(async (req, res) => {
         return ok ? sendJson(res, 200, { ok: true }) : sendJson(res, 404, { error: 'That app password no longer exists.' });
       }
     } catch (e) {
-      if (e.userError) return sendJson(res, e.status || 400, { error: e.message });
+      if (e.userError) return sendJson(res, e.status || 400, { error: e.message, code: e.code, field: e.field });
       return engineDown(e);
     }
     return sendJson(res, 404, { error: 'Not found' });
@@ -634,8 +696,49 @@ const server = http.createServer(async (req, res) => {
   }
 
   // 4b. Health check for monitoring (no secrets)
+  // 3d. Payments: Stripe's notifications, and the test-only checkout page.
+  if (reqUrl.pathname === '/billing/stripe/webhook' && req.method === 'POST') {
+    let raw = '';
+    try { raw = await readRaw(req, 512 * 1024); } catch (e) { return sendJson(res, 413, { error: 'Request too large' }); }
+    try {
+      const out = await billing.stripeWebhook(raw, req.headers['stripe-signature']);
+      return sendJson(res, out.status, out.body);
+    } catch (e) {
+      console.error('[billing] webhook:', e.message);
+      return sendJson(res, 500, { error: 'Internal error' }); // Stripe retries later
+    }
+  }
+  if (reqUrl.pathname === '/billing/fake-checkout' && req.method === 'GET') {
+    const id = Number(reqUrl.searchParams.get('order')), sig = reqUrl.searchParams.get('sig');
+    if (!billing.fakeCheckoutValid(id, sig)) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('Not Found'); }
+    const o = await billing.order(id);
+    if (!o) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('Not Found'); }
+    const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': ADMIN_CSP, 'Cache-Control': 'no-store' });
+    return res.end(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Test payment</title></head><body style="font:15px system-ui;max-width:520px;margin:60px auto">
+<h1>Test payment (no real money)</h1><p>${esc(o.kind)} · ${esc(o.domain)} · ${(o.amount_cents / 100).toFixed(2)} €</p>
+<form method="post" action="/billing/fake-pay"><input type="hidden" name="order" value="${id}"><input type="hidden" name="sig" value="${esc(sig)}">
+<button id="fakePay" type="submit">Pay (test)</button></form><p><a id="fakeCancel" href="/?order=${id}&amp;paid=0#domains">Cancel</a></p></body></html>`);
+  }
+  if (reqUrl.pathname === '/billing/fake-pay' && req.method === 'POST') {
+    if (isCrossSite(req)) return sendJson(res, 403, { error: 'Forbidden' });
+    let raw = '';
+    try { raw = await readRaw(req, 4096); } catch (e) { return sendJson(res, 413, { error: 'Request too large' }); }
+    const f = new URLSearchParams(raw);
+    const id = Number(f.get('order'));
+    if (!billing.fakeCheckoutValid(id, f.get('sig'))) return sendJson(res, 404, { error: 'Not found' });
+    await billing.markPaid(id, { paymentRef: 'fake_' + id });
+    res.writeHead(303, { Location: `/?order=${id}&paid=1#domains` });
+    return res.end();
+  }
+
   if (reqUrl.pathname === '/healthz' && req.method === 'GET') {
-    const result = { gateway: 'ok', engine: 'down', database: 'down', schema: schemaReady ? 'ok' : 'pending', adminAccess: engineAdmin.getStatus(), recoveryAdminSet: engineAdmin.recoveryAdminSet(), search: searchBackend.getStatus() };
+    const result = { gateway: 'ok', engine: 'down', database: 'down', schema: schemaReady ? 'ok' : 'pending', adminAccess: engineAdmin.getStatus(), recoveryAdminSet: engineAdmin.recoveryAdminSet(), search: searchBackend.getStatus(),
+      payments: billing.provider().name, registrar: registrar.kind() || 'off' };
+    // Switches that must never be on in production show up here (the security probe fails on them).
+    const testFeatures = [process.env.IRONID_DNS_FAKE && 'dns-fake', process.env.PAYMENTS_FAKE === 'true' && 'payments-fake',
+      registrar.kind() === 'fake' && 'registrar-fake', process.env.IRONID_MIGRATION_TEST === 'true' && 'migration-test'].filter(Boolean);
+    if (testFeatures.length) result.testFeatures = testFeatures;
     try {
       const r = await new Promise((resolve, reject) => {
         const er = http.get({ hostname: ENGINE_HOST, port: ENGINE_PORT, path: '/jmap/session', timeout: 5000 }, x => { x.resume(); resolve(x.statusCode); });
@@ -682,6 +785,10 @@ server.listen(PORT, () => {
       console.log('[db] Control-plane schema ready.');
       adminConsole.pruneAudit();
       setInterval(() => adminConsole.pruneAudit(), 24 * 3600 * 1000).unref();
+      // Copies of old mailboxes run in the background; domains past their paid year are marked expired.
+      migration.startWorker();
+      domains.expireDomains();
+      setInterval(() => domains.expireDomains(), 6 * 3600 * 1000).unref();
     } catch (e) {
       console.error(`[db] Control-plane migration failed (attempt ${attempt}), retrying:`, e.message);
       await wait(attempt);

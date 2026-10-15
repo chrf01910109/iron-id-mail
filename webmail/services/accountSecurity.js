@@ -62,6 +62,17 @@ async function jmap(auth, methodCalls, using = USING) {
   return r.json.methodResponses;
 }
 
+/** Uploads a blob (e.g. a whole message) to an account. Over-quota answers throw { overQuota: true }. */
+async function uploadBlob(auth, accountId, data, type) {
+  const r = await engineRequest('POST', `/jmap/upload/${encodeURIComponent(accountId)}/`, {
+    headers: { authorization: auth, 'content-type': type }, body: data, timeout: 120000
+  });
+  if (r.status === 401) throw Object.assign(new Error('not authorized'), { status: 401 });
+  if (/overQuota|quota/i.test(r.text || '') && r.status >= 400) throw Object.assign(new Error('over quota'), { overQuota: true });
+  if (r.status < 200 || r.status >= 300 || !r.json || !r.json.blobId) throw new Error('upload HTTP ' + r.status + ' ' + String(r.text || '').slice(0, 200));
+  return r.json;
+}
+
 function first(responses, id) {
   const hit = responses.find(x => x[2] === id);
   if (!hit) throw new Error('no answer from the mail engine');
@@ -171,6 +182,14 @@ async function storedCredential(email) {
   try {
     return { id: r.rows[0].cred_id, secret: box.decrypt(r.rows[0].secret_enc, 'webmail-credential:' + email), expiresAt: r.rows[0].expires_at.getTime() };
   } catch (e) { return null; }
+}
+
+/** The webmail's stored access for a mailbox, if it still works ('Basic …'), else null. Used by background jobs (mail import). */
+async function storedWebmailAuth(email) {
+  const stored = await storedCredential(String(email).toLowerCase());
+  if (!stored || stored.expiresAt < Date.now()) return null;
+  const auth = basic(String(email).toLowerCase(), stored.secret);
+  return (await engineSession(auth)) ? auth : null;
 }
 
 /** Forgets the webmail's stored access for a mailbox (after an admin reset, suspension or deletion). */
@@ -342,5 +361,5 @@ module.exports = {
   claimCode, validCodeFormat,
   newTotpSetup, validOtpUrl, twoStepEnabled, setTwoStep, friendly,
   mailAppPasswords, createMailAppPassword, deleteMailAppPassword, WEBMAIL_CRED_NAME, forgetWebmailCredential,
-  jmap, first
+  jmap, first, engineRequest, storedWebmailAuth, uploadBlob
 };

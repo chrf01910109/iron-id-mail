@@ -8,7 +8,7 @@
 const fs = require('fs');
 const dns = require('dns').promises;
 
-const TYPES = { TXT: 16, MX: 15, CNAME: 5, A: 1 };
+const TYPES = { TXT: 16, MX: 15, CNAME: 5, A: 1, NS: 2 };
 const FAKE = process.env.IRONID_DNS_FAKE || '';
 if (FAKE) console.warn('[dns] IRONID_DNS_FAKE is set: DNS answers come from a test file. Never set this in production.');
 
@@ -45,6 +45,7 @@ async function lookup(name, type) {
     if (type === 'MX') return (await dns.resolveMx(name)).map(m => `${m.priority} ${m.exchange}`);
     if (type === 'CNAME') return await dns.resolveCname(name);
     if (type === 'A') return await dns.resolve4(name);
+    if (type === 'NS') return await dns.resolveNs(name);
   } catch (e) {
     if (['ENOTFOUND', 'ENODATA', 'ENOTIMP', 'ESERVFAIL'].includes(e.code)) return [];
     throw e;
