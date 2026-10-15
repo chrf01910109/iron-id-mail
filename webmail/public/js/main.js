@@ -39,6 +39,10 @@ function pickedLang() {
     return code === pageLang && Date.now() - Number(at) < PICK_TTL ? code : '';
   } catch (e) { return ''; }
 }
+// "Create one" on the sign-in card, only when sign-up is open.
+fetch('/signup-api/config', { credentials: 'same-origin' }).then(r => r.json())
+  .then(c => { if (c && c.enabled) $('#loginSignup').classList.remove('hidden'); }).catch(() => {});
+
 for (const b of document.querySelectorAll('.login-lang [data-lang]')) {
   b.setAttribute('aria-pressed', String(b.dataset.lang === pageLang));
   b.addEventListener('click', () => {

@@ -125,3 +125,22 @@ CREATE TABLE IF NOT EXISTS cp.user_prefs (
   lang        TEXT CHECK (lang IN ('en', 'fr')),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Sign-up (name@iron-id.io): one row per account created by sign-up. Limits per IP and per day are
+-- counted here; external_daily_limit is the sending limit that applied when the account was made.
+CREATE TABLE IF NOT EXISTS cp.signups (
+  email                 TEXT PRIMARY KEY,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ip                    TEXT,
+  terms_version         TEXT NOT NULL,
+  lang                  TEXT,
+  external_daily_limit  INTEGER
+);
+CREATE INDEX IF NOT EXISTS signups_created ON cp.signups (created_at DESC);
+CREATE INDEX IF NOT EXISTS signups_ip_created ON cp.signups (ip, created_at DESC);
+
+-- Sign-up security-check puzzles already used (each works once).
+CREATE TABLE IF NOT EXISTS cp.signup_puzzles (
+  challenge  TEXT PRIMARY KEY,
+  used_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

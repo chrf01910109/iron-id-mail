@@ -52,10 +52,10 @@ function engineRequest(method, path, { headers = {}, body = null, timeout = 1500
 
 const basic = (user, secret) => 'Basic ' + Buffer.from(user + ':' + secret, 'utf8').toString('base64');
 
-async function jmap(auth, methodCalls) {
+async function jmap(auth, methodCalls, using = USING) {
   const r = await engineRequest('POST', '/jmap/', {
     headers: { authorization: auth, 'content-type': 'application/json' },
-    body: JSON.stringify({ using: USING, methodCalls })
+    body: JSON.stringify({ using, methodCalls })
   });
   if (r.status === 401) throw Object.assign(new Error('not authorized'), { status: 401 });
   if (r.status !== 200 || !r.json) throw Object.assign(new Error('engine HTTP ' + r.status), { status: r.status });
@@ -341,5 +341,6 @@ module.exports = {
   basic, checkPassword, signInWithCode, engineSession, webmailAuthFor, rotateWebmailCredential,
   claimCode, validCodeFormat,
   newTotpSetup, validOtpUrl, twoStepEnabled, setTwoStep, friendly,
-  mailAppPasswords, createMailAppPassword, deleteMailAppPassword, WEBMAIL_CRED_NAME, forgetWebmailCredential
+  mailAppPasswords, createMailAppPassword, deleteMailAppPassword, WEBMAIL_CRED_NAME, forgetWebmailCredential,
+  jmap, first
 };

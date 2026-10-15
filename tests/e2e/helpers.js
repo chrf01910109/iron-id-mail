@@ -137,6 +137,6 @@ async function waitHealthy(timeoutMs = 120000, { requireAdmin = false } = {}) {
 }
 
 module.exports = {
-  BASE, ENGINE, TEST_DOMAIN, MAIL_USING, sleep, basic, engine, recoveryAuth,
+  BASE, ENGINE, TEST_DOMAIN, MAIL_USING, sleep, basic, engine, recoveryAuth, domainId,
   createTestUser, deleteTestUser, gw, login, mail, primaryAccount, waitHealthy, upload, sendMail
 };

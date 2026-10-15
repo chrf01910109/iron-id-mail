@@ -13,6 +13,7 @@ const security = require('./services/accountSecurity');
 const adminConsole = require('./services/adminConsole');
 const labels = require('./services/labels');
 const i18n = require('./services/i18n');
+const signup = require('./services/signup');
 
 let PORT = parseInt(process.env.PORT, 10) || 3001;
 const ENGINE_HOST = process.env.IRONID_ENGINE_HOST || process.env.MAIL_ENGINE_HOST || '127.0.0.1';
@@ -26,6 +27,8 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 const JMAP_MAX_REQUEST = 10 * 1024 * 1024; // the engine's own limit (maxSizeRequest)
 const HTML_FILE = path.join(PUBLIC_DIR, 'index.html');
 const ADMIN_HTML_FILE = path.join(PUBLIC_DIR, 'admin.html');
+const SIGNUP_HTML_FILE = path.join(PUBLIC_DIR, 'signup.html');
+const LEGAL_PAGES = new Set(['terms', 'acceptable-use', 'privacy']);
 
 // Webmail static files (/app/...). Only these types are served.
 const STATIC_TYPES = {
@@ -216,6 +219,45 @@ const server = http.createServer(async (req, res) => {
     return adminConsole.handle(req, res, reqUrl, { readJson, sendJson, sendBodyError, isCrossSite, session, ip: sessions.clientIp(req) });
   }
 
+
+  // 2b. Sign-up for name@<platform domain> (off unless SIGNUP_ENABLED=true) and the pages it links to.
+  if ((reqUrl.pathname === '/signup' || reqUrl.pathname === '/signup/') && (req.method === 'GET' || req.method === 'HEAD')) {
+    try {
+      const html = i18n.htmlFor(fs.readFileSync(SIGNUP_HTML_FILE, 'utf8'), res.ironLang);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': ADMIN_CSP, 'Cache-Control': 'no-cache', 'Vary': 'Cookie, Accept-Language' });
+      res.end(html);
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Error loading the sign-up page');
+    }
+    return;
+  }
+  const legal = /^\/legal\/([a-z-]+)$/.exec(reqUrl.pathname);
+  if (legal && LEGAL_PAGES.has(legal[1]) && (req.method === 'GET' || req.method === 'HEAD')) {
+    try {
+      const html = i18n.htmlFor(fs.readFileSync(path.join(PUBLIC_DIR, 'legal', legal[1] + '.html'), 'utf8'), res.ironLang);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': ADMIN_CSP, 'Cache-Control': 'no-cache', 'Vary': 'Cookie, Accept-Language' });
+      res.end(html);
+    } catch (err) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not Found');
+    }
+    return;
+  }
+  if (reqUrl.pathname.startsWith('/signup-api/')) {
+    if (!schemaReady) return sendJson(res, 503, { error: 'The server is starting. Please try again in a moment.' });
+    const ip = sessions.clientIp(req);
+    return signup.handle(req, res, reqUrl, {
+      readJson, sendJson, sendBodyError, isCrossSite, ip, lang: res.ironLang,
+      // The new account is signed in straight away, like /auth/login.
+      openSession: async (email, webAuth) => {
+        await sessions.destroySession(sessions.sessionIdFrom(req));
+        const id = await sessions.createSession(email, webAuth, { ip, userAgent: req.headers['user-agent'] });
+        await setLangPref(email, res.ironLang).catch(e => console.error('[signup] saving language:', e.message));
+        return { 'Set-Cookie': [sessions.sessionCookie(req, id), i18n.langCookie(req, res.ironLang)] };
+      }
+    });
+  }
 
   // 3. Serve Webmail Client Single-Page App
   if (reqUrl.pathname.startsWith('/app/') && (req.method === 'GET' || req.method === 'HEAD')) {

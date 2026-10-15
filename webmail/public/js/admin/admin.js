@@ -201,7 +201,7 @@ function head(title, sub, ...actions) {
 
 /* ——— Pages ——— */
 const ACTION_LABELS = {
-  'signin.ok': tx('signin', 'Signed in'), 'signin.failed': t('Failed sign-in'), 'mailbox.created': t('Mailbox created'), 'mailbox.updated': t('Mailbox changed'),
+  'signin.ok': tx('signin', 'Signed in'), 'signup.created': t('Account created by sign-up'), 'signin.failed': t('Failed sign-in'), 'mailbox.created': t('Mailbox created'), 'mailbox.updated': t('Mailbox changed'),
   'mailbox.deleted': t('Mailbox deleted'), 'mailbox.suspended': t('Mailbox suspended'), 'mailbox.restored': t('Mailbox restored'), 'mailbox.signin_reset': t('Sign-in reset'),
   'team.created': t('Team created'), 'team.updated': t('Team changed'), 'team.deleted': t('Team deleted'), 'domain.added': t('Domain added'), 'domain.assigned': t('Domain assigned'),
   'domain.verified': t('Domain verified'), 'domain.removed': t('Domain removed'), 'domain.catch_all': t('Catch-all changed'), 'domain.dkim_prepared': t('New DKIM keys created'),

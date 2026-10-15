@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light">
+  <title>Create your IRON ID account</title>
+  <meta name="description" content="Create your free IRON ID mailbox.">
+  <link rel="icon" href="/app/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app/base.css">
+  <link rel="stylesheet" href="/app/app.css">
+  <script type="module" src="/app/js/signup.js"></script>
+</head>
+<body class="signup-page">
+
+  <header class="header">
+    <a class="hdr-brand" href="/" style="text-decoration:none;color:inherit">
+      <div class="hdr-brand-icon">ID</div>
+      <span class="hdr-brand-name">IRON ID</span>
+      <span class="hdr-brand-badge">MAIL</span>
+    </a>
+  </header>
+
+  <main class="signup-wrap">
+    <div class="login-card signup-card">
+      <div class="login-brand">
+        <div class="hdr-brand-icon login-logo">ID</div>
+        <div>
+          <div class="login-title">IRON ID Mail</div>
+          <div class="muted small">Create your mailbox</div>
+        </div>
+      </div>
+
+      <div id="suClosed" class="login-alert info hidden">Sign-up isn't open yet. If you already have an IRON ID mailbox, sign in instead.</div>
+
+      <form id="suForm" class="stack hidden" novalidate autocomplete="on">
+        <div>
+          <div class="lh-top"><span id="suStepTitle" class="fl-label" style="margin:0">Your address</span><span id="suStepOf" class="muted small"></span></div>
+          <div class="sb-meter"><div id="suProgress" class="sb-meter-fill"></div></div>
+        </div>
+
+        <section data-step="1" class="stack">
+          <div id="suIntro" class="login-alert info" style="margin:0" data-no-i18n></div>
+          <div class="two-col">
+            <div>
+              <label class="fl-label" for="suFirst">First name</label>
+              <input id="suFirst" class="login-input" type="text" maxlength="60" autocomplete="given-name" required>
+            </div>
+            <div>
+              <label class="fl-label" for="suLast">Last name</label>
+              <input id="suLast" class="login-input" type="text" maxlength="60" autocomplete="family-name">
+            </div>
+          </div>
+          <div>
+            <label class="fl-label" for="suLocal">Choose your address</label>
+            <div class="addr-row">
+              <input id="suLocal" class="login-input" type="text" maxlength="30" autocomplete="username" autocapitalize="none" spellcheck="false" required aria-describedby="suAddrStatus">
+              <span id="suDomain" class="muted" style="font-weight:600" data-no-i18n>@iron-id.io</span>
+            </div>
+          </div>
+          <div id="suAddrStatus" role="status" aria-live="polite"></div>
+          <div id="suSuggest" class="row-actions hidden" style="gap:6px"></div>
+        </section>
+
+        <section data-step="2" class="stack hidden">
+          <ul class="sec-list"><li><span class="grow muted">Your address</span><b id="suAddrShow" data-no-i18n></b></li></ul>
+          <div>
+            <label class="fl-label" for="suPw">Password (12+ characters)</label>
+            <input id="suPw" class="login-input" type="password" maxlength="128" autocomplete="new-password" required aria-describedby="suPwHelp">
+            <div class="meter" aria-hidden="true" style="margin-top:8px"><div id="suPwMeter" style="width:0"></div></div>
+            <div id="suPwHelp" class="muted small" style="margin-top:4px">A short sentence works well. Common and leaked passwords are refused.</div>
+            <label class="check-row" style="margin-top:8px"><input id="suPwShow" type="checkbox"> <span>Show password</span></label>
+          </div>
+          <div>
+            <label class="fl-label" for="suRecovery">Recovery email (optional)</label>
+            <input id="suRecovery" class="login-input" type="email" maxlength="254" autocomplete="email" placeholder="you@gmail.com" data-no-i18n>
+            <div class="muted small" style="margin-top:4px">An address you already have, used only if you're locked out.</div>
+          </div>
+        </section>
+
+        <section data-step="3" class="stack hidden">
+          <section class="sec-card">
+            <h4>Security check <span id="suPowBadge" class="sec-badge">Not done</span></h4>
+            <p class="muted small">Your browser solves a small puzzle, checked on our own server. No pictures to click, nothing sent to other companies.</p>
+            <div class="row-actions">
+              <button id="suPowRun" type="button" class="act-btn hidden">Run the check again</button>
+              <span id="suPowStatus" class="muted small" role="status" aria-live="polite"></span>
+            </div>
+          </section>
+          <label class="check-row" style="align-items:flex-start">
+            <input id="suTerms" type="checkbox" style="margin-top:3px">
+            <span>I agree to the <a href="/legal/terms" target="_blank" rel="noopener">Terms of Service</a> and the <a href="/legal/acceptable-use" target="_blank" rel="noopener">Acceptable Use Policy</a> (no bulk or unsolicited mail), and I have read the <a href="/legal/privacy" target="_blank" rel="noopener">Privacy Notice</a>.</span>
+          </label>
+          <div class="notice info" style="margin:0">New accounts have a daily limit for mail to addresses outside IRON ID at first. Mail between IRON ID addresses is not limited.</div>
+        </section>
+
+        <div id="suError" class="hidden" role="alert"></div>
+        <button id="suNext" type="submit" class="login-submit-btn"><span>Continue</span></button>
+        <div style="text-align:center"><button id="suBack" type="button" class="lh-link hidden">← Back</button></div>
+      </form>
+
+      <div id="suDone" class="stack hidden" style="align-items:flex-start">
+        <div class="su-done-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <div>
+          <div id="suWelcome" class="login-title"></div>
+          <div id="suReady" class="muted"></div>
+        </div>
+        <a class="login-submit-btn su-open" href="/">Open my mailbox</a>
+      </div>
+
+      <div class="login-presets">
+        <div class="row-actions" style="justify-content:space-between">
+          <span class="small muted">Have an account? <a href="/" class="su-link">Sign in</a></span>
+          <span class="login-lang" role="group" aria-label="Language">
+            <button type="button" class="preset-btn" data-lang="en" lang="en" data-no-i18n>English</button>
+            <button type="button" class="preset-btn" data-lang="fr" lang="fr" data-no-i18n>Français</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

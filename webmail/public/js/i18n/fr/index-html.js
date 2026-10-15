@@ -136,5 +136,7 @@ export default {
   'Email address': 'Adresse e-mail',
   'Sign in': 'Se connecter',
   'Language': 'Langue',
+  'No IRON ID mailbox yet?': 'Pas encore de boîte mail IRON ID ?',
+  'Create one': 'En créer une',
   'Saved to your account: used on every device, in the admin console and for messages from IRON ID.': 'Enregistrée dans votre compte : utilisée sur tous vos appareils, dans la console d’administration et pour les messages d’IRON ID.'
 };

@@ -312,3 +312,17 @@ a.att:hover { border-color: var(--color-accent); background: var(--color-accent-
 .popover button .pop-check { margin-left: auto; color: var(--color-accent); display: inline-flex; }
 #teamSection { margin-top: 8px; }
 #labelList { margin-bottom: 8px; }
+
+/* ——— Sign-up page ——— */
+body.signup-page { height: auto; min-height: 100vh; min-height: 100dvh; overflow: auto; }
+.signup-wrap { flex: 1; display: grid; place-items: start center; padding: 40px 16px 48px; }
+.signup-card { max-width: 460px; box-shadow: var(--shadow-lg); }
+.signup-card .login-presets { margin-top: 18px; }
+.signup-card .login-lang { justify-content: flex-end; }
+.su-done-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--color-success-bg); color: var(--color-success); display: grid; place-items: center; }
+.su-link { color: var(--color-accent); font-weight: 600; }
+.login-signup { margin-top: 14px; text-align: center; }
+.signup-card .addr-row { display: flex; align-items: center; gap: 8px; }
+.signup-card .addr-row .login-input { flex: 1; min-width: 0; }
+.signup-card .meter { height: 6px; border-radius: 3px; background: var(--color-border-light); overflow: hidden; }
+.signup-card .meter > div { height: 100%; border-radius: 3px; transition: width 0.2s; }

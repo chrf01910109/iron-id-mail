@@ -44,6 +44,7 @@ export default {
 
   // Activity log descriptions (the raw action codes are not translated)
   'signin|Signed in': 'Connexion réussie',
+  'Account created by sign-up': 'Compte créé par inscription',
   'mailbox|Active': 'Active',
   'mailbox|Suspended': 'Suspendue',
   'mailbox|Restore': 'Réactiver',

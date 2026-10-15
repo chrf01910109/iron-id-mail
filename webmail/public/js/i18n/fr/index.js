@@ -14,5 +14,6 @@ import safeHtml from './safeHtml.js';
 import compose from './compose.js';
 import settings from './settings.js';
 import admin from './admin.js';
+import signup from './signup.js';
 
-export default Object.freeze(Object.assign({}, common, indexhtml, adminhtml, main, api, util, mail, list, reader, sidebar, labels, safeHtml, compose, settings, admin));
+export default Object.freeze(Object.assign({}, common, indexhtml, adminhtml, main, api, util, mail, list, reader, sidebar, labels, safeHtml, compose, settings, admin, signup));

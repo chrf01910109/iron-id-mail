@@ -1158,4 +1158,4 @@ async function teamsFor(email) {
   }));
 }
 
-module.exports = { handle, auditSignIn, pruneAudit, isAdmin, teamsFor, customerForEmail, PLATFORM_DOMAIN, tempPassword };
+module.exports = { handle, auditSignIn, pruneAudit, isAdmin, teamsFor, customerForEmail, PLATFORM_DOMAIN, tempPassword, engineDirectory, aliasEmails };

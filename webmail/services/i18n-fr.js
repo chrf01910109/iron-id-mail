@@ -47,6 +47,26 @@ const FR = {
   'Give the app password a name, for example "Outlook on my laptop".': 'Donnez un nom au mot de passe d’application, par exemple « Outlook sur mon ordinateur portable ».',
   'That name is reserved. Please choose another.': 'Ce nom est réservé. Veuillez en choisir un autre.',
 
+  /* ——— Sign-up (signup.js) ——— */
+  'Sign-up is not open yet.': 'Les inscriptions ne sont pas encore ouvertes.',
+  'The security check did not work. Please run it again.': 'La vérification de sécurité n’a pas fonctionné. Veuillez la relancer.',
+  'Too many requests. Please wait a few minutes and try again.': 'Trop de demandes. Veuillez patienter quelques minutes, puis réessayer.',
+  'Enter your first name.': 'Saisissez votre prénom.',
+  'Use 4 to 30 letters, numbers, dots, dashes or underscores for your address.': 'Votre adresse doit comporter de 4 à 30 caractères : lettres, chiffres, points, tirets ou tirets bas.',
+  'That address is reserved. Choose another one.': 'Cette adresse est réservée. Choisissez-en une autre.',
+  'Enter a valid recovery email address, or leave it empty.': 'Saisissez une adresse e-mail de secours valide, ou laissez le champ vide.',
+  'Use an address outside IRON ID for recovery, so you can still reach it if you are locked out.': 'Utilisez une adresse hors IRON ID comme adresse de secours, pour pouvoir y accéder si vous perdez l’accès à votre compte.',
+  'Please accept the Terms of Service to continue.': 'Veuillez accepter les Conditions d’utilisation pour continuer.',
+  'Too many accounts were created from this network today. Please try again tomorrow.': 'Trop de comptes ont été créés depuis ce réseau aujourd’hui. Veuillez réessayer demain.',
+  'Sign-up is busy right now. Please try again later.': 'Les inscriptions sont très sollicitées en ce moment. Veuillez réessayer plus tard.',
+  'That address was just taken. Choose another one.': 'Cette adresse vient d’être prise. Choisissez-en une autre.',
+  'Use at least 12 characters for your password.': 'Votre mot de passe doit comporter au moins 12 caractères.',
+  'Use at most 128 characters for your password.': 'Votre mot de passe doit comporter au plus 128 caractères.',
+  'This password is too simple. A short sentence works well.': 'Ce mot de passe est trop simple. Une courte phrase convient très bien.',
+  'This password is too common. Choose another one.': 'Ce mot de passe est trop courant. Choisissez-en un autre.',
+  'This password is too easy to guess. Add another word or two.': 'Ce mot de passe est trop facile à deviner. Ajoutez un ou deux mots.',
+  'Don’t use your name or your address in your password.': 'N’utilisez pas votre nom ni votre adresse dans votre mot de passe.',
+
   /* ——— Labels (labels.js) ——— */
   'Enter a label name.': 'Saisissez un nom de libellé.',
   'You can have up to {n} labels.': 'Vous pouvez avoir jusqu’à {n} libellés.',

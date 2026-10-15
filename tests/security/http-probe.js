@@ -79,6 +79,17 @@ async function get(path, opts = {}) {
   const bad = await fetch(base + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{not json' });
   check('malformed JSON refused', bad.status === 400, 'HTTP ' + bad.status);
 
+  // 8b. Sign-up: the page has a strict policy; when switched off, nothing can be created
+  const su = await get('/signup');
+  check('sign-up page has a strict CSP', su.status === 200 && /script-src 'self'/.test(su.headers.get('content-security-policy') || ''), 'HTTP ' + su.status);
+  let suCfg = {};
+  try { suCfg = JSON.parse((await get('/signup-api/config')).text); } catch (e) { /* old version */ }
+  const suEvil = await fetch(base + '/signup-api/check', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.example' }, body: '{"local":"x"}' });
+  check('sign-up refuses other websites', [403].includes(suEvil.status), 'HTTP ' + suEvil.status);
+  const suCreate = await fetch(base + '/signup-api/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  if (suCfg.enabled === false) check('sign-up is switched off: nothing can be created', suCreate.status === 403, 'HTTP ' + suCreate.status);
+  else check('sign-up refuses a request without the security check', suCreate.status === 400, 'HTTP ' + suCreate.status + (suCfg.enabled ? ' (sign-up is ON here)' : ''));
+
   // 9. Health endpoint shows no secrets
   const hz = await get('/healthz');
   check('healthz has no secrets', hz.status === 200 && !/password|secret|token|postgres(ql)?:\/\//i.test(hz.text), hz.text.slice(0, 160));
