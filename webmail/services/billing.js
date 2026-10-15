@@ -166,8 +166,9 @@ async function markPaid(orderId, { paymentRef = null } = {}) {
   let order;
   try {
     await client.query('BEGIN');
+    // 'cancelled' too: someone may leave the payment page, then pay in the still-open Stripe tab.
     const r = await client.query(`UPDATE cp.orders SET status = 'paid', paid_at = NOW(), payment_ref = COALESCE($2, payment_ref)
-                                   WHERE id = $1 AND status = 'pending' RETURNING *`, [orderId, paymentRef]);
+                                   WHERE id = $1 AND status IN ('pending', 'cancelled') RETURNING *`, [orderId, paymentRef]);
     order = r.rows[0];
     if (order) {
       const year = new Date().getFullYear();

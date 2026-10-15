@@ -77,10 +77,10 @@ ac.addRoute('GET', '/admin-api/billing/settings', async ctx => {
 
 ac.addRoute('POST', '/admin-api/billing/settings', async (ctx, b) => {
   ac.requirePlatform(ctx);
+  // Check every value first, so a bad one saves nothing.
+  const values = Object.entries(SETTING_KEYS).filter(([k]) => b[k] !== undefined).map(([k, clean]) => [k, clean(b[k])]);
   const changed = [];
-  for (const [k, clean] of Object.entries(SETTING_KEYS)) {
-    if (b[k] === undefined) continue;
-    const v = clean(b[k]);
+  for (const [k, v] of values) {
     if (v === '') await db.query('DELETE FROM cp.settings WHERE key = $1', [k]);
     else await db.setSetting(k, v);
     changed.push(k);

@@ -93,6 +93,7 @@ function baseUrl(req) {
 
 async function connect(email, b, { req, lang, name }) {
   const info = await checkConnect(email, b);
+  if (b.acceptTerms !== true) fail('Please accept the Terms of Sale to continue.');
   const cust = await personalCustomer(email, { create: true, name });
   const open = (await db.query(`SELECT id FROM cp.orders WHERE customer_id = $1 AND domain = $2 AND kind IN ('domain_connect','domain_register')
                                 AND status IN ('paid','fulfilled') LIMIT 1`, [cust.id, info.domain])).rows[0];
@@ -257,6 +258,14 @@ async function removeDomain(current, b) {
   return adminConsole.runRoute(ctxFor(current.email, cust.id, null), 'POST', '/admin-api/domains/remove', { domain, confirm: b.confirm });
 }
 
+/** The person left the payment page without paying: the order is closed (a new one can be made). */
+async function cancelOrder(current, b) {
+  const cust = await personalCustomer(current.email);
+  const r = cust && await db.query(`UPDATE cp.orders SET status = 'cancelled' WHERE id = $1 AND customer_id = $2 AND status = 'pending' RETURNING id`, [Number(b.id), cust.id]);
+  if (!r || !r.rowCount) fail('That order was not found.', 404);
+  return { ok: true };
+}
+
 /* ——— Reading ——— */
 async function overview(current) {
   const prices = await billing.priceList();
@@ -298,6 +307,8 @@ async function notices(email) {
 /** Daily: marks domains past their paid year as expired. */
 async function expireDomains() {
   try {
+    // Payment pages that were never completed (Stripe's own expire after an hour).
+    await db.query(`UPDATE cp.orders SET status = 'cancelled' WHERE status = 'pending' AND created_at < NOW() - INTERVAL '1 day'`);
     const r = await db.query(`UPDATE cp.registered_domains SET status = 'expired' WHERE status = 'active' AND expires_at < NOW() RETURNING domain`);
     for (const x of r.rows) db.audit({ actor: 'system', action: 'domain.expired', target: x.domain }).catch(() => {});
   } catch (e) { console.error('[domains] expiry check:', e.message); }
@@ -305,5 +316,5 @@ async function expireDomains() {
 
 module.exports = {
   personalCustomer, checkConnect, search, connect, buy, renew, addAddress, removeAddress, removeDomain, overview, notices,
-  publishDns, expireDomains, cleanContact, DomainError, MAX_ADDRESSES
+  publishDns, expireDomains, cleanContact, cancelOrder, DomainError, MAX_ADDRESSES
 };

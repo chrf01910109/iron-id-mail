@@ -159,7 +159,8 @@ test('connecting a domain you own: €2, DNS records, verification, then address
   assert.deepEqual(r.json.nameservers, ['ns1.some-host.test', 'ns2.some-host.test']);
   assert.equal((await post('domains/check', { domain: 'iron-id.io' })).status, 400);
 
-  r = await post('domains/connect', { domain: OWN });
+  assert.equal((await post('domains/connect', { domain: OWN })).status, 400, 'terms of sale');
+  r = await post('domains/connect', { domain: OWN, acceptTerms: true });
   assert.equal(r.status, 200, r.text);
   assert.equal(r.json.order.amountCents, 200);
   await pay(r.json.checkoutUrl);

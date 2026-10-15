@@ -5,6 +5,7 @@ import * as mail from './mail.js';
 import * as labels from './labels.js';
 import { h, $, icon, toast, dialog, openMenu, formatSize } from './util.js';
 import { t } from './i18n.js';
+import { isOpen as domainsOpen } from './domains.js';
 
 const ROLE_ICON = { inbox: 'inbox', sent: 'sent', drafts: 'drafts', archive: 'archive', trash: 'trash', junk: 'junk' };
 let onOpenFolder = () => {};
@@ -60,7 +61,7 @@ async function deleteFolder(mb, accountId) {
 
 function folderRows(accountId) {
   const set = mail.folderSet(accountId);
-  const viewing = mail.viewAccount() === accountId && !mail.state.view.label;
+  const viewing = mail.viewAccount() === accountId && !mail.state.view.label && !domainsOpen();
   return set.mailboxes.map(mb => {
     const active = viewing && mb.id === mail.state.view.mailboxId && !mail.state.list.searchAll;
     const unread = mb.unreadThreads || mb.unreadEmails || 0;
@@ -132,7 +133,7 @@ function render() {
 function renderLabels() {
   const v = mail.state.view;
   const rows = mail.state.labels.map(l => {
-    const active = v.label === l.slug;
+    const active = v.label === l.slug && !domainsOpen();
     const btn = h('button', { type: 'button', class: 'sb-btn' + (active ? ' active' : ''), 'aria-current': active ? 'page' : null, dataset: { label: l.slug }, title: l.name },
       h('span', { class: 'lbl-dot c-' + l.color }), h('span', { class: 'sb-name' }, l.name));
     btn.addEventListener('click', () => onOpenLabel(l.slug));

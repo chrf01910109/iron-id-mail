@@ -1,12 +1,12 @@
 // IRON ID Mail — sign-up page: name@<platform domain> in three steps, then straight into the webmail.
 // Everything is checked again on the server; the checks here only guide the person.
 
-import { t, lang as pageLang, setLang } from './i18n.js'; // first: translates the page
+import { t, tx, lang as pageLang, setLang } from './i18n.js'; // first: translates the page
 import { $, h, debounce } from './util.js';
 import { solve } from './sha256.js';
 
 const state = { step: 1, domain: 'iron-id.io', available: false, checked: '', pow: null, powRunning: false, busy: false };
-const STEP_TITLES = () => [t('Your address'), t('Password'), t('Confirm')];
+const STEP_TITLES = () => [t('Your address'), t('Password'), tx('step', 'Confirm')];
 
 async function api(path, body) {
   let res;

@@ -17,7 +17,8 @@
     p, li { color: var(--color-text-secondary); line-height: 1.65; }
     ul { padding-left: 20px; }
     .draft { background: var(--color-warning-bg); color: #78350F; border: 1px solid #FDE68A; border-radius: 8px; padding: 10px 14px; margin: 14px 0 20px; font-size: 13px; }
-    .back { color: var(--color-accent); font-weight: 600; text-decoration: none; font-size: 13px; }
+    nav.legal { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--color-border); font-size: 13px; }
+    nav.legal a { color: var(--color-accent); font-weight: 600; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -25,33 +26,37 @@
   <main>
     <div lang="en">
       <h1>Privacy Notice</h1>
-      <div class="draft">Draft, version 2026-10. IRON ID will review and complete this text (parts in [brackets]) before sign-up opens to the public.</div>
-      <h2>What we keep</h2>
-      <ul><li>Your name, your address and, if you give one, your recovery email.</li><li>Your messages, contacts and settings, so the service works.</li><li>The network address (IP) and browser used when the account was created and at each sign-in, to protect your account (sign-in records are kept 180 days).</li><li>Your language choice.</li></ul>
-      <h2>What we don’t do</h2>
-      <ul><li>No advertising, no tracking, no selling or sharing of your data for marketing.</li><li>The sign-up security check runs on our own server: nothing is sent to other companies.</li></ul>
-      <h2>Where it is stored</h2>
-      <p>[Where the data is stored and who hosts it.]</p>
+      <div class="draft">Draft, version 2026-10. IRON ID will have this text reviewed and completed (parts in [brackets]) before sign-up and sales open to the public. The French version is the one that applies.</div>
+      <h2>Who is responsible</h2>
+      <p>[Company name, address] (see <a href="/legal/notice">Legal notice</a>), contact for personal data: [email] [— data protection officer if appointed].</p>
+      <h2>What we keep, why, and on what basis (GDPR)</h2>
+      <ul><li>Account: name, address, optional recovery email, language — to provide the service (contract).</li><li>Your messages, contacts and settings — to provide the service (contract). We do not read them, except at your request or when the law requires it.</li><li>Security: network address (IP) and browser at sign-up and sign-ins, kept 180 days — to protect accounts (legitimate interest).</li><li>Orders and invoices: what you bought, amounts, owner details of a domain — kept 10 years as accounting law requires (legal obligation).</li><li>Copy of an old mailbox: the old provider’s password is encrypted and erased as soon as the copy ends.</li></ul>
+      <h2>Who receives data</h2>
+      <ul><li>Stripe (card payments) — card details go directly to Stripe.</li><li>The domain registrar [OpenSRS / Tucows, Canada] and the registry (AFNIC, EURid, …) for domain names; registries publish some owner details in the WHOIS directory unless privacy applies.</li><li>Our hosting providers ([host]).</li><li>No advertising, no tracking, no sale or sharing for marketing.</li></ul>
+      <h2>Transfers outside the EU</h2>
+      <p>[Railway (United States) during the launch phase; OpenSRS (Canada, adequacy decision); Stripe — safeguards: standard contractual clauses / adequacy decisions.]</p>
       <h2>How long</h2>
-      <p>As long as your account exists. When you close it, your mail and data are deleted [within how long], except what the law requires us to keep.</p>
+      <p>As long as your account exists; then deleted within [30] days, except invoices (10 years) and what the law requires.</p>
       <h2>Your rights</h2>
-      <p>You can ask to see, correct or delete your data. [Applicable data-protection law.] Contact: [privacy contact].</p>
-      <p><a class="back" href="/signup">← Back to sign-up</a></p>
+      <p>You can ask to access, correct, delete or receive your data, object to or limit its processing: write to [email]. You can also complain to the CNIL (www.cnil.fr).</p>
+      <nav class="legal"><a href="/legal/terms">Terms of Service</a> <a href="/legal/sale">Terms of Sale</a> <a href="/legal/acceptable-use">Acceptable Use</a> <a href="/legal/notice">Legal notice</a> <a href="/">IRON ID Mail</a></nav>
     </div>
     <div lang="fr">
       <h1>Politique de confidentialité</h1>
-      <div class="draft">Projet, version 2026-10. IRON ID relira et complétera ce texte (passages entre [crochets]) avant l’ouverture des inscriptions au public.</div>
-      <h2>Ce que nous conservons</h2>
-      <ul><li>Votre nom, votre adresse et, si vous en indiquez une, votre adresse e-mail de secours.</li><li>Vos messages, contacts et réglages, pour que le service fonctionne.</li><li>L’adresse réseau (IP) et le navigateur utilisés lors de la création du compte et à chaque connexion, pour protéger votre compte (les connexions sont conservées 180 jours).</li><li>Votre choix de langue.</li></ul>
-      <h2>Ce que nous ne faisons pas</h2>
-      <ul><li>Pas de publicité, pas de pistage, aucune vente ni partage de vos données à des fins commerciales.</li><li>La vérification de sécurité de l’inscription fonctionne sur notre propre serveur : rien n’est envoyé à d’autres entreprises.</li></ul>
-      <h2>Où sont stockées les données</h2>
-      <p>[Lieu de stockage des données et hébergeur.]</p>
-      <h2>Combien de temps</h2>
-      <p>Tant que votre compte existe. Quand vous le fermez, vos messages et vos données sont supprimés [dans quel délai], sauf ce que la loi nous oblige à conserver.</p>
+      <div class="draft">Projet, version 2026-10. IRON ID fera relire et compléter ce texte (passages entre [crochets]) avant l’ouverture des inscriptions et des ventes au public. La version française fait foi.</div>
+      <h2>Responsable du traitement</h2>
+      <p>[Raison sociale, adresse] (voir les <a href="/legal/notice">Mentions légales</a>), contact pour les données personnelles : [e-mail] [— délégué à la protection des données s’il est désigné].</p>
+      <h2>Ce que nous conservons, pourquoi et sur quelle base (RGPD)</h2>
+      <ul><li>Compte : nom, adresse, e-mail de secours facultatif, langue — pour fournir le service (contrat).</li><li>Vos messages, contacts et réglages — pour fournir le service (contrat). Nous ne les lisons pas, sauf à votre demande ou si la loi l’impose.</li><li>Sécurité : adresse réseau (IP) et navigateur à l’inscription et aux connexions, conservés 180 jours — pour protéger les comptes (intérêt légitime).</li><li>Commandes et factures : ce que vous avez acheté, montants, coordonnées du titulaire d’un domaine — conservées 10 ans comme l’exige le droit comptable (obligation légale).</li><li>Copie d’une ancienne boîte mail : le mot de passe de l’ancien fournisseur est chiffré et effacé dès la fin de la copie.</li></ul>
+      <h2>Destinataires</h2>
+      <ul><li>Stripe (paiements par carte) — les données de carte vont directement chez Stripe.</li><li>Le bureau d’enregistrement [OpenSRS / Tucows, Canada] et le registre (AFNIC, EURid, …) pour les noms de domaine ; les registres publient certaines coordonnées du titulaire dans l’annuaire WHOIS, sauf protection prévue.</li><li>Nos hébergeurs ([hébergeur]).</li><li>Pas de publicité, pas de pistage, aucune vente ni partage à des fins commerciales.</li></ul>
+      <h2>Transferts hors de l’UE</h2>
+      <p>[Railway (États-Unis) pendant la phase de lancement ; OpenSRS (Canada, décision d’adéquation) ; Stripe — garanties : clauses contractuelles types / décisions d’adéquation.]</p>
+      <h2>Durée de conservation</h2>
+      <p>Tant que votre compte existe ; puis suppression dans un délai de [30] jours, sauf les factures (10 ans) et ce que la loi impose.</p>
       <h2>Vos droits</h2>
-      <p>Vous pouvez demander à consulter, corriger ou supprimer vos données. [Loi applicable sur la protection des données.] Contact : [contact confidentialité].</p>
-      <p><a class="back" href="/signup">← Retour à l’inscription</a></p>
+      <p>Vous pouvez demander l’accès, la rectification, l’effacement ou la portabilité de vos données, vous opposer à leur traitement ou le limiter : écrivez à [e-mail]. Vous pouvez aussi saisir la CNIL (www.cnil.fr).</p>
+      <nav class="legal"><a href="/legal/terms">Conditions d’utilisation</a> <a href="/legal/sale">Conditions générales de vente</a> <a href="/legal/acceptable-use">Usage acceptable</a> <a href="/legal/notice">Mentions légales</a> <a href="/">IRON ID Mail</a></nav>
     </div>
   </main>
 </body>

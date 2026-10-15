@@ -32,7 +32,7 @@ export default {
   'Have an account?': 'Déjà un compte ?',
   // signup.js
   'Password': 'Mot de passe',
-  'Confirm': 'Confirmation',
+  'step|Confirm': 'Confirmation',
   'Step {n} of 3': 'Étape {n} sur 3',
   'Create my account': 'Créer mon compte',
   '{email} is available': '{email} est disponible',

@@ -33,7 +33,7 @@ const JMAP_MAX_REQUEST = 10 * 1024 * 1024; // the engine's own limit (maxSizeReq
 const HTML_FILE = path.join(PUBLIC_DIR, 'index.html');
 const ADMIN_HTML_FILE = path.join(PUBLIC_DIR, 'admin.html');
 const SIGNUP_HTML_FILE = path.join(PUBLIC_DIR, 'signup.html');
-const LEGAL_PAGES = new Set(['terms', 'acceptable-use', 'privacy']);
+const LEGAL_PAGES = new Set(['terms', 'acceptable-use', 'privacy', 'sale', 'notice']);
 
 // Webmail static files (/app/...). Only these types are served.
 const STATIC_TYPES = {
@@ -436,6 +436,7 @@ const server = http.createServer(async (req, res) => {
         if (!cust) return sendJson(res, 404, { error: 'That domain was not found.' });
         return sendJson(res, 200, await adminConsole.runRoute({ email: current.email, platform: false, customerIds: [cust.id], customers: [], ip }, 'POST', '/admin-api/domains/verify', { domain: body.domain }));
       }
+      if (route === 'POST /account/orders/cancel') return sendJson(res, 200, await domains.cancelOrder(current, body));
       if (route === 'POST /account/domains/remove') return sendJson(res, 200, await domains.removeDomain(current, body));
       if (route === 'POST /account/addresses') return sendJson(res, 200, await domains.addAddress(current, body));
       if (route === 'POST /account/addresses/remove') return sendJson(res, 200, await domains.removeAddress(current, body));
@@ -721,7 +722,8 @@ const server = http.createServer(async (req, res) => {
 <button id="fakePay" type="submit">Pay (test)</button></form><p><a id="fakeCancel" href="/?order=${id}&amp;paid=0#domains">Cancel</a></p></body></html>`);
   }
   if (reqUrl.pathname === '/billing/fake-pay' && req.method === 'POST') {
-    if (isCrossSite(req)) return sendJson(res, 403, { error: 'Forbidden' });
+    // No same-site check: the page sends no referrer, so the browser posts with "Origin: null";
+    // the signed order link is what protects this (and it only exists with PAYMENTS_FAKE=true).
     let raw = '';
     try { raw = await readRaw(req, 4096); } catch (e) { return sendJson(res, 413, { error: 'Request too large' }); }
     const f = new URLSearchParams(raw);
