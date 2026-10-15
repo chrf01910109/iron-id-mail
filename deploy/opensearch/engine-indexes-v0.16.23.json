@@ -1,0 +1,221 @@
+{
+ "st_email": {
+  "mappings": {
+   "_source": {
+    "enabled": false
+   },
+   "properties": {
+    "acc_id": {
+     "type": "integer"
+    },
+    "attach": {
+     "type": "text"
+    },
+    "bcc": {
+     "type": "text"
+    },
+    "body": {
+     "type": "text"
+    },
+    "cc": {
+     "type": "text"
+    },
+    "doc_id": {
+     "type": "integer"
+    },
+    "from": {
+     "type": "text",
+     "fields": {
+      "keyword": {
+       "type": "keyword"
+      }
+     }
+    },
+    "has_att": {
+     "type": "boolean"
+    },
+    "headers": {
+     "type": "object"
+    },
+    "rcvd": {
+     "type": "long"
+    },
+    "sent": {
+     "type": "long"
+    },
+    "size": {
+     "type": "integer"
+    },
+    "subj": {
+     "type": "text",
+     "fields": {
+      "keyword": {
+       "type": "keyword"
+      }
+     }
+    },
+    "to": {
+     "type": "text",
+     "fields": {
+      "keyword": {
+       "type": "keyword"
+      }
+     }
+    }
+   }
+  },
+  "analysis": {
+   "analyzer": {
+    "default": {
+     "filter": [
+      "lowercase",
+      "stemmer"
+     ],
+     "type": "custom",
+     "tokenizer": "standard"
+    }
+   }
+  }
+ },
+ "st_calendar": {
+  "mappings": {
+   "_source": {
+    "enabled": false
+   },
+   "properties": {
+    "acc_id": {
+     "type": "integer"
+    },
+    "attendee": {
+     "type": "text"
+    },
+    "desc": {
+     "type": "text"
+    },
+    "doc_id": {
+     "type": "integer"
+    },
+    "loc": {
+     "type": "text"
+    },
+    "owner": {
+     "type": "text"
+    },
+    "start": {
+     "type": "long"
+    },
+    "title": {
+     "type": "text"
+    },
+    "uid": {
+     "type": "keyword"
+    }
+   }
+  },
+  "analysis": {
+   "analyzer": {
+    "default": {
+     "filter": [
+      "lowercase",
+      "stemmer"
+     ],
+     "type": "custom",
+     "tokenizer": "standard"
+    }
+   }
+  }
+ },
+ "st_contact": {
+  "mappings": {
+   "_source": {
+    "enabled": false
+   },
+   "properties": {
+    "acc_id": {
+     "type": "integer"
+    },
+    "addr": {
+     "type": "text"
+    },
+    "doc_id": {
+     "type": "integer"
+    },
+    "email": {
+     "type": "text"
+    },
+    "kind": {
+     "type": "text"
+    },
+    "member": {
+     "type": "text"
+    },
+    "name": {
+     "type": "text"
+    },
+    "nick": {
+     "type": "text"
+    },
+    "note": {
+     "type": "text"
+    },
+    "online": {
+     "type": "text"
+    },
+    "org": {
+     "type": "text"
+    },
+    "phone": {
+     "type": "text"
+    },
+    "uid": {
+     "type": "keyword"
+    }
+   }
+  },
+  "analysis": {
+   "analyzer": {
+    "default": {
+     "filter": [
+      "lowercase",
+      "stemmer"
+     ],
+     "type": "custom",
+     "tokenizer": "standard"
+    }
+   }
+  }
+ },
+ "st_tracing": {
+  "mappings": {
+   "_source": {
+    "enabled": false
+   },
+   "properties": {
+    "ev_type": {
+     "type": "long"
+    },
+    "id": {
+     "type": "long"
+    },
+    "keywords": {
+     "type": "text"
+    },
+    "queue_id": {
+     "type": "long"
+    }
+   }
+  },
+  "analysis": {
+   "analyzer": {
+    "default": {
+     "filter": [
+      "lowercase",
+      "stemmer"
+     ],
+     "type": "custom",
+     "tokenizer": "standard"
+    }
+   }
+  }
+ }
+}

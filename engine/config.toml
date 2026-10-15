@@ -1,0 +1,57 @@
+# ==============================================================================
+# IRON ID Sovereign Mail Engine - Local Development Configuration
+# ==============================================================================
+
+[server]
+hostname = "mail.iron-id.io"
+
+# ------------------------------------------------------------------------------
+# Storage Configuration (Embedded RocksDB)
+# ------------------------------------------------------------------------------
+[storage]
+data = "rocksdb"
+blob = "rocksdb"
+lookup = "rocksdb"
+fts = "rocksdb"
+
+[store.rocksdb]
+type = "rocksdb"
+path = "data"
+compression = "lz4"
+cache-size = "128MB"
+write-buffer-size = "128MB"
+
+# ------------------------------------------------------------------------------
+# Directory Configuration (Internal Store)
+# ------------------------------------------------------------------------------
+[directory.internal]
+type = "internal"
+store = "rocksdb"
+
+# ------------------------------------------------------------------------------
+# Network Listeners (Localhost Testing)
+# ------------------------------------------------------------------------------
+[server.listener."http"]
+bind = ["127.0.0.1:8080"]
+protocol = "http"
+
+[server.listener."smtp"]
+bind = ["127.0.0.1:2525"]
+protocol = "smtp"
+
+[server.listener."submissions"]
+bind = ["127.0.0.1:587"]
+protocol = "smtp"
+
+[server.listener."imap"]
+bind = ["127.0.0.1:1143"]
+protocol = "imap"
+
+# ------------------------------------------------------------------------------
+# JMAP & Development Authentication Flags
+# ------------------------------------------------------------------------------
+[jmap]
+allow-insecure-auth = true
+
+[authentication]
+allow-cleartext = true

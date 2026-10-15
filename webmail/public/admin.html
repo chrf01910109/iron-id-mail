@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light">
+  <title>IRON ID Admin</title>
+  <link rel="icon" href="/app/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app/base.css">
+  <link rel="stylesheet" href="/app/app.css">
+  <link rel="stylesheet" href="/app/admin.css">
+  <script type="module" src="/app/js/admin/admin.js"></script>
+</head>
+<body class="admin">
+
+  <header class="header">
+    <button id="navToggle" class="icon-btn nav-toggle" type="button" title="Menu" aria-label="Show menu" aria-controls="adminNav" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <div class="hdr-brand">
+      <div class="hdr-brand-icon">ID</div>
+      <span class="hdr-brand-name">IRON ID</span>
+      <span class="hdr-brand-badge">ADMIN</span>
+    </div>
+    <div class="hdr-spacer"></div>
+    <div class="hdr-controls">
+      <div class="user-pill" title="Signed in">
+        <div id="userAvatar" class="user-pill-avatar">··</div>
+        <div class="user-pill-info">
+          <span id="hdrRole" class="user-pill-name">—</span>
+          <span id="hdrUserEmail" class="user-pill-email">—</span>
+        </div>
+      </div>
+      <a class="hdr-btn" href="/" title="Back to your mailbox">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3H10l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+        <span class="hdr-label">Webmail</span>
+      </a>
+      <button id="btnSignOut" type="button" class="hdr-btn danger" title="Sign out">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="hdr-label">Sign out</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="admin-layout">
+    <nav id="adminNav" class="admin-nav" aria-label="Admin sections"></nav>
+    <div id="navScrim" class="sidebar-scrim"></div>
+    <main id="page" class="admin-page" tabindex="-1">
+      <div class="loading-text">Loading…</div>
+    </main>
+  </div>
+
+  <!-- Form dialog (built by admin.js) -->
+  <div id="formDialog" class="modal-bg" aria-hidden="true"></div>
+
+  <!-- Confirm / prompt dialog -->
+  <div id="dialog" class="modal-bg" aria-hidden="true">
+    <form id="dialogForm" class="modal dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+      <div class="modal-hdr"><h3 id="dialogTitle">Confirm</h3></div>
+      <div class="modal-body">
+        <p id="dialogText"></p>
+        <input id="dialogInput" class="fl-input hidden" type="text" maxlength="255">
+        <div id="dialogError" class="form-status"></div>
+      </div>
+      <div class="modal-ftr">
+        <button id="dialogCancel" type="button" class="act-btn">Cancel</button>
+        <button id="dialogOk" type="submit" class="compose-btn">OK</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="menu" class="popover hidden" role="menu"></div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    <span id="toastIcon" class="toast-icon">✓</span>
+    <span id="toastMsg"></span>
+    <button id="toastAction" type="button" class="toast-action hidden"></button>
+  </div>
+</body>
+</html>

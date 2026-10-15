@@ -1,0 +1,12 @@
+# The mail engine may only read and write its own search indexes (st_*).
+_meta:
+  type: "roles"
+  config_version: 2
+ironid_mail_search:
+  description: "IRON ID mail engine: its own search indexes only"
+  cluster_permissions:
+    - "cluster_composite_ops"
+    - "cluster_monitor"
+  index_permissions:
+    - index_patterns: ["st_*"]
+      allowed_actions: ["indices_all"]

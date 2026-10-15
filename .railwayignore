@@ -1,0 +1,15 @@
+# Local-only files railway up must not upload
+.opensearch/
+*.tar.gz
+.backup-*
+*.bundle
+
+# Private seed data (production never needs it; the encrypted copy isn't needed either)
+engine/export_data.json/
+engine/export_data.tar.gz.enc
+.env
+.env.*
+*.pem
+*.key
+SEED_KEY
+secrets/

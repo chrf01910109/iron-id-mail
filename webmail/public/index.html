@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light">
+  <title>IRON ID Mail</title>
+  <meta name="description" content="IRON ID sovereign business email.">
+  <link rel="icon" href="/app/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app/base.css">
+  <link rel="stylesheet" href="/app/app.css">
+  <script type="module" src="/app/js/main.js"></script>
+</head>
+<body class="view-list">
+
+  <!-- ═══════════════ TOP HEADER ═══════════════ -->
+  <header class="header">
+    <button id="navToggle" class="icon-btn nav-toggle" type="button" title="Folders" aria-label="Show folders" aria-controls="sidebar" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <div class="hdr-brand">
+      <div class="hdr-brand-icon">ID</div>
+      <span class="hdr-brand-name">IRON ID</span>
+      <span class="hdr-brand-badge">MAIL</span>
+    </div>
+
+    <div class="hdr-spacer"></div>
+
+    <div class="hdr-controls">
+      <div class="conn-badge" title="Connection to your mailbox">
+        <span id="connDot" class="conn-dot"></span>
+        <span id="connText">Connecting…</span>
+      </div>
+
+      <div id="userProfileBadge" class="user-pill" title="Signed in">
+        <div id="userAvatar" class="user-pill-avatar">··</div>
+        <div class="user-pill-info">
+          <span id="hdrUserName" class="user-pill-name">—</span>
+          <span id="hdrUserEmail" class="user-pill-email">—</span>
+        </div>
+      </div>
+
+      <a id="btnAdmin" class="hdr-btn hidden" href="/admin" title="Admin console">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span class="hdr-label">Admin</span>
+      </a>
+
+      <button id="btnSettings" type="button" class="hdr-btn" title="Settings">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="hdr-label">Settings</span>
+      </button>
+
+      <button id="btnSignOut" type="button" class="hdr-btn danger" title="Sign out">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="hdr-label">Sign out</span>
+      </button>
+
+      <button id="btnRefresh" type="button" class="icon-btn" title="Refresh" aria-label="Refresh">
+        <svg id="refreshIcon" width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </button>
+
+      <button id="btnCompose" type="button" class="compose-btn" title="Compose (c)">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span class="hdr-label">Compose</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════ MAIN 3-COLUMN LAYOUT ═══════════════ -->
+  <div class="main-layout">
+    <div id="sidebarScrim" class="sidebar-scrim"></div>
+
+    <aside id="sidebar" class="sidebar" aria-label="Folders">
+      <div class="sb-section-row">
+        <div class="sb-section">Folders</div>
+        <button id="btnNewFolder" type="button" class="sb-mini-btn" title="New folder" aria-label="New folder">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <nav id="folderList" class="folder-list">
+        <div class="loading-text">Loading folders…</div>
+      </nav>
+
+      <div id="teamSection" class="hidden">
+        <div class="sb-section-row"><div class="sb-section">Team mailboxes</div></div>
+        <nav id="teamList" class="folder-list" aria-label="Team mailboxes"></nav>
+      </div>
+
+      <div class="sb-section-row">
+        <div class="sb-section">Labels</div>
+        <button id="btnNewLabel" type="button" class="sb-mini-btn" title="New label" aria-label="New label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <nav id="labelList" class="folder-list" aria-label="Labels"></nav>
+
+      <div class="sb-footer">
+        <div class="sb-session-label">Storage</div>
+        <div id="quotaText" class="sb-session-sub">—</div>
+        <div class="sb-meter"><div id="quotaFill" class="sb-meter-fill"></div></div>
+        <div id="sessionUser" class="sb-session-user sb-user-line">—</div>
+      </div>
+    </aside>
+
+    <section class="list-panel" aria-label="Messages">
+      <div class="list-header">
+        <div class="lh-top">
+          <div class="lh-title">
+            <span id="activeFolderName">Inbox</span>
+            <span id="activeFolderBadge" class="lh-badge">0</span>
+          </div>
+          <button id="btnMarkAllRead" type="button" class="lh-link" title="Mark every message in this folder as read">Mark all read</button>
+        </div>
+        <form id="searchForm" class="lh-search" role="search" autocomplete="off">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="searchInput" type="search" name="q" placeholder="Search mail" aria-label="Search mail" enterkeyhint="search" spellcheck="false">
+          <button id="searchHelpBtn" type="button" class="search-help-btn" title="Search tips" aria-label="Search tips">?</button>
+        </form>
+        <div id="searchHelp" class="search-help hidden">
+          <div><b>from:</b>anis &nbsp; <b>to:</b>contact@iron-id.io &nbsp; <b>subject:</b>invoice</div>
+          <div><b>has:attachment</b> &nbsp; <b>is:unread</b> &nbsp; <b>is:starred</b></div>
+          <div><b>after:</b>2026-01-31 &nbsp; <b>before:</b>2026-12-31 &nbsp; <b>in:all</b> (every folder)</div>
+          <div>Use quotes for exact phrases: <b>"board meeting"</b>. Accents don't matter.</div>
+        </div>
+        <div class="lh-filters" role="tablist">
+          <button type="button" class="filter-tab active" data-filter="all" role="tab">All</button>
+          <button type="button" class="filter-tab" data-filter="unread" role="tab">Unread <span id="unreadFilterCount"></span></button>
+          <button type="button" class="filter-tab" data-filter="starred" role="tab">Starred</button>
+          <button type="button" id="filterMine" class="filter-tab hidden" data-filter="mine" role="tab">Assigned to me</button>
+          <span id="searchBadge" class="search-badge hidden"></span>
+        </div>
+      </div>
+      <div id="emailList" class="list-scroll" role="listbox" aria-label="Messages" tabindex="0">
+        <div class="loading-text">Loading messages…</div>
+      </div>
+    </section>
+
+    <main id="readerPane" class="reader" aria-label="Message">
+      <div class="reader-empty">
+        <div>
+          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="reader-empty-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          <p>Select a message to read it</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ═══════════════ COMPOSE ═══════════════ -->
+  <div id="composeModal" class="modal-bg compose-bg" aria-hidden="true">
+    <div class="modal compose" role="dialog" aria-modal="true" aria-labelledby="composeTitle">
+      <div class="modal-hdr">
+        <h3 id="composeTitle">New message</h3>
+        <div class="cmp-hdr-right">
+          <span id="cmpStatus" class="cmp-status" aria-live="polite"></span>
+          <button id="cmpClose" type="button" class="icon-btn small" title="Close (draft is kept)" aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body compose-body">
+        <div id="composeAlert" class="hidden"></div>
+        <div class="cmp-row">
+          <label class="cmp-label" for="cmpFrom">From</label>
+          <select id="cmpFrom" class="cmp-input cmp-select"></select>
+        </div>
+        <div class="cmp-row cmp-rcpt">
+          <label class="cmp-label" for="cmpTo">To</label>
+          <input id="cmpTo" class="cmp-input" type="text" autocomplete="off" spellcheck="false" placeholder="Recipients, separated by commas">
+          <span class="cmp-toggles">
+            <button id="cmpShowCc" type="button" class="lh-link">Cc</button>
+            <button id="cmpShowBcc" type="button" class="lh-link">Bcc</button>
+          </span>
+        </div>
+        <div id="cmpCcRow" class="cmp-row cmp-rcpt hidden">
+          <label class="cmp-label" for="cmpCc">Cc</label>
+          <input id="cmpCc" class="cmp-input" type="text" autocomplete="off" spellcheck="false">
+        </div>
+        <div id="cmpBccRow" class="cmp-row cmp-rcpt hidden">
+          <label class="cmp-label" for="cmpBcc">Bcc</label>
+          <input id="cmpBcc" class="cmp-input" type="text" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="cmp-row">
+          <label class="cmp-label" for="cmpSub">Subject</label>
+          <input id="cmpSub" class="cmp-input" type="text" autocomplete="off">
+        </div>
+        <textarea id="cmpBody" class="cmp-body" aria-label="Message" spellcheck="true"></textarea>
+        <div id="cmpAtt" class="att-list cmp-att"></div>
+        <ul id="cmpSuggest" class="suggest hidden" role="listbox"></ul>
+      </div>
+      <div class="modal-ftr cmp-ftr">
+        <button id="cmpAttachBtn" type="button" class="act-btn" title="Attach files">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          Attach
+        </button>
+        <input id="cmpFile" type="file" multiple class="hidden">
+        <button id="cmpDiscard" type="button" class="act-btn danger-text" title="Delete this draft">Discard</button>
+        <div class="flex-spacer"></div>
+        <button id="sendBtn" type="button" class="compose-btn" title="Send (Ctrl+Enter)">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          <span>Send</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SETTINGS ═══════════════ -->
+  <div id="settingsModal" class="modal-bg" aria-hidden="true">
+    <div class="modal settings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-hdr">
+        <h3 id="settingsTitle">Settings</h3>
+        <button id="settingsClose" type="button" class="icon-btn small" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="settings-tabs" role="tablist">
+        <button id="stab-general" type="button" class="stab-btn active" data-tab="general">Profile</button>
+        <button id="stab-security" type="button" class="stab-btn" data-tab="security">Security</button>
+        <button id="stab-vacation" type="button" class="stab-btn" data-tab="vacation">Out of office</button>
+        <button id="stab-preferences" type="button" class="stab-btn" data-tab="preferences">Preferences</button>
+        <button id="stab-shortcuts" type="button" class="stab-btn" data-tab="shortcuts">Shortcuts</button>
+      </div>
+      <div class="modal-body settings-body">
+        <div id="tab-general" class="tab-content active">
+          <div class="profile-row">
+            <div id="setProfileAvatar" class="user-pill-avatar big">··</div>
+            <div>
+              <div id="setProfileEmail" class="profile-email">—</div>
+              <div class="muted small">Your name and signature are saved to your mailbox and used on every device.</div>
+            </div>
+          </div>
+          <form id="profileForm" class="stack">
+            <div>
+              <label class="fl-label" for="setDisplayName">Display name</label>
+              <input id="setDisplayName" class="fl-input" type="text" maxlength="120" autocomplete="name">
+            </div>
+            <div>
+              <label class="fl-label" for="setSignature">Signature</label>
+              <textarea id="setSignature" class="fl-input" rows="4" maxlength="2000"></textarea>
+            </div>
+            <div id="profileStatus" class="form-status" role="status"></div>
+            <div><button type="submit" class="compose-btn">Save profile</button></div>
+          </form>
+        </div>
+
+        <div id="tab-security" class="tab-content">
+          <section class="sec-card">
+            <h4>Password</h4>
+            <form id="pwForm" class="stack" autocomplete="on">
+              <input id="pwUsername" type="email" autocomplete="username" class="hidden" tabindex="-1" aria-hidden="true">
+              <div>
+                <label class="fl-label" for="pwCurrent">Current password</label>
+                <input id="pwCurrent" class="fl-input" type="password" autocomplete="current-password" required>
+              </div>
+              <div class="two-col">
+                <div>
+                  <label class="fl-label" for="pwNew">New password (12+ characters)</label>
+                  <input id="pwNew" class="fl-input" type="password" autocomplete="new-password" minlength="12" required>
+                </div>
+                <div>
+                  <label class="fl-label" for="pwConfirm">Repeat new password</label>
+                  <input id="pwConfirm" class="fl-input" type="password" autocomplete="new-password" minlength="12" required>
+                </div>
+              </div>
+              <div id="pwCodeRow" class="hidden">
+                <label class="fl-label" for="pwCode">6-digit code from your authenticator app</label>
+                <input id="pwCode" class="fl-input code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
+              </div>
+              <div id="pwStatus" class="form-status" role="status"></div>
+              <div class="row-actions"><button id="pwSubmitBtn" type="submit" class="compose-btn">Change password</button>
+                <span class="muted small">Every other browser is signed out.</span></div>
+            </form>
+          </section>
+
+          <section class="sec-card">
+            <h4>Two-step sign-in <span id="twoStepBadge" class="sec-badge">Off</span></h4>
+            <p class="muted small">After your password, sign-in asks for a 6-digit code from an authenticator app on your phone (Google Authenticator, Microsoft Authenticator, 2FAS…). A stolen password alone is then not enough.</p>
+            <div id="twoStepOff">
+              <button id="twoStepStart" type="button" class="act-btn">Turn on two-step sign-in</button>
+              <form id="twoStepSetup" class="stack hidden">
+                <div class="qr-row">
+                  <img id="twoStepQr" class="qr" alt="QR code to scan with your authenticator app" width="168" height="168">
+                  <div class="small">
+                    <p>1. Scan this code with your authenticator app.</p>
+                    <p class="muted">Can't scan? Enter this key instead:</p>
+                    <code id="twoStepSecret" class="secret-text"></code>
+                    <p style="margin-top:8px">2. Enter the 6-digit code it shows, and your password.</p>
+                  </div>
+                </div>
+                <div class="two-col">
+                  <div>
+                    <label class="fl-label" for="twoStepCode">6-digit code</label>
+                    <input id="twoStepCode" class="fl-input code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+                  </div>
+                  <div>
+                    <label class="fl-label" for="twoStepPassword">Your password</label>
+                    <input id="twoStepPassword" class="fl-input" type="password" autocomplete="current-password" required>
+                  </div>
+                </div>
+                <div class="row-actions"><button type="submit" class="compose-btn">Turn on</button><button id="twoStepCancel" type="button" class="act-btn">Cancel</button></div>
+              </form>
+            </div>
+            <form id="twoStepOn" class="stack hidden">
+              <p class="small">Two-step sign-in is on. To turn it off, confirm with a code and your password.</p>
+              <div class="two-col">
+                <div>
+                  <label class="fl-label" for="twoStepOffCode">6-digit code</label>
+                  <input id="twoStepOffCode" class="fl-input code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+                </div>
+                <div>
+                  <label class="fl-label" for="twoStepOffPassword">Your password</label>
+                  <input id="twoStepOffPassword" class="fl-input" type="password" autocomplete="current-password" required>
+                </div>
+              </div>
+              <div class="row-actions"><button type="submit" class="act-btn danger-text">Turn off two-step sign-in</button></div>
+            </form>
+            <div id="twoStepStatus" class="form-status" role="status"></div>
+          </section>
+
+          <section class="sec-card">
+            <h4>Signed-in browsers</h4>
+            <ul id="sessionList" class="sec-list"><li class="muted small">Loading…</li></ul>
+            <div class="row-actions"><button id="signOutOthers" type="button" class="act-btn">Sign out all other browsers</button></div>
+            <div id="sessionStatus" class="form-status" role="status"></div>
+          </section>
+
+          <section class="sec-card">
+            <h4>Recent sign-ins</h4>
+            <p class="muted small">If you see a sign-in you don't recognise, change your password and turn on two-step sign-in.</p>
+            <ul id="signinList" class="sec-list"><li class="muted small">Loading…</li></ul>
+          </section>
+
+          <section class="sec-card">
+            <h4>App passwords</h4>
+            <p class="muted small">For mail apps such as Outlook, Apple Mail or your phone's mail app. Each app gets its own password, which you can revoke at any time. With two-step sign-in on, mail apps can only sign in this way.</p>
+            <ul id="appPwList" class="sec-list"></ul>
+            <form id="appPwForm" class="inline-form">
+              <input id="appPwName" class="fl-input" type="text" maxlength="60" placeholder="Name, e.g. Outlook on my laptop" aria-label="App password name">
+              <input id="appPwPassword" class="fl-input" type="password" autocomplete="current-password" placeholder="Your password" aria-label="Your password, to confirm">
+              <button type="submit" class="act-btn">Create</button>
+            </form>
+            <div id="appPwNew" class="notice info hidden">
+              <div>
+                <div><b>Your new app password</b> (shown only once):</div>
+                <code id="appPwSecret" class="secret-text big"></code>
+                <div class="small" style="margin-top:6px">In your mail app use your email address as the username and this as the password. Incoming: <b>IMAP</b>, port 993, SSL. Outgoing: <b>SMTP</b>, port 465, SSL. Server names are given when mail apps are enabled.</div>
+              </div>
+              <button id="appPwCopy" type="button" class="lh-link">Copy</button>
+            </div>
+            <div id="appPwStatus" class="form-status" role="status"></div>
+          </section>
+        </div>
+
+        <div id="tab-vacation" class="tab-content">
+          <form id="vacationForm" class="stack">
+            <label class="check-row"><input id="vacEnabled" type="checkbox"> <span>Send an automatic reply</span></label>
+            <div class="two-col">
+              <div>
+                <label class="fl-label" for="vacFrom">From (optional)</label>
+                <input id="vacFrom" class="fl-input" type="date">
+              </div>
+              <div>
+                <label class="fl-label" for="vacTo">Until (optional)</label>
+                <input id="vacTo" class="fl-input" type="date">
+              </div>
+            </div>
+            <div>
+              <label class="fl-label" for="vacSubject">Subject</label>
+              <input id="vacSubject" class="fl-input" type="text" maxlength="200" placeholder="Out of office">
+            </div>
+            <div>
+              <label class="fl-label" for="vacText">Message</label>
+              <textarea id="vacText" class="fl-input" rows="5" maxlength="5000"></textarea>
+            </div>
+            <div id="vacStatus" class="form-status" role="status"></div>
+            <div><button type="submit" class="compose-btn">Save</button></div>
+          </form>
+        </div>
+
+        <div id="tab-preferences" class="tab-content">
+          <form id="prefsForm" class="stack">
+            <label class="check-row"><input id="prefAutoSeen" type="checkbox"> <span>Mark messages as read when I open them</span></label>
+            <label class="check-row"><input id="prefConfirmDelete" type="checkbox"> <span>Ask before deleting permanently</span></label>
+            <div>
+              <label class="fl-label" for="prefRemoteImages">Pictures from the internet in emails</label>
+              <select id="prefRemoteImages" class="fl-input">
+                <option value="ask">Ask first (recommended: blocks tracking pixels)</option>
+                <option value="always">Always show</option>
+              </select>
+            </div>
+            <p class="muted small">Preferences are saved on this device.</p>
+            <div><button type="submit" class="compose-btn">Save preferences</button></div>
+          </form>
+        </div>
+
+        <div id="tab-shortcuts" class="tab-content">
+          <table class="shortcut-table">
+            <tbody>
+              <tr><td><kbd>c</kbd></td><td>Compose</td><td><kbd>/</kbd></td><td>Search</td></tr>
+              <tr><td><kbd>j</kbd> / <kbd>k</kbd></td><td>Next / previous conversation</td><td><kbd>Enter</kbd></td><td>Open</td></tr>
+              <tr><td><kbd>r</kbd></td><td>Reply</td><td><kbd>a</kbd></td><td>Reply all</td></tr>
+              <tr><td><kbd>f</kbd></td><td>Forward</td><td><kbd>e</kbd></td><td>Archive</td></tr>
+              <tr><td><kbd>#</kbd></td><td>Delete</td><td><kbd>s</kbd></td><td>Star</td></tr>
+              <tr><td><kbd>Shift</kbd>+<kbd>i</kbd></td><td>Mark read</td><td><kbd>Shift</kbd>+<kbd>u</kbd></td><td>Mark unread</td></tr>
+              <tr><td><kbd>v</kbd></td><td>Move to folder</td><td><kbd>Esc</kbd></td><td>Close / back</td></tr>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Send</td><td><kbd>l</kbd></td><td>Label</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DIALOG (confirm / prompt) ═══════════════ -->
+  <div id="dialog" class="modal-bg" aria-hidden="true">
+    <form id="dialogForm" class="modal dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+      <div class="modal-hdr"><h3 id="dialogTitle">Confirm</h3></div>
+      <div class="modal-body">
+        <p id="dialogText"></p>
+        <input id="dialogInput" class="fl-input hidden" type="text" maxlength="255">
+        <div id="dialogError" class="form-status"></div>
+      </div>
+      <div class="modal-ftr">
+        <button id="dialogCancel" type="button" class="act-btn">Cancel</button>
+        <button id="dialogOk" type="submit" class="compose-btn">OK</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Folder picker for "Move to" -->
+  <div id="menu" class="popover hidden" role="menu"></div>
+
+  <!-- ═══════════════ SIGN IN ═══════════════ -->
+  <div id="loginScreen" class="login-overlay">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="hdr-brand-icon login-logo">ID</div>
+        <div>
+          <div class="login-title">IRON ID Mail</div>
+          <div class="muted small">Sign in to your mailbox</div>
+        </div>
+      </div>
+      <div id="loginAlert" class="hidden"></div>
+      <form id="loginForm" class="stack">
+        <div>
+          <label class="fl-label" for="loginEmail">Email address</label>
+          <input id="loginEmail" type="email" required placeholder="you@iron-id.io" class="login-input" autocomplete="username">
+        </div>
+        <div>
+          <label class="fl-label" for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" required class="login-input" autocomplete="current-password">
+        </div>
+        <div id="loginCodeRow" class="hidden">
+          <label class="fl-label" for="loginCode">6-digit code from your authenticator app</label>
+          <input id="loginCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="login-input code-input" placeholder="123456">
+        </div>
+        <button id="loginSubmitBtn" type="submit" class="login-submit-btn"><span>Sign in</span></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    <span id="toastIcon" class="toast-icon">✓</span>
+    <span id="toastMsg"></span>
+    <button id="toastAction" type="button" class="toast-action hidden"></button>
+  </div>
+</body>
+</html>

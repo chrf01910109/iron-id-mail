@@ -1,0 +1,18 @@
+# Keep the image small and free of local-only files
+.git
+**/node_modules
+*.log
+*.bundle
+.backup-*
+docs/*.pdf
+
+# Local OpenSearch tarballs (Mac only, never deployed)
+.opensearch/
+*.tar.gz
+
+# Encrypted seed (CI unlocks it into engine/export_data.json before building)
+engine/export_data.tar.gz.enc
+.env
+.env.*
+SEED_KEY
+secrets/

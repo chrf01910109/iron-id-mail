@@ -1,0 +1,6 @@
+# No user gets admin rights; administration uses the container's admin certificate only.
+_meta:
+  type: "rolesmapping"
+  config_version: 2
+ironid_mail_search:
+  users: ["stalwart"]

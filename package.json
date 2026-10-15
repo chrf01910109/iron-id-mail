@@ -1,0 +1,11 @@
+{
+  "name": "iron-id-mail",
+  "version": "1.0.0",
+  "description": "IRON ID Sovereign Email Engine & Webmail Gateway",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "bash tests/e2e/run-docker.sh"
+  },
+  "dependencies": {}
+}

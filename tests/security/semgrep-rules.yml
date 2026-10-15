@@ -1,0 +1,175 @@
+# IRON ID — security rules for semgrep (run offline: semgrep scan --config tests/security/semgrep-rules.yml).
+# Each rule targets a mistake that would matter in this codebase (gateway, webmail, deploy scripts).
+rules:
+  # ——— Injection ———
+  - id: sql-built-with-template-or-concat
+    languages: [javascript]
+    severity: ERROR
+    message: "SQL built from a template literal or string concatenation with a variable. Use $1 parameters."
+    patterns:
+      - pattern-either:
+          - pattern: $DB.query(`...${$X}...`, ...)
+          - pattern: $DB.query(`...${$X}...`)
+          - pattern: $DB.query("..." + $X, ...)
+          - pattern: $DB.query("..." + $X)
+          - pattern: $DB.query($A + $B, ...)
+      # Fragments that are fixed strings chosen in code (e.g. a scoping clause) are fine.
+      - pattern-not: |
+          $DB.query(`...${$C ? '...' : '...'}...`, ...)
+      - pattern-not: |
+          $DB.query(`...${$W.length ? '...' + $W.join('...') : '...'}...`, ...)
+      - pattern-not: $DB.query(`...${$P.length}...`, ...)
+
+  - id: shell-exec-with-variable
+    languages: [javascript]
+    severity: ERROR
+    message: "Shell command built from a variable (command injection)."
+    pattern-either:
+      - pattern: require('child_process').exec($X, ...)
+      - pattern: require('child_process').execSync($X, ...)
+      - pattern: $CP.exec(`...${$Y}...`, ...)
+      - pattern: $CP.execSync(`...${$Y}...`, ...)
+
+  - id: dynamic-code-eval
+    languages: [javascript]
+    severity: ERROR
+    message: "eval / new Function / string timers run code from data."
+    pattern-either:
+      - pattern: eval($X)
+      - pattern: new Function(...)
+      - pattern: setTimeout("...", ...)
+      - pattern: setInterval("...", ...)
+
+  # ——— Cross-site scripting in the browser code ———
+  - id: innerhtml-with-non-constant
+    languages: [javascript]
+    severity: ERROR
+    message: "innerHTML / outerHTML / insertAdjacentHTML / document.write with a value that is not a constant string. Use textContent or the h() helper."
+    patterns:
+      - pattern-either:
+          - pattern: $EL.innerHTML = $V
+          - pattern: $EL.outerHTML = $V
+          - pattern: $EL.insertAdjacentHTML($P, $V)
+          - pattern: document.write($V)
+      - pattern-not: $EL.innerHTML = "..."
+      - pattern-not: $EL.innerHTML = '...'
+      - pattern-not: $EL.innerHTML = ``
+    paths:
+      include: ['webmail/public/**']
+
+  - id: h-helper-html-attribute-with-variable
+    languages: [javascript]
+    severity: WARNING
+    message: "The h() helper's html attribute must only receive constant markup (icons). Check that no untrusted text reaches it."
+    patterns:
+      - pattern: "h($T, {..., html: $V, ...}, ...)"
+      - pattern-not: "h($T, {..., html: '...', ...}, ...)"
+      - pattern-not: 'h($T, {..., html: "...", ...}, ...)'
+    paths:
+      include: ['webmail/public/**']
+
+  - id: javascript-url-or-unvalidated-href
+    languages: [javascript]
+    severity: WARNING
+    message: "Setting href/src from a variable. Make sure javascript: and data: URLs can't get in."
+    patterns:
+      - pattern-either:
+          - pattern: $EL.setAttribute('href', $V)
+          - pattern: $EL.href = $V
+      - pattern-not: $EL.href = '...'
+    paths:
+      include: ['webmail/public/**']
+
+  - id: postmessage-handler
+    languages: [javascript]
+    severity: WARNING
+    message: "A message event handler must check event.origin."
+    pattern: window.addEventListener('message', ...)
+
+  # ——— Crypto and secrets ———
+  - id: weak-random-for-secrets
+    languages: [javascript]
+    severity: ERROR
+    message: "Math.random() is not suitable for tokens, passwords or ids that must be unguessable. Use crypto.randomBytes / randomInt."
+    pattern: Math.random()
+    paths:
+      exclude: ['webmail/public/**', 'tests/**']
+
+  - id: weak-hash-for-secrets
+    languages: [javascript]
+    severity: WARNING
+    message: "MD5/SHA-1 are not suitable for passwords or integrity of secrets."
+    pattern-either:
+      - pattern: crypto.createHash('md5')
+      - pattern: crypto.createHash('sha1')
+
+  - id: non-constant-time-secret-compare
+    languages: [javascript]
+    severity: WARNING
+    message: "Comparing a secret/token with === leaks timing. Use crypto.timingSafeEqual."
+    patterns:
+      - pattern-either:
+          - pattern: $A === process.env.$TOK
+          - pattern: process.env.$TOK === $A
+          - pattern: $A !== process.env.$TOK
+          - pattern: process.env.$TOK !== $A
+      - metavariable-regex:
+          metavariable: $TOK
+          regex: (?i).*(token|secret|password|key).*
+
+  - id: tls-verification-disabled
+    languages: [javascript]
+    severity: WARNING
+    message: "TLS certificate checks are turned off. Only acceptable for a known self-signed internal service; document why."
+    pattern-either:
+      - pattern: "{..., rejectUnauthorized: false, ...}"
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
+  - id: secret-logged
+    languages: [javascript]
+    severity: ERROR
+    message: "A password/secret/token may be written to the logs."
+    patterns:
+      - pattern-either:
+          - pattern: console.$LOG(..., $X, ...)
+      - metavariable-regex:
+          metavariable: $X
+          regex: ^(password|secret|token|apiKey|newPassword|currentPassword|auth|webAuth|RECOVERY|recovery)$
+
+  # ——— HTTP gateway ———
+  - id: cors-wildcard
+    languages: [javascript]
+    severity: WARNING
+    message: "Access-Control-Allow-Origin * lets any website read the response."
+    pattern-either:
+      - pattern: "{..., 'Access-Control-Allow-Origin': '*', ...}"
+      - pattern: $RES.setHeader('Access-Control-Allow-Origin', '*')
+
+  - id: fs-read-from-request
+    languages: [javascript]
+    severity: ERROR
+    message: "File path built from request data (path traversal) without a resolve + prefix check."
+    patterns:
+      - pattern-either:
+          - pattern: fs.readFileSync($REQ.url, ...)
+          - pattern: fs.readFileSync(path.join($DIR, $REQ.url), ...)
+          - pattern: fs.createReadStream($REQ.url, ...)
+
+  # ——— Docker / shell ———
+  - id: dockerfile-curl-pipe-shell
+    languages: [dockerfile]
+    severity: WARNING
+    message: "Piping a downloaded script to a shell runs whatever the server sends. Pin and verify instead."
+    pattern-regex: curl[^\n|]*\|\s*(ba)?sh
+
+  - id: dockerfile-download-without-checksum
+    languages: [dockerfile]
+    severity: WARNING
+    message: "Downloaded archive extracted without a checksum check."
+    pattern-regex: curl[^\n]*\|\s*tar
+
+  - id: shell-secret-echo
+    languages: [bash]
+    severity: ERROR
+    message: "A secret variable is printed by echo."
+    pattern-regex: echo[^\n]*\$\{?(PASSWORD|PASS|SECRET|TOKEN|ADMIN_TOKEN|STALWART_RECOVERY_ADMIN|OPENSEARCH_PASSWORD|DB_PASS)\b

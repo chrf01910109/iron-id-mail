@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Windows binaries (downloaded dynamically in Docker on Railway)
+engine/stalwart.exe
+*.exe
+
+# Local database runtime stores
+engine/data/
+/data/
+*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Reports and generated documents (Device-only, do not track in Git)
+*.pdf
+docs/*.pdf
+
+# e2e test dependencies
+tests/e2e/node_modules/
+audit-results/
+
+# Local OpenSearch tarballs (Mac only, never deployed)
+.opensearch/
+*.tar.gz
+
+# Private: never commit (secrets, keys, real mail data)
+engine/export_data.json/
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+SEED_KEY
+secrets/

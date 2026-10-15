@@ -1,0 +1,37 @@
+name: Security audit
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  schedule:
+    - cron: '17 5 * * 1'   # every Monday, to catch newly published dependency problems
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # gitleaks scans the whole history
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install audit tools
+        run: |
+          pip install --user semgrep
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.2/gitleaks_8.24.2_linux_x64.tar.gz | tar -xz -C /usr/local/bin gitleaks || sudo tar -xz -C /usr/local/bin gitleaks
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install dependencies (for npm audit)
+        run: |
+          cd webmail && npm ci --omit=dev --silent
+          cd ../tests/e2e && npm ci --silent --ignore-scripts || npm install --silent --ignore-scripts
+      - name: Run the audit
+        run: bash tests/security/run-audit.sh
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-results
+          path: audit-results/

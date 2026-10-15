@@ -1,0 +1,6 @@
+# Starts empty on purpose. ironid-entrypoint.sh creates the "stalwart" user with
+# OPENSEARCH_PASSWORD only after the search templates are in place, and resets that
+# password on every start, so changing the variable and redeploying is enough.
+_meta:
+  type: "internalusers"
+  config_version: 2

@@ -1,0 +1,43 @@
+# ==============================================================================
+# IRON ID Sovereign Mail — All-in-One Railway VPS Container Configuration
+# Self-contained embedded RocksDB storage with pre-seeded accounts
+# ==============================================================================
+
+[server]
+hostname = "mail.iron-id.io"
+
+# ------------------------------------------------------------------------------
+# Storage Configuration (Embedded RocksDB)
+# ------------------------------------------------------------------------------
+[storage]
+data = "rocksdb"
+blob = "rocksdb"
+lookup = "rocksdb"
+fts = "rocksdb"
+
+[store.rocksdb]
+type = "rocksdb"
+path = "/opt/iron-id/data"
+compression = "lz4"
+cache-size = "128MB"
+write-buffer-size = "128MB"
+
+# ------------------------------------------------------------------------------
+# Directory Configuration (Internal Store)
+# ------------------------------------------------------------------------------
+[directory.internal]
+type = "internal"
+store = "rocksdb"
+
+# ------------------------------------------------------------------------------
+# Network Listeners
+# ------------------------------------------------------------------------------
+[server.listener."http"]
+bind = ["127.0.0.1:8085"]
+protocol = "http"
+
+[jmap]
+allow-insecure-auth = true
+
+[authentication]
+allow-cleartext = true
