@@ -286,12 +286,7 @@ async function create(b, { ip, lang }) {
   const email = `${local}@${DOMAIN}`;
   if ((await adminAddresses()).has(email)) fail('That address is reserved. Choose another one.', 400, { code: 'address' });
   await usePuzzle(b.pow);
-  // If the fresh lookup fails, the cached list will do: the engine itself refuses a duplicate at create time.
-  const used = await takenAddresses({ fresh: true }).catch(e => {
-    console.error('[signup] address lookup:', e.message);
-    return taken.set || new Set();
-  });
-  if (used.has(email)) fail('That address was just taken. Choose another one.', 409, { code: 'taken' });
+  if ((await takenAddresses({ fresh: true })).has(email)) fail('That address was just taken. Choose another one.', 409, { code: 'taken' });
 
   // Limits per network and per day, counted and reserved in one step (a lock makes parallel
   // requests wait their turn), so they hold even if many requests arrive at once.

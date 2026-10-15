@@ -76,42 +76,14 @@ function engineRequest(path, { method = 'POST', auth, body } = {}) {
 async function jmap(auth, methodCalls) {
   const r = await engineRequest('/jmap/', { auth, body: { using: USING, methodCalls } });
   if (r.status === 401) throw Object.assign(new Error('Engine rejected the credentials'), { code: 'unauthorized' });
-  if (r.status !== 200 || !r.json) {
-    const type = r.json && typeof r.json.type === 'string' ? r.json.type : '';
-    throw Object.assign(new Error(`Engine returned HTTP ${r.status}${type ? ' (' + type + ')' : ''}`),
-      { code: /:limit$/.test(type) ? 'limit' : undefined });
-  }
+  if (r.status !== 200 || !r.json) throw new Error(`Engine returned HTTP ${r.status}`);
   return r.json.methodResponses;
-}
-
-// The engine runs at most 4 requests at a time per account (JMAP maxConcurrentRequests) and
-// answers more with HTTP 400 "limit". All gateway calls use one account, so they queue here.
-const MAX_PARALLEL = 3;
-let running = 0;
-const waiting = [];
-async function queued(fn) {
-  if (running < MAX_PARALLEL) running++;
-  else await new Promise(resolve => waiting.push(resolve)); // a finishing call hands over its slot
-  try {
-    return await fn();
-  } finally {
-    const next = waiting.shift();
-    if (next) next(); else running--;
-  }
 }
 
 /** Calls the engine with the gateway's API key. */
 async function call(methodCalls) {
   if (!apiKey) throw Object.assign(new Error('Engine admin access is not set up yet'), { code: 'not_configured' });
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await queued(() => jmap('Bearer ' + apiKey, methodCalls));
-    } catch (e) {
-      // Another user of the gateway key (a second instance during a deploy) can still fill the engine's slots.
-      if (e.code !== 'limit' || attempt >= 4) throw e;
-      await new Promise(resolve => setTimeout(resolve, 150 * attempt));
-    }
-  }
+  return jmap('Bearer ' + apiKey, methodCalls);
 }
 
 function basic(userPass) {
