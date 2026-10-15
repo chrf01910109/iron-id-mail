@@ -287,7 +287,10 @@ async function create(b, { ip, lang }) {
   const email = `${local}@${DOMAIN}`;
   if ((await adminAddresses()).has(email)) fail('That address is reserved. Choose another one.', 400, { code: 'address' });
   await usePuzzle(b.pow);
-  if ((await takenAddresses({ fresh: true })).has(email)) fail('That address was just taken. Choose another one.', 409, { code: 'taken' });
+  // A fresh look at the directory; if the engine can't answer now, the last list is used (the engine
+  // itself still refuses an address that exists when the account is created).
+  const used = await takenAddresses({ fresh: true }).catch(e => { console.error('[signup] directory:', e.message); return taken.set || new Set(); });
+  if (used.has(email)) fail('That address was just taken. Choose another one.', 409, { code: 'taken' });
 
   // Limits per network and per day, counted and reserved in one step (a lock makes parallel
   // requests wait their turn), so they hold even if many requests arrive at once.
