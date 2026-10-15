@@ -785,7 +785,7 @@ const server = http.createServer(async (req, res) => {
 
   if (reqUrl.pathname === '/healthz' && req.method === 'GET') {
     const result = { gateway: 'ok', engine: 'down', database: 'down', schema: schemaReady ? 'ok' : 'pending', adminAccess: engineAdmin.getStatus(), recoveryAdminSet: engineAdmin.recoveryAdminSet(), search: searchBackend.getStatus(),
-      payments: billing.provider().name, registrar: registrar.kind() || 'off', passwordReset: passwordReset.enabled() ? 'on' : 'off' };
+      payments: billing.provider().name, registrar: registrar.kind() || 'off', recoveryLinks: passwordReset.enabled() ? 'on' : 'off' };
     // Switches that must never be on in production show up here (the security probe fails on them).
     const testFeatures = [process.env.IRONID_DNS_FAKE && 'dns-fake', process.env.PAYMENTS_FAKE === 'true' && 'payments-fake',
       registrar.kind() === 'fake' && 'registrar-fake', process.env.IRONID_MIGRATION_TEST === 'true' && 'migration-test'].filter(Boolean);

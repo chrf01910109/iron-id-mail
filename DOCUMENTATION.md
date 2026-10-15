@@ -220,6 +220,7 @@ arrive or would land in spam.
   `cp.settings`, 50 MB). The message is in the account's language.
 - Audit: `recovery.link_requested` (with the outcome, never shown to the requester), `recovery.password_reset`,
   `account.recovery_set` / `account.recovery_removed`.
+- `/healthz` shows `recoveryLinks: on|off`; the security probe checks it is off, or on without revealing which addresses exist.
 
 ### 4.6 Own domains and payments ("Pro" mail) — built, switched off in production
 The offer (France): the free mailbox name@iron-id.io has **5 GB**. Addresses on the person's own domain

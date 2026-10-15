@@ -84,7 +84,7 @@ test('recovery by email is open here, and its page loads', async () => {
   const page = await h.gw('/forgot');
   assert.equal(page.status, 200);
   assert.match(page.headers.get('content-security-policy'), /script-src 'self'/);
-  assert.equal((await h.gw('/healthz')).json.passwordReset, 'on');
+  assert.equal((await h.gw('/healthz')).json.recoveryLinks, 'on');
 });
 
 test('the recovery address needs the password, must be outside IRON ID, and is saved', async () => {
