@@ -67,6 +67,15 @@ test('the language is saved to the account and follows the person at sign-in', a
   assert.match(set.setCookie, /SameSite=Lax/);
   assert.doesNotMatch(set.setCookie, /HttpOnly/, 'the page reads it before sign-in');
 
+  // A browser already signed in learns the new language from /account/me on its next load.
+  const me = await h.gw('/account/me', { cookie: S });
+  assert.equal(me.json.lang, 'fr');
+  // French answers keep their dates (recent sign-ins come from the database as dates).
+  const sec = await h.gw('/account/security', { headers: { cookie: `iid_session=${S}; ironid_lang=fr` } });
+  assert.equal(sec.status, 200, sec.text);
+  assert.ok(sec.json.recentSignIns.length > 0);
+  assert.ok(!Number.isNaN(Date.parse(sec.json.recentSignIns[0].at)), 'a real date, not {}');
+
   // Another device with an English browser: the account's French wins.
   r = await h.login(user.email, user.password, { ...XF(204), 'accept-language': 'en-US' });
   assert.equal(r.json.lang, 'fr');

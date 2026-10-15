@@ -1,5 +1,26 @@
 # IRON ID Mail — Test and Security Audit Report
 
+## Update 2026-10-15 — English and French (branch `i18n-en-fr`)
+
+Same local stack as below (real Stalwart 0.16.23, PostgreSQL 16, OpenSearch 2.19.3, gateway, Chromium).
+
+| Check | Result |
+|---|---|
+| End-to-end tests, all files (11) | **83 / 83 passed**: the 77 existing tests unchanged (English output identical), 5 new language tests (`10-languages.test.js`), and the restart test with a real restart |
+| Translation coverage (`tests/i18n/check-translations.js`) | **OK** — 942 webmail/admin texts and every gateway message have French (668 + 219 entries); placeholders identical in both languages |
+| Security audit (`run-audit.sh`) | Same as 2026-10-14: 0 dependency problems, working tree clean, semgrep 0 errors / 1 known warning, HTTP probe 37/38 (recovery login left on in the test copy) |
+| Independent review (separate agent, read-only) | 1 real bug found and fixed before commit: in French, dates coming from the database (recent sign-ins, activity log, domain dates) showed "Invalid Date". Also fixed: a database error while saving the language could fail a sign-in; the language picked on the sign-in screen now expires after 30 min (shared computers); a cookie-blocked browser can't loop on reload |
+
+New tests in `10-languages.test.js`: page served in the browser's language (English default, cookie wins, bad
+cookie ignored); gateway errors in French and unchanged in English; language saved to the account, returned at
+sign-in and by `/account/me`, dates intact in French answers; webmail in French in a real browser (sign-in
+buttons, folders, search, no English left on the main screen, Preferences switch back to English); admin console
+in French.
+
+Known change in English: dates now always use day/month order (`en-GB`) instead of the browser's own format.
+
+---
+
 | | |
 |---|---|
 | Date | 2026-10-14 (Africa/Algiers) |

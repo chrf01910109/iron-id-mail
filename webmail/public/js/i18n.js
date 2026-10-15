@@ -80,10 +80,12 @@ export function num(n, opts) {
 
 /** Saves the language in this browser and reloads the page in it. The account's choice is saved separately (/account/prefs). */
 export function setLang(code, { reload = true } = {}) {
-  if (!SUPPORTED.includes(code)) return;
+  if (!SUPPORTED.includes(code)) return false;
   const secure = location.protocol === 'https:' ? '; Secure' : '';
   document.cookie = `${COOKIE}=${code}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+  if (readCookie() !== code) return false; // cookies blocked: reloading would not change anything
   if (reload && code !== lang) location.reload();
+  return true;
 }
 
 const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];

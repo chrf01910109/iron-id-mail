@@ -27,6 +27,8 @@ jobs:
         run: |
           cd webmail && npm ci --omit=dev --silent
           cd ../tests/e2e && npm ci --silent --ignore-scripts || npm install --silent --ignore-scripts
+      - name: Every text has its French translation
+        run: node tests/i18n/check-translations.js
       - name: Run the audit
         run: bash tests/security/run-audit.sh
       - name: Keep the results

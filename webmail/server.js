@@ -288,7 +288,7 @@ const server = http.createServer(async (req, res) => {
       // account's saved choice wins, so the same language follows the person to every device.
       const picked = i18n.validLang(body.lang);
       let lang = picked || await getLangPref(session.username) || res.ironLang;
-      if (picked) await setLangPref(session.username, picked);
+      if (picked) await setLangPref(session.username, picked).catch(e => console.error('[auth] saving language:', e.message));
       res.ironLang = lang;
       return sendJson(res, 200, { session, lang }, { 'Set-Cookie': [sessions.sessionCookie(req, id), i18n.langCookie(req, lang)] });
     } catch (e) {
@@ -337,12 +337,13 @@ const server = http.createServer(async (req, res) => {
 
       // Who am I to the gateway: admin console access, teams (shared mailboxes) and labels.
       if (route === 'GET /account/me') {
-        const [admin, teams, myLabels] = await Promise.all([
+        const [admin, teams, myLabels, lang] = await Promise.all([
           adminConsole.isAdmin(current.email),
           adminConsole.teamsFor(current.email).catch(e => { console.error('[account] teams:', e.message); return []; }),
-          labels.list(String(current.email).toLowerCase())
+          labels.list(String(current.email).toLowerCase()),
+          getLangPref(current.email)
         ]);
-        return sendJson(res, 200, { email: current.email, admin, teams, labels: myLabels });
+        return sendJson(res, 200, { email: current.email, admin, teams, labels: myLabels, lang });
       }
       if (route === 'POST /account/labels') return sendJson(res, 200, await labels.create(String(current.email).toLowerCase(), body));
       if (route === 'POST /account/labels/update') return sendJson(res, 200, await labels.update(String(current.email).toLowerCase(), body));

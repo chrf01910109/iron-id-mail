@@ -30,11 +30,19 @@ const hideLogin = () => $('#loginScreen').classList.remove('open');
 
 // Language buttons on the sign-in card. The choice is remembered by this browser at once and
 // saved to the account when the person signs in.
+// The choice counts for 30 minutes, so on a shared computer it does not carry over to the next person.
 const LANG_PICKED = 'ironid.langPicked';
+const PICK_TTL = 30 * 60 * 1000;
+function pickedLang() {
+  try {
+    const [code, at] = String(sessionStorage.getItem(LANG_PICKED) || '').split('|');
+    return code === pageLang && Date.now() - Number(at) < PICK_TTL ? code : '';
+  } catch (e) { return ''; }
+}
 for (const b of document.querySelectorAll('.login-lang [data-lang]')) {
   b.setAttribute('aria-pressed', String(b.dataset.lang === pageLang));
   b.addEventListener('click', () => {
-    try { sessionStorage.setItem(LANG_PICKED, b.dataset.lang); } catch (e) { /* storage blocked */ }
+    try { sessionStorage.setItem(LANG_PICKED, b.dataset.lang + '|' + Date.now()); } catch (e) { /* storage blocked */ }
     setLang(b.dataset.lang);
   });
 }
@@ -48,9 +56,7 @@ $('#loginForm').addEventListener('submit', async e => {
   btn.disabled = true; btn.querySelector('span').textContent = t('Signing in…');
   $('#loginAlert').className = 'hidden';
   try {
-    let picked = '';
-    try { picked = sessionStorage.getItem(LANG_PICKED) || ''; } catch (e) { /* storage blocked */ }
-    const data = await api.signIn(email, password, code, picked);
+    const data = await api.signIn(email, password, code, pickedLang());
     try { sessionStorage.removeItem(LANG_PICKED); } catch (e) { /* storage blocked */ }
     if (data.lang && data.lang !== pageLang) { window.location.replace('/'); return; } // the account's language: reload in it
     $('#loginPassword').value = '';
@@ -106,6 +112,8 @@ async function boot() {
   // Admin access, team mailboxes (with members, for assigning) and labels.
   try {
     const me = await api.account('me');
+    // The language saved to the account (changed on another device): switch to it once.
+    if (me.lang && me.lang !== pageLang && setLang(me.lang)) return;
     mail.state.teams = me.teams || [];
     mail.state.labels = me.labels || [];
     $('#btnAdmin').classList.toggle('hidden', !me.admin);

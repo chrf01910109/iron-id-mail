@@ -162,6 +162,27 @@ records → *Switch to the new keys* (allowed only once both are visible in DNS;
 mailbox must not be disrupted) and never shows the exposed selectors `v1-ed25519/rsa-20260921` (and
 `-20260922` for client.dz) as something to publish; it warns to switch to new keys.
 
+### 4.4 Languages (English and French)
+The webmail, the admin console and the gateway's messages are available in **English and French**.
+
+| | |
+|---|---|
+| Choosing | On the sign-in card (English / Français buttons), or Settings → Preferences → Language |
+| Saved | On the account (`cp.user_prefs`), so it follows the person to every device; applied at sign-in and when the webmail loads |
+| Before sign-in | The `ironid_lang` cookie (this browser's last choice), else the browser's language, else English |
+| Dates and sizes | `en-GB` / `fr-FR` formats (day before month in both); sizes in Ko/Mo/Go in French |
+
+How it is built (for developers):
+- Text is written in English in the code and wrapped in `t('…')` (`tn()` for plurals, `tx('context', '…')` for a word
+  with two French meanings, e.g. the folder "Archives" vs the action "Archiver"). Changing parts use `{placeholders}`.
+- French lives in `webmail/public/js/i18n/fr/<file>.js`, keyed by the exact English text. Static text in
+  `index.html`/`admin.html` needs no code: `i18n.js` translates the page's text and `placeholder`/`title`/
+  `aria-label`/`alt` when it loads (`data-no-i18n` opts an element out). The page stays hidden until then (3 s fallback).
+- Gateway messages are translated in `sendJson` (`webmail/services/i18n.js` + `i18n-fr.js`): `error`, and the admin
+  console's `problem`/`purpose`/`warnings`/`protected` fields. Keys may contain `{x}` for parts that change.
+- `node tests/i18n/check-translations.js` fails when any visible text has no French (run in CI). Adding a third
+  language = one more dictionary folder + adding its code to `SUPPORTED` / `LANGS` on both sides.
+
 ---
 
 ## 5. Roles and permissions
@@ -199,6 +220,7 @@ the account's credentials (new password, two-step and all app passwords removed)
 | `webmail_credentials` | Per mailbox: the webmail's engine app password (encrypted), expiry |
 | `used_codes` | Two-step codes already used (hash), kept a few minutes |
 | `labels` | Per person: slug, name, colour |
+| `user_prefs` | Per person: language (`en`/`fr`) |
 | `recovery` | Reserved for recovery e-mail addresses |
 
 Migrations (`controlPlane.sql`) run on every start and are idempotent. Mail data, accounts, domains and keys
@@ -280,6 +302,7 @@ customer (Domains → Assign), add each customer's admin, and turn on two-step s
 |---|---|---|
 | End-to-end tests (local) | `cd tests/e2e && BASE_URL=… ENGINE_URL=… RECOVERY_ADMIN=… DNS_FAKE_FILE=… npm test -- ./*.test.js` | Needs a running gateway started with `PLATFORM_ADMINS=…,e2e-platform-admin@iron-id.io` and `IRONID_DNS_FAKE=<same file>` |
 | End-to-end tests (CI) | `bash tests/e2e/run-docker.sh` | Builds the real image, Postgres 16 and OpenSearch; runs every test. GitHub Actions `e2e.yml` |
+| French translations complete | `node tests/i18n/check-translations.js` | No server needed. Lists every text without French, by file:line. GitHub Actions `security.yml` |
 | Security audit | `bash tests/security/run-audit.sh [BASE_URL]` | npm audit, gitleaks (tree + history), semgrep (repo rules), HTTP probe. GitHub Actions `security.yml` weekly |
 | Production probe (read-only) | `node tests/security/http-probe.js https://<domain>` | Safe on production: anonymous requests only |
 
@@ -336,7 +359,10 @@ sign-in brake; every admin action audited; admin scope enforced on the server; e
 ---
 
 ## 12. Roadmap
-1. Deploy Phases 2, 3a, 3b + audit fixes; do the actions in §10.2.
+1. Deploy Phases 2, 3a, 3b + audit fixes + English/French; do the actions in §10.2.
+   Next in development: sign-up for name@iron-id.io (switched off in production until the VPS and the
+   iron-id.io MX move), then connecting your own domain from the webmail (design: project doc
+   `signup-and-languages-plan-2026-10-15`).
 2. VPS (OVH, port 25 open): move the engine and its database, clean IP + reverse DNS, TLS on mail ports,
    listeners bound correctly, fresh keys; pilot on `mail.iron-id.io`.
 3. Mail apps (IMAP/SMTP submission), spam/virus filtering, deliverability monitoring, verified-sender badge.

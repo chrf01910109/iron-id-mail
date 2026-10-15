@@ -84,6 +84,8 @@ const MESSAGE_FIELDS = new Set(['error', 'problem', 'purpose', 'warnings', 'prot
 function translateMessages(lang, value, depth = 0) {
   if (lang === 'en' || depth > 8 || value === null || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map(v => translateMessages(lang, v, depth + 1));
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return value; // Date, Buffer…: leave as they are
   const out = {};
   for (const [k, v] of Object.entries(value)) {
     if (MESSAGE_FIELDS.has(k) && typeof v === 'string') out[k] = translate(lang, v);
