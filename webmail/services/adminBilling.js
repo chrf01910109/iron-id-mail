@@ -21,8 +21,10 @@ ac.addRoute('GET', '/admin-api/billing', async (ctx, b, url) => {
   if (status && ['pending', 'paid', 'fulfilled', 'failed', 'cancelled', 'refunded'].includes(status)) { args.push(status); where.push(`o.status = $${args.length}`); }
   const w = where.length ? 'WHERE ' + where.join(' AND ') : '';
   const [orders, months] = await Promise.all([
+    // nosemgrep: sql-built-with-template-or-concat -- fixed clauses chosen in code, values are $n parameters
     db.query(`SELECT o.*, c.name AS customer_name, c.kind AS customer_kind FROM cp.orders o LEFT JOIN cp.customers c ON c.id = o.customer_id
               ${w} ORDER BY o.created_at DESC LIMIT 300`, args),
+    // nosemgrep: sql-built-with-template-or-concat -- fixed clauses chosen in code, values are $n parameters
     db.query(`SELECT to_char(date_trunc('month', paid_at), 'YYYY-MM') AS month,
                      SUM(amount_cents)::int AS ttc, SUM(amount_ht_cents)::int AS ht, SUM(vat_cents)::int AS vat, COUNT(*)::int AS n
                 FROM cp.orders o ${w ? w + ' AND' : 'WHERE'} o.status IN ('paid','fulfilled','failed') AND o.paid_at IS NOT NULL

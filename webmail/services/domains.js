@@ -334,7 +334,7 @@ async function overview(current) {
 async function notices(email) {
   const cust = await personalCustomer(email);
   if (!cust) return [];
-  const r = await db.query(`SELECT domain, expires_at FROM cp.registered_domains WHERE customer_id = $1 AND expires_at < NOW() + INTERVAL '${RENEW_DAYS} days'`, [cust.id]);
+  const r = await db.query(`SELECT domain, expires_at FROM cp.registered_domains WHERE customer_id = $1 AND expires_at < NOW() + make_interval(days => $2)`, [cust.id, RENEW_DAYS]);
   return r.rows.map(x => ({ domain: x.domain, expiresAt: x.expires_at, expired: new Date(x.expires_at) < new Date() }));
 }
 
