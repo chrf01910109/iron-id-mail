@@ -60,6 +60,11 @@ test('address check: format, reserved, taken (with suggestions), available', asy
   assert.equal(taken.json.reason, 'taken');
   assert.ok(taken.json.suggestions.length >= 1);
   assert.ok(taken.json.suggestions.every(s => /^[a-z0-9][a-z0-9._-]+$/.test(s)));
+  // An address with admin rights is never given out, even without a mailbox (PLATFORM_ADMINS).
+  assert.equal((await check('e2e-platform-admin')).json.available, false);
+  for (const fake of ['iron.id.team', 'ir0nid', 'do-not-reply', 'help.desk', 'x.admin', 'hostmaster1']) {
+    assert.equal((await check(fake)).json.reason, 'reserved', fake);
+  }
   const free = await check('su-' + tag);
   assert.deepEqual(free.json, { available: true, email: `su-${tag}@${h.TEST_DOMAIN}` });
   const form = await fetch(h.BASE + '/signup-api/check', { method: 'POST', body: 'local=x', headers: { 'content-type': 'application/x-www-form-urlencoded', ...XF(1) } });
@@ -146,17 +151,17 @@ test('a new account is signed in, in its language, with a welcome message; the a
   assert.equal(dup.json.code, 'taken');
 });
 
-test('at most 3 accounts a day from one network', async () => {
-  const ip = XF(7);
-  for (let i = 1; i <= 3; i++) {
+test('at most 3 accounts a day from one network, even when requests arrive together', async () => {
+  // Five sign-ups sent at the same moment from one IPv6 /64 (different addresses in it).
+  const pows = await Promise.all([1, 2, 3, 4, 5].map(() => puzzle()));
+  const results = await Promise.all(pows.map((pow, i) => {
     const local = `su-lim${i}-${tag}`;
-    const r = await create({ local, password: GOOD_PW, pow: await puzzle() }, ip);
-    assert.equal(r.status, 200, r.text);
-    created.push(local);
-  }
-  const fourth = await create({ local: 'su-lim4-' + tag, password: GOOD_PW, pow: await puzzle() }, ip);
-  assert.equal(fourth.status, 429);
-  assert.match(fourth.json.error, /from this network today/);
+    return create({ local, password: GOOD_PW, pow }, { 'x-forwarded-for': `2001:db8:${ipBase.toString(16)}:7::${i + 1}` })
+      .then(r => { if (r.status === 200) created.push(local); return r; });
+  }));
+  const codes = results.map(r => r.status).sort();
+  assert.deepEqual(codes, [200, 200, 200, 429, 429], results.map(r => r.text).join(' | '));
+  assert.ok(results.filter(r => r.status === 429).every(r => /from this network today/.test(r.json.error)));
 });
 
 test('the sign-up page in a real browser: three steps, then the mailbox with the welcome message', async () => {

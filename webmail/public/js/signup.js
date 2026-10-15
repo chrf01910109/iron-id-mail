@@ -78,7 +78,7 @@ const checkAddress = debounce(async () => {
     const ideas = r.suggestions || [];
     if (ideas.length) {
       $('#suSuggest').replaceChildren(h('span', { class: 'muted small' }, t('Try one of these:')),
-        ...ideas.map(x => h('button', { type: 'button', class: 'preset-btn', on: { click: () => { $('#suLocal').value = x; checkAddress(); } } }, x + '@' + state.domain)));
+        ...ideas.map(x => h('button', { type: 'button', class: 'preset-btn', on: { click: () => { $('#suLocal').value = x; $('#suLocal').dataset.touched = '1'; checkAddress(); } } }, x + '@' + state.domain)));
       $('#suSuggest').classList.remove('hidden');
     }
   } catch (e) {
@@ -88,6 +88,7 @@ const checkAddress = debounce(async () => {
 }, 350);
 
 $('#suLocal').addEventListener('input', () => {
+  $('#suLocal').dataset.touched = '1';
   const v = $('#suLocal').value, clean = v.toLowerCase().replace(/[^a-z0-9._-]/g, '');
   if (v !== clean) $('#suLocal').value = clean;
   state.available = false; updateNext();
@@ -103,7 +104,6 @@ $('#suFirst').addEventListener('input', () => {
   updateNext();
 });
 $('#suLast').addEventListener('input', () => $('#suFirst').dispatchEvent(new Event('input')));
-$('#suLocal').addEventListener('keydown', () => { $('#suLocal').dataset.touched = '1'; });
 
 /* ——— Step 2: the password ——— */
 function scorePassword(pw) {
@@ -168,7 +168,9 @@ $('#suForm').addEventListener('submit', async e => {
     $('#suPw').value = '';
     $('#suForm').classList.add('hidden');
     $('#suWelcome').textContent = t('Welcome, {name}', { name: $('#suFirst').value.trim() });
-    $('#suReady').textContent = t('Your address {email} is ready and you are signed in.', { email: r.email });
+    $('#suReady').textContent = r.signedIn === false
+      ? t('Your address {email} is ready. Sign in with it and your new password.', { email: r.email })
+      : t('Your address {email} is ready and you are signed in.', { email: r.email });
     $('#suDone').classList.remove('hidden');
     $('.su-open').focus();
   } catch (err) {

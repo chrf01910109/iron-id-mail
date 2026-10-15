@@ -183,6 +183,24 @@ How it is built (for developers):
 - `node tests/i18n/check-translations.js` fails when any visible text has no French (run in CI). Adding a third
   language = one more dictionary folder + adding its code to `SUPPORTED` / `LANGS` on both sides.
 
+### 4.5 Sign-up (name@iron-id.io) — built, switched off in production
+Anyone can create a personal mailbox on the platform domain at **`/signup`** — but only when the gateway runs
+with `SIGNUP_ENABLED=true`. It stays **off in production** until the VPS receives iron-id.io's mail (the MX
+moves after Issam's mailbox is migrated); before that, mail from outside would not reach new addresses.
+
+| Step | What happens |
+|---|---|
+| 1. Address | First/last name; the address is suggested from the name and checked live: 4–30 letters, digits, `.` `-` `_`; reserved names refused (postmaster, abuse, admin, support… also look-alikes such as `ir0nid`, `help.desk`, `x.admin`); taken names (mailboxes, teams, aliases) get 2–3 suggestions. Addresses with admin rights (`cp.admins`, `PLATFORM_ADMINS`) are never given out |
+| 2. Password | 12–128 characters, not in a list of ~47,000 common long passwords (`webmail/data/`), not the person's name or address; the engine's own strength check also applies. Optional recovery email (outside IRON ID; stored, verified once outgoing mail works) |
+| 3. Confirm | A security puzzle the browser solves in under a second (proof of work, checked on IRON ID's server — no CAPTCHA, nothing sent to other companies; each puzzle works once, 20 min). Terms of Service / Acceptable Use / Privacy accepted (draft pages at `/legal/…`, to be completed by IRON ID) |
+| Done | Mailbox created as a normal user (no admin rights), signed in straight away, welcome message in the inbox in the chosen language, language saved |
+
+Limits: 3 accounts a day per network (IPv4 address, or IPv6 /64) — `SIGNUP_PER_IP_DAY`; 200 a day in total —
+`SIGNUP_PER_DAY`; both counted under a database lock, so parallel requests can't exceed them. Settings for later in
+`cp.settings` (empty = none): `signup.quota_mb` (storage per new mailbox) and `signup.external_daily_limit`
+(messages a day to outside addresses for new accounts — recorded per sign-up now, enforced when outgoing mail
+moves to the VPS). The sign-in card shows "No IRON ID mailbox yet? Create one" only while sign-up is on.
+
 ---
 
 ## 5. Roles and permissions
@@ -221,7 +239,9 @@ the account's credentials (new password, two-step and all app passwords removed)
 | `used_codes` | Two-step codes already used (hash), kept a few minutes |
 | `labels` | Per person: slug, name, colour |
 | `user_prefs` | Per person: language (`en`/`fr`) |
-| `recovery` | Reserved for recovery e-mail addresses |
+| `signup_log` | Each sign-up: address, time, IP and network, terms version, language, sending limit at the time |
+| `signup_puzzles` | Sign-up security puzzles already used (kept 1 hour) |
+| `recovery` | Recovery e-mail address given at sign-up (not verified yet); removed when the mailbox is deleted |
 
 Migrations (`controlPlane.sql`) run on every start and are idempotent. Mail data, accounts, domains and keys
 are in the engine's own tables in the same database. `ironid_meta` (public schema) holds entrypoint markers
@@ -243,6 +263,8 @@ are in the engine's own tables in the same database. `ironid_meta` (public schem
 | `MAIL_HOST` | no | MX host shown to customers (default `mail.iron-id.io`) |
 | `TRUST_PROXY` | no | Default `true` (Railway). Set `false` if the gateway is reached directly, so clients can't choose their address for the sign-in brake |
 | `TOTP_ISSUER` | no | Name shown in authenticator apps (default IRON ID) |
+| `SIGNUP_ENABLED` | no | `true` opens `/signup` (name@iron-id.io). **Leave unset in production until the VPS and the iron-id.io MX move** |
+| `SIGNUP_PER_IP_DAY` / `SIGNUP_PER_DAY` | no | Sign-up limits per network per day (default 3) and in total per day (default 200) |
 | `PORT` | set by Railway | Gateway port |
 | `IRONID_DNS_FAKE` | **never in production** | Test-only file of fake DNS answers |
 | `CONFIG_PATH` | **never set** | Breaks the engine's seed import |
@@ -360,9 +382,10 @@ sign-in brake; every admin action audited; admin scope enforced on the server; e
 
 ## 12. Roadmap
 1. Deploy Phases 2, 3a, 3b + audit fixes + English/French; do the actions in §10.2.
-   Next in development: sign-up for name@iron-id.io (switched off in production until the VPS and the
-   iron-id.io MX move), then connecting your own domain from the webmail (design: project doc
-   `signup-and-languages-plan-2026-10-15`).
+   Built: sign-up for name@iron-id.io (§4.5), switched off in production until the VPS and the iron-id.io MX
+   move. Next: connecting your own domain from the webmail (design: project doc
+   `signup-and-languages-plan-2026-10-15`). Before opening sign-up: final Terms/Privacy texts, pricing,
+   the sending limit, and recovery-email verification.
 2. VPS (OVH, port 25 open): move the engine and its database, clean IP + reverse DNS, TLS on mail ports,
    listeners bound correctly, fresh keys; pilot on `mail.iron-id.io`.
 3. Mail apps (IMAP/SMTP submission), spam/virus filtering, deliverability monitoring, verified-sender badge.

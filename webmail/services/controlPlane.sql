@@ -126,18 +126,24 @@ CREATE TABLE IF NOT EXISTS cp.user_prefs (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Sign-up (name@iron-id.io): one row per account created by sign-up. Limits per IP and per day are
--- counted here; external_daily_limit is the sending limit that applied when the account was made.
-CREATE TABLE IF NOT EXISTS cp.signups (
-  email                 TEXT PRIMARY KEY,
+-- Sign-up (name@iron-id.io): one row per sign-up. A row is reserved ('pending') before the account is
+-- created and removed if that fails, so the limits per network (IPv4 address or IPv6 /64) and per day
+-- hold under parallel requests. external_daily_limit is the sending limit that applied at sign-up.
+-- An address can appear more than once (a deleted mailbox's address can be taken again).
+CREATE TABLE IF NOT EXISTS cp.signup_log (
+  id                    BIGSERIAL PRIMARY KEY,
+  email                 TEXT NOT NULL,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   ip                    TEXT,
+  network               TEXT NOT NULL,
+  status                TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'created')),
   terms_version         TEXT NOT NULL,
   lang                  TEXT,
   external_daily_limit  INTEGER
 );
-CREATE INDEX IF NOT EXISTS signups_created ON cp.signups (created_at DESC);
-CREATE INDEX IF NOT EXISTS signups_ip_created ON cp.signups (ip, created_at DESC);
+CREATE INDEX IF NOT EXISTS signup_log_created ON cp.signup_log (created_at DESC);
+CREATE INDEX IF NOT EXISTS signup_log_network ON cp.signup_log (network, created_at DESC);
+CREATE INDEX IF NOT EXISTS signup_log_email ON cp.signup_log (email);
 
 -- Sign-up security-check puzzles already used (each works once).
 CREATE TABLE IF NOT EXISTS cp.signup_puzzles (

@@ -50,5 +50,6 @@ export default {
   'Passed': 'Réussie',
   'Creating your mailbox…': 'Création de votre boîte mail…',
   'Welcome, {name}': 'Bienvenue, {name}',
-  'Your address {email} is ready and you are signed in.': 'Votre adresse {email} est prête et vous êtes connecté.'
+  'Your address {email} is ready and you are signed in.': 'Votre adresse {email} est prête et vous êtes connecté.',
+  'Your address {email} is ready. Sign in with it and your new password.': 'Votre adresse {email} est prête. Connectez-vous avec cette adresse et votre nouveau mot de passe.'
 };

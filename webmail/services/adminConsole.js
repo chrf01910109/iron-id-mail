@@ -983,6 +983,9 @@ route('POST', '/admin-api/mailboxes/delete', async (ctx, b) => {
   await engineSet('Account', { destroy: [a.id] }, 'delete the mailbox');
   await signOutEverywhere(a.email);
   await db.query('DELETE FROM cp.labels WHERE email = $1', [a.email]).catch(() => {});
+  // A later mailbox with the same address must not inherit the recovery address or choices.
+  await db.query('DELETE FROM cp.recovery WHERE email = $1', [a.email]).catch(() => {});
+  await db.query('DELETE FROM cp.user_prefs WHERE email = $1', [a.email]).catch(() => {});
   // Admin rights belong to the mailbox: a new mailbox with the same address doesn't inherit them.
   await db.query('DELETE FROM cp.admins WHERE lower(email) = $1', [a.email]);
   audit(ctx, 'mailbox.deleted', a.email, null, row.customer_id);

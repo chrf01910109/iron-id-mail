@@ -46,14 +46,30 @@ const RESERVED = new Set(`
   support sysadmin system team tech test uucp webmaster www accounts account billing-team ceo cto director
   official moderator report reports spam unsubscribe usenet verification verify welcome hello
 `.split(/\s+/).filter(Boolean));
+// Words refused anywhere in a name (after removing . _ - and reading 0/1/3/4/5/7 as o/i/e/a/s/t):
+// they would let someone pass for IRON ID staff or a system address.
+const STRONG = ['admin', 'postmaster', 'hostmaster', 'webmaster', 'abuse', 'ironid', 'noreply', 'donotreply',
+  'mailerdaemon', 'daemon', 'helpdesk', 'support', 'security', 'billing', 'official', 'moderator', 'sysadmin',
+  'gateway', 'staff', 'root', 'contactus'];
 const LOCAL_RE = /^[a-z0-9][a-z0-9._-]{2,28}[a-z0-9]$/;
+const LEET = { 0: 'o', 1: 'i', 3: 'e', 4: 'a', 5: 's', 7: 't' };
 
 /** Why a name can't be used, or null. Does not look at whether it is taken. */
 function nameProblem(local) {
-  if (!LOCAL_RE.test(local) || /[._-]{2}/.test(local)) return 'format';
-  if (RESERVED.has(local) || /^(postmaster|abuse|admin|support|security|noreply|no-reply|ironid|iron-id)[._-]?/.test(local)) return 'reserved';
-  if (/^\d+$/.test(local)) return 'format';
+  if (!LOCAL_RE.test(local) || /[._-]{2}/.test(local) || /^\d+$/.test(local)) return 'format';
+  const squash = local.replace(/[._-]/g, '');
+  const base = squash.replace(/\d+$/, '');
+  const look = squash.replace(/[013457]/g, d => LEET[d]);
+  if (RESERVED.has(local) || RESERVED.has(squash) || RESERVED.has(base) || STRONG.some(w => squash.includes(w) || look.includes(w))) return 'reserved';
   return null;
+}
+
+// Addresses that hold admin rights (cp.admins, PLATFORM_ADMINS) are never given out, even when no
+// mailbox exists for them: whoever owns that address would get the admin console.
+async function adminAddresses() {
+  const set = new Set(String(process.env.PLATFORM_ADMINS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+  try { for (const r of (await db.query('SELECT lower(email) AS email FROM cp.admins')).rows) set.add(r.email); } catch (e) { /* table missing: env only */ }
+  return set;
 }
 
 // Addresses in use on the platform domain (mailboxes, teams, aliases), cached briefly for the live check.
@@ -74,15 +90,17 @@ function suggestions(local, first, last, used) {
   const clean = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
   const f = clean(first), l = clean(last), base = clean(local) || f || 'name';
   const year = new Date().getFullYear();
-  const ideas = [f && l && `${f}.${l}`, f && l && `${f[0]}.${l}`, f && l && `${l}.${f}`, f && l && `${f}${l}`, `${base}.${year}`, `${base}${Math.floor(10 + Math.random() * 89)}`];
+  const ideas = [f && l && `${f}.${l}`, f && l && `${f[0]}.${l}`, f && l && `${l}.${f}`, f && l && `${f}${l}`, `${base}.${year}`, `${base}${crypto.randomInt(10, 100)}`];
   return [...new Set(ideas.filter(Boolean))].filter(x => !nameProblem(x) && !used.has(`${x}@${DOMAIN}`)).slice(0, 3);
 }
 
 /** Live check while typing: { available, reason?, suggestions? } — reason: format | reserved | taken. */
 async function check(b) {
+  if (!b || typeof b !== 'object' || Array.isArray(b)) fail('Invalid request');
   const local = String(b.local || '').trim().toLowerCase();
   const problem = nameProblem(local);
   const used = await takenAddresses();
+  if (!problem && (await adminAddresses()).has(`${local}@${DOMAIN}`)) return { available: false, reason: 'reserved', suggestions: suggestions(local, b.first, b.last, used) };
   if (problem) return { available: false, reason: problem, suggestions: problem === 'reserved' ? suggestions(local, b.first, b.last, used) : [] };
   if (used.has(`${local}@${DOMAIN}`)) return { available: false, reason: 'taken', suggestions: suggestions(local, b.first, b.last, used) };
   return { available: true, email: `${local}@${DOMAIN}` };
@@ -114,6 +132,8 @@ function passwordProblem(pw, { local = '', first = '', last = '' } = {}) {
   if (parts.some(x => lower.includes(x)) || lower.includes('ironid') || lower.includes('iron-id')) return 'Don’t use your name or your address in your password.';
   return null;
 }
+
+if (enabled()) setImmediate(() => commonPasswords());
 
 /* ——— Proof of work (ALTCHA-style, verified here) ——— */
 const POW_MAX = intEnv('SIGNUP_POW_MAX', 300000); // average ~150,000 SHA-256 in the browser (well under a second)
@@ -150,14 +170,29 @@ async function usePuzzle(p) {
 }
 
 /* ——— Request brakes ——— */
-const hits = new Map(); // key -> [timestamps]
+/** The network a request comes from: the IPv4 address, or the /64 of an IPv6 address (one home or server). */
+function networkOf(ip) {
+  let a = String(ip || '').toLowerCase().replace(/^::ffff:(?=\d+\.)/, '');
+  if (!a.includes(':')) return a;
+  a = a.split('%')[0];
+  const [head, tail = ''] = a.split('::');
+  const h = head ? head.split(':') : [], t = tail ? tail.split(':') : [];
+  const full = a.includes('::') ? h.concat(Array(Math.max(0, 8 - h.length - t.length)).fill('0'), t) : h;
+  return full.slice(0, 4).map(x => x.replace(/^0+(?=.)/, '')).join(':') + '::/64';
+}
+const hits = new Map(); // key -> [timestamps], oldest keys first
+const MAX_KEYS = 20000;
 function brake(key, max, windowMs) {
   const now = Date.now();
   const list = (hits.get(key) || []).filter(t => now - t < windowMs);
   if (list.length >= max) return true;
   list.push(now);
+  hits.delete(key);
   hits.set(key, list);
-  if (hits.size > 50000) for (const [k, v] of hits) if (!v.length || now - v[v.length - 1] > 3600e3) hits.delete(k);
+  if (hits.size > MAX_KEYS) { // forget the least recently seen networks
+    let n = hits.size - MAX_KEYS;
+    for (const k of hits.keys()) { if (n-- <= 0) break; hits.delete(k); }
+  }
   return false;
 }
 const slowDown = () => fail('Too many requests. Please wait a few minutes and try again.', 429);
@@ -232,7 +267,9 @@ const EMAIL_RE = /^[^\s@<>"]{1,64}@[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
  */
 async function create(b, { ip, lang }) {
   if (!enabled()) fail('Sign-up is not open yet.', 403);
-  if (brake('create:' + ip, 10, 10 * 60e3)) slowDown();
+  if (!b || typeof b !== 'object' || Array.isArray(b)) fail('Invalid request');
+  const net = networkOf(ip);
+  if (brake('create:' + net, 10, 10 * 60e3)) slowDown();
   const first = cleanName(b.first), last = cleanName(b.last);
   const local = String(b.local || '').trim().toLowerCase();
   const password = typeof b.password === 'string' ? b.password : '';
@@ -246,17 +283,45 @@ async function create(b, { ip, lang }) {
   if (recovery && (!EMAIL_RE.test(recovery) || recovery.length > 254)) fail('Enter a valid recovery email address, or leave it empty.', 400, { code: 'recovery' });
   if (recovery && recovery.endsWith('@' + DOMAIN)) fail('Use an address outside IRON ID for recovery, so you can still reach it if you are locked out.', 400, { code: 'recovery' });
   if (b.acceptTerms !== true) fail('Please accept the Terms of Service to continue.');
-  await usePuzzle(b.pow);
-
-  // Limits per IP address and per day (counted in the database, so they survive restarts).
-  const counts = (await db.query(`SELECT COUNT(*) FILTER (WHERE ip = $1) AS ip, COUNT(*) AS total
-                                    FROM cp.signups WHERE created_at > NOW() - INTERVAL '1 day'`, [ip])).rows[0];
-  if (Number(counts.ip) >= intEnv('SIGNUP_PER_IP_DAY', 3)) fail('Too many accounts were created from this network today. Please try again tomorrow.', 429);
-  if (Number(counts.total) >= intEnv('SIGNUP_PER_DAY', 200)) fail('Sign-up is busy right now. Please try again later.', 429);
-
   const email = `${local}@${DOMAIN}`;
+  if ((await adminAddresses()).has(email)) fail('That address is reserved. Choose another one.', 400, { code: 'address' });
+  await usePuzzle(b.pow);
   if ((await takenAddresses({ fresh: true })).has(email)) fail('That address was just taken. Choose another one.', 409, { code: 'taken' });
 
+  // Limits per network and per day, counted and reserved in one step (a lock makes parallel
+  // requests wait their turn), so they hold even if many requests arrive at once.
+  const reservation = await reserve({ email, ip, net, lang });
+  try {
+    return await createAccount({ email, local, first, last, password, recovery, lang, ip }, reservation);
+  } catch (e) {
+    if (!e.accountCreated) await db.query('DELETE FROM cp.signup_log WHERE id = $1', [reservation]).catch(() => {});
+    throw e;
+  }
+}
+
+async function reserve({ email, ip, net, lang }) {
+  const client = await db.getPool().connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('iron-id-signup'))");
+    const c = (await client.query(`SELECT COUNT(*) FILTER (WHERE network = $1) AS net, COUNT(*) AS total
+                                     FROM cp.signup_log WHERE created_at > NOW() - INTERVAL '1 day'`, [net])).rows[0];
+    if (Number(c.net) >= intEnv('SIGNUP_PER_IP_DAY', 3)) fail('Too many accounts were created from this network today. Please try again tomorrow.', 429);
+    if (Number(c.total) >= intEnv('SIGNUP_PER_DAY', 200)) fail('Sign-up is busy right now. Please try again later.', 429);
+    const r = await client.query(`INSERT INTO cp.signup_log (email, ip, network, terms_version, lang, external_daily_limit, status)
+                                  VALUES ($1, $2, $3, $4, $5, $6, 'pending') RETURNING id`,
+      [email, ip, net, TERMS_VERSION, lang, await setting('signup.external_daily_limit')]);
+    await client.query('COMMIT');
+    return r.rows[0].id;
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+async function createAccount({ email, local, first, last, password, recovery, lang, ip }, reservation) {
   const dom = (await engineAdmin.call([['x:Domain/get', { ids: null, properties: ['name'] }, 'd']]))
     .find(x => x[2] === 'd');
   const domainRec = dom && dom[0] !== 'error' && (dom[1].list || []).find(d => d.name.toLowerCase() === DOMAIN);
@@ -271,27 +336,34 @@ async function create(b, { ip, lang }) {
   if (!r || r[0] === 'error') throw new Error('account create: ' + JSON.stringify(r && r[1]));
   if (!r[1].created || !r[1].created.u) {
     const d = JSON.stringify(r[1].notCreated || {});
-    if (/already exists|primaryKey|duplicate|in use/i.test(d)) fail('That address was just taken. Choose another one.', 409, { code: 'taken' });
+    if (/already exists|primaryKey|duplicate|in use/i.test(d)) { taken.at = 0; fail('That address was just taken. Choose another one.', 409, { code: 'taken' }); }
     // The engine also judges password strength (repeats, common words…).
     if (/password is too weak|"secret"/i.test(d)) fail('This password is too easy to guess. Add another word or two.', 400, { code: 'password' });
     throw new Error('account create refused: ' + d);
   }
   taken.at = 0;
 
-  await db.query(`INSERT INTO cp.signups (email, ip, terms_version, lang, external_daily_limit)
-                  VALUES ($1, $2, $3, $4, $5)`, [email, ip, TERMS_VERSION, lang, await setting('signup.external_daily_limit')]);
+  // From here the mailbox exists: problems below are logged, never reported as a failed sign-up.
+  const note = (what, e) => console.error(`[signup] ${email}: ${what}:`, e.message);
+  await db.query("UPDATE cp.signup_log SET status = 'created' WHERE id = $1", [reservation]).catch(e => note('log', e));
+  // A reused address must not keep an earlier owner's recovery address or choices.
+  await db.query('DELETE FROM cp.recovery WHERE email = $1', [email]).catch(e => note('recovery', e));
+  await db.query('DELETE FROM cp.labels WHERE email = $1', [email]).catch(e => note('labels', e));
   if (recovery) {
-    await db.query(`INSERT INTO cp.recovery (email, recovery_email) VALUES ($1, $2)
-                    ON CONFLICT (email) DO UPDATE SET recovery_email = EXCLUDED.recovery_email, verified_at = NULL, updated_at = NOW()`, [email, recovery]);
+    await db.query('INSERT INTO cp.recovery (email, recovery_email) VALUES ($1, $2)', [email, recovery]).catch(e => note('recovery', e));
   }
   db.audit({ actor: email, action: 'signup.created', target: email, details: { lang, recovery: !!recovery, quotaMb }, ip }).catch(() => {});
 
   // Sign in the way /auth/login does, then put the welcome message in the inbox.
-  const auth = await security.webmailAuthFor(email, security.basic(email, password));
-  const session = await security.engineSession(auth);
-  if (!session) throw new Error('new account could not sign in');
-  try { await deliverWelcome(auth, session, { first, email, lang }); } catch (e) { console.error('[signup] welcome message:', e.message); }
-  return { email, auth, session };
+  let auth = null, session = null;
+  try {
+    auth = await security.webmailAuthFor(email, security.basic(email, password));
+    session = await security.engineSession(auth);
+  } catch (e) { note('sign-in', e); }
+  if (session) {
+    try { await deliverWelcome(auth, session, { first, email, lang }); } catch (e) { note('welcome message', e); }
+  }
+  return { email, auth: session ? auth : null, session };
 }
 
 /* ——— HTTP ——— */
@@ -317,8 +389,10 @@ async function handle(req, res, url, { readJson, sendJson, sendBodyError, isCros
       return sendJson(res, 200, await check(body));
     }
     const out = await create(body, { ip, lang });
-    const headers = await openSession(out.email, out.auth);
-    return sendJson(res, 200, { ok: true, email: out.email, lang }, headers);
+    let headers = {};
+    if (out.auth) { try { headers = await openSession(out.email, out.auth); } catch (e) { console.error('[signup] session:', e.message); } }
+    // signedIn false: the mailbox exists, the person signs in normally.
+    return sendJson(res, 200, { ok: true, email: out.email, lang, signedIn: !!headers['Set-Cookie'] }, headers);
   } catch (e) {
     if (e.userError) return sendJson(res, e.status || 400, { error: e.message, code: e.code });
     console.error('[signup] ' + route + ':', e.message);
@@ -326,4 +400,4 @@ async function handle(req, res, url, { readJson, sendJson, sendBodyError, isCros
   }
 }
 
-module.exports = { handle, enabled, nameProblem, passwordProblem, check, challenge, usePuzzle, DOMAIN, TERMS_VERSION, WELCOME };
+module.exports = { handle, enabled, networkOf, nameProblem, passwordProblem, check, challenge, usePuzzle, DOMAIN, TERMS_VERSION, WELCOME };

@@ -1,5 +1,27 @@
 # IRON ID Mail — Test and Security Audit Report
 
+## Update 2026-10-15 (evening) — Sign-up for name@iron-id.io (branch `i18n-en-fr`, on top of the clean history `1e52414`)
+
+Same local stack, gateway started with `SIGNUP_ENABLED=true`.
+
+| Check | Result |
+|---|---|
+| End-to-end tests, all files (12) | **91 / 91 passed**: 90 in the full run (incl. 8 new sign-up tests in `11-signup.test.js`) + the restart test with a real restart |
+| Translation coverage | **OK** — 1,011 texts, 719 French entries; gateway 237 |
+| Security audit | 0 dependency problems; semgrep 0 errors after one fix (suggested names used `Math.random`), 1 known warning; HTTP probe 40/41 with 3 new sign-up checks (the 1 "failure" is the recovery login left on in the test copy) |
+| Independent review (separate agent) | 1 critical + 3 high findings, **all fixed and covered by tests**: an address listed as admin (`PLATFORM_ADMINS` / `cp.admins`) but without a mailbox could be claimed by sign-up and get the admin console → such addresses are now refused; the per-network limit could be exceeded with parallel requests → counted and reserved under a database lock (test sends 5 at once: exactly 3 pass); re-using a deleted address failed after creating the account → new log table, account creation never reported as a failure once done; a deleted mailbox's recovery address could pass to the next owner → removed on delete and on sign-up. Also fixed: IPv6 limits per /64, bounded memory for the request brake, look-alike reserved names (`ir0nid`, `help.desk`, `x.admin`…), non-object request bodies |
+
+Sign-up tests: open/closed state and page policy; address format/reserved/taken with suggestions, admin addresses
+refused, form posts and other websites refused; every rule refused before the puzzle is spent (name, reserved,
+short/simple/common/name-containing passwords, bad or in-house recovery address, terms) and in French; the puzzle
+(wrong answer, forged signature, missing, used twice); a new account signed in with its language and an unread
+welcome message, its password working at the normal sign-in, the address then taken; the limit under parallel
+requests; the page in a real browser (link from the sign-in card, taken address blocks, password rule, puzzle,
+terms, then the mailbox with the welcome message); the page in French on a phone (no sideways scroll) and the
+draft legal pages.
+
+---
+
 ## Update 2026-10-15 — English and French (branch `i18n-en-fr`)
 
 Same local stack as below (real Stalwart 0.16.23, PostgreSQL 16, OpenSearch 2.19.3, gateway, Chromium).
