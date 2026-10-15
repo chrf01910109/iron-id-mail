@@ -669,3 +669,8 @@ body {
 .hidden { display: none !important; }
 .animate-spin { animation: spin 0.6s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* English/French: the page stays hidden until its text is in the right language (i18n.js);
+   shown after 3 s regardless, so a script problem never leaves a blank page. */
+html.i18n-wait body { visibility: hidden; animation: i18n-show 0s linear 3s forwards; }
+@keyframes i18n-show { to { visibility: visible; } }

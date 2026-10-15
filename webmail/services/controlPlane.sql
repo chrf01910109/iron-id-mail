@@ -118,3 +118,10 @@ CREATE TABLE IF NOT EXISTS cp.labels (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (email, slug)
 );
+
+-- A person's own choices that follow them to every device (language for now: 'en' or 'fr').
+CREATE TABLE IF NOT EXISTS cp.user_prefs (
+  email       TEXT PRIMARY KEY,
+  lang        TEXT CHECK (lang IN ('en', 'fr')),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

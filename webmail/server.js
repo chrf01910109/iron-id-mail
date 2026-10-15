@@ -12,6 +12,7 @@ const searchBackend = require('./services/searchBackend');
 const security = require('./services/accountSecurity');
 const adminConsole = require('./services/adminConsole');
 const labels = require('./services/labels');
+const i18n = require('./services/i18n');
 
 let PORT = parseInt(process.env.PORT, 10) || 3001;
 const ENGINE_HOST = process.env.IRONID_ENGINE_HOST || process.env.MAIL_ENGINE_HOST || '127.0.0.1';
@@ -150,7 +151,21 @@ function engineJmap(authHeader, methodCalls) {
   });
 }
 
+// The language a person chose (cp.user_prefs). Missing table or row → null (use the browser's).
+async function getLangPref(email) {
+  try {
+    const r = await db.query('SELECT lang FROM cp.user_prefs WHERE email = $1', [String(email).toLowerCase()]);
+    return r.rows.length ? i18n.validLang(r.rows[0].lang) : null;
+  } catch (e) { return null; }
+}
+async function setLangPref(email, lang) {
+  await db.query(`INSERT INTO cp.user_prefs (email, lang) VALUES ($1, $2)
+                  ON CONFLICT (email) DO UPDATE SET lang = EXCLUDED.lang, updated_at = NOW()`, [String(email).toLowerCase(), lang]);
+}
+
 function sendJson(res, status, obj, extraHeaders = {}) {
+  // Messages for people are written in English; send them in the request's language.
+  if (obj && typeof obj.error === 'string' && res.ironLang) obj = { ...obj, error: i18n.translate(res.ironLang, obj.error) };
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extraHeaders });
   res.end(JSON.stringify(obj));
 }
@@ -170,6 +185,7 @@ function isCrossSite(req) {
 
 const server = http.createServer(async (req, res) => {
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
+  res.ironLang = i18n.langFrom(req);
 
   let reqUrl;
   try {
@@ -185,8 +201,8 @@ const server = http.createServer(async (req, res) => {
   // 2. Admin console: the page, and its API for admins signed in with their mailbox.
   if ((reqUrl.pathname === '/admin' || reqUrl.pathname === '/admin/') && (req.method === 'GET' || req.method === 'HEAD')) {
     try {
-      const html = fs.readFileSync(ADMIN_HTML_FILE, 'utf8');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': ADMIN_CSP, 'Cache-Control': 'no-cache' });
+      const html = i18n.htmlFor(fs.readFileSync(ADMIN_HTML_FILE, 'utf8'), res.ironLang);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': ADMIN_CSP, 'Cache-Control': 'no-cache', 'Vary': 'Cookie, Accept-Language' });
       res.end(html);
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'text/plain' });
@@ -210,8 +226,8 @@ const server = http.createServer(async (req, res) => {
   }
   if (reqUrl.pathname === '/' || reqUrl.pathname === '/index.html') {
     try {
-      const html = fs.readFileSync(HTML_FILE, 'utf8');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': WEBMAIL_CSP, 'Cache-Control': 'no-cache' });
+      const html = i18n.htmlFor(fs.readFileSync(HTML_FILE, 'utf8'), res.ironLang);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': WEBMAIL_CSP, 'Cache-Control': 'no-cache', 'Vary': 'Cookie, Accept-Language' });
       res.end(html);
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'text/plain' });
@@ -268,7 +284,13 @@ const server = http.createServer(async (req, res) => {
       await sessions.destroySession(sessions.sessionIdFrom(req)); // replace any previous session from this browser
       const id = await sessions.createSession(session.username, webAuth, { ip, userAgent: req.headers['user-agent'] });
       adminConsole.auditSignIn({ email: session.username, ok: true, reason: check.result === 'mfa' ? 'two-step' : undefined, ip, userAgent: req.headers['user-agent'] });
-      return sendJson(res, 200, { session }, { 'Set-Cookie': sessions.sessionCookie(req, id) });
+      // Language: a choice made on the sign-in screen is saved to the account; otherwise the
+      // account's saved choice wins, so the same language follows the person to every device.
+      const picked = i18n.validLang(body.lang);
+      let lang = picked || await getLangPref(session.username) || res.ironLang;
+      if (picked) await setLangPref(session.username, picked);
+      res.ironLang = lang;
+      return sendJson(res, 200, { session, lang }, { 'Set-Cookie': [sessions.sessionCookie(req, id), i18n.langCookie(req, lang)] });
     } catch (e) {
       console.error('[auth] sign-in failed:', e.message);
       if (e.code === 'overQuota') return sendJson(res, 409, { error: e.message });
@@ -423,6 +445,18 @@ const server = http.createServer(async (req, res) => {
         const created = await security.createMailAppPassword(current.auth, body.name);
         db.audit({ actor: current.email, action: 'account.app_password_created', target: String(body.name || '').slice(0, 60), ip }).catch(() => {});
         return sendJson(res, 200, { id: created.id, secret: created.secret });
+      }
+
+      if (route === 'GET /account/prefs') {
+        return sendJson(res, 200, { lang: (await getLangPref(current.email)) || res.ironLang, languages: i18n.SUPPORTED });
+      }
+
+      if (route === 'POST /account/prefs') {
+        const lang = i18n.validLang(body.lang);
+        if (!lang) return sendJson(res, 400, { error: 'Choose English or French.' });
+        await setLangPref(current.email, lang);
+        res.ironLang = lang;
+        return sendJson(res, 200, { ok: true, lang }, { 'Set-Cookie': i18n.langCookie(req, lang) });
       }
 
       if (route === 'POST /account/app-passwords/delete') {

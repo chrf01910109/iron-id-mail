@@ -2,6 +2,7 @@
 // the webmail); everything goes through /admin-api, which checks the role and scope.
 // Untrusted text is only inserted with textContent (h()).
 
+import '../i18n.js'; // first: translates the page before anything else runs
 import { h, $, $$, toast, dialog, openMenu, formatSize, initials, icon } from '../util.js';
 
 /* ——— API ——— */

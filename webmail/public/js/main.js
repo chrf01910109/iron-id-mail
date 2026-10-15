@@ -1,5 +1,6 @@
 // IRON ID Mail — webmail entry point: sign-in, wiring, actions, shortcuts, live updates.
 
+import './i18n.js'; // first: translates the page before anything else runs
 import * as api from './api.js';
 import * as mail from './mail.js';
 import * as sidebar from './sidebar.js';
