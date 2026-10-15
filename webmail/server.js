@@ -165,7 +165,7 @@ async function setLangPref(email, lang) {
 
 function sendJson(res, status, obj, extraHeaders = {}) {
   // Messages for people are written in English; send them in the request's language.
-  if (obj && typeof obj.error === 'string' && res.ironLang) obj = { ...obj, error: i18n.translate(res.ironLang, obj.error) };
+  if (obj && res.ironLang && res.ironLang !== 'en') obj = i18n.translateMessages(res.ironLang, obj);
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extraHeaders });
   res.end(JSON.stringify(obj));
 }
@@ -541,7 +541,7 @@ const server = http.createServer(async (req, res) => {
       if (res.writableEnded) return; // already answered (e.g. refused by the gateway)
       console.error('[proxy] engine unreachable:', err.message);
       if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Mail engine is temporarily unavailable. Please try again shortly.' }));
+      res.end(JSON.stringify({ error: i18n.translate(res.ironLang, 'Mail engine is temporarily unavailable. Please try again shortly.') }));
     });
 
     // Webmail sessions may use the standard mail functions only. The engine's own

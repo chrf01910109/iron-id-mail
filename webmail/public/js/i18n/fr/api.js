@@ -1,3 +1,35 @@
 // French for api — keys are the exact English text.
 export default {
+  'Your session has ended. Please sign in again.': 'Votre session a expiré. Veuillez vous reconnecter.',
+  'The mail server refused the request': 'Le serveur de messagerie a refusé la demande',
+  'The mail server is not reachable (HTTP {status})': 'Le serveur de messagerie est injoignable (HTTP {status})',
+  'Network problem: the mail server could not be reached.': 'Problème de réseau : impossible de joindre le serveur de messagerie.',
+  'The mail server returned an error (HTTP {status})': 'Le serveur de messagerie a renvoyé une erreur (HTTP {status})',
+  // checkSet()
+  'Could not change ({type})': 'Impossible d’effectuer la modification ({type})',
+  'Could not save your profile ({type})': 'Impossible d’enregistrer votre profil ({type})',
+  'Could not save the automatic reply ({type})': 'Impossible d’enregistrer la réponse automatique ({type})',
+  'Could not create the folder ({type})': 'Impossible de créer le dossier ({type})',
+  'Could not rename the folder ({type})': 'Impossible de renommer le dossier ({type})',
+  'Could not assign the message ({type})': 'Impossible d’assigner le message ({type})',
+  'Could not remove the label ({type})': 'Impossible de retirer le libellé ({type})',
+  'Could not update the message ({type})': 'Impossible de mettre à jour le message ({type})',
+  'Could not move the message ({type})': 'Impossible de déplacer le message ({type})',
+  'Could not undo ({type})': 'Impossible d’annuler ({type})',
+  'Could not remove the message from the folder ({type})': 'Impossible de retirer le message du dossier ({type})',
+  'Could not delete the message ({type})': 'Impossible de supprimer le message ({type})',
+  'Could not mark messages as read ({type})': 'Impossible de marquer les messages comme lus ({type})',
+  'Could not save the draft ({type})': 'Impossible d’enregistrer le brouillon ({type})',
+  'Could not create the message ({type})': 'Impossible de créer le message ({type})',
+  'Could not file the message in Sent ({type})': 'Impossible de classer le message dans Envoyés ({type})',
+  'Could not {action} ({type})': 'Échec de l’opération « {action} » ({type})',
+  // Uploads and sign-in
+  'Not signed in': 'Vous n’êtes pas connecté',
+  '"{name}" is larger than the {size} MB limit': '« {name} » dépasse la limite de {size} Mo',
+  'Upload failed (HTTP {status})': 'Échec de l’envoi du fichier (HTTP {status})',
+  'Upload failed: unexpected answer': 'Échec de l’envoi du fichier : réponse inattendue',
+  'Upload failed: network problem': 'Échec de l’envoi du fichier : problème de réseau',
+  'Sign-in failed (HTTP {status})': 'Échec de la connexion (HTTP {status})',
+  'Network problem: the server could not be reached.': 'Problème de réseau : impossible de joindre le serveur.',
+  'Server error (HTTP {status})': 'Erreur du serveur (HTTP {status})'
 };

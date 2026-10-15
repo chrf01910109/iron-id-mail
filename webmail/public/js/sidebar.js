@@ -4,6 +4,7 @@ import * as api from './api.js';
 import * as mail from './mail.js';
 import * as labels from './labels.js';
 import { h, $, icon, toast, dialog, openMenu, formatSize } from './util.js';
+import { t } from './i18n.js';
 
 const ROLE_ICON = { inbox: 'inbox', sent: 'sent', drafts: 'drafts', archive: 'archive', trash: 'trash', junk: 'junk' };
 let onOpenFolder = () => {};
@@ -24,35 +25,35 @@ export function init({ openFolder, dropThread, openLabel }) {
 }
 
 function validName(v) {
-  if (!v) return 'Please enter a name.';
-  if (v.length > 200) return 'That name is too long.';
-  if (/[/\\]/.test(v)) return 'Folder names cannot contain / or \\.';
+  if (!v) return t('Please enter a name.');
+  if (v.length > 200) return t('That name is too long.');
+  if (/[/\\]/.test(v)) return t('Folder names cannot contain / or \\.');
   return null;
 }
 
 async function newFolder(parentId, accountId) {
-  const name = await dialog({ title: parentId ? 'New sub-folder' : 'New folder', text: 'Folder name', input: '', okLabel: 'Create', validate: validName });
+  const name = await dialog({ title: parentId ? t('New sub-folder') : t('New folder'), text: t('Folder name'), input: '', okLabel: t('Create'), validate: validName });
   if (!name) return;
   try {
     const id = await mail.createMailbox(name, parentId, accountId);
-    toast(`Folder "${name}" created`);
+    toast(t('Folder "{name}" created', { name }));
     onOpenFolder(id, accountId);
   } catch (e) { toast(e.message, false); }
 }
 
 async function renameFolder(mb, accountId) {
-  const name = await dialog({ title: 'Rename folder', text: 'New name', input: mb.name, okLabel: 'Rename', validate: validName });
+  const name = await dialog({ title: t('Rename folder'), text: t('New name'), input: mb.name, okLabel: t('Rename'), validate: validName });
   if (!name || name === mb.name) return;
-  try { await mail.renameMailbox(mb.id, name, accountId); toast('Folder renamed'); } catch (e) { toast(e.message, false); }
+  try { await mail.renameMailbox(mb.id, name, accountId); toast(t('Folder renamed')); } catch (e) { toast(e.message, false); }
 }
 
 async function deleteFolder(mb, accountId) {
-  const ok = await dialog({ title: 'Delete folder', text: `Delete the folder "${mb.name}"? It must be empty.`, okLabel: 'Delete', danger: true });
+  const ok = await dialog({ title: t('Delete folder'), text: t('Delete the folder "{name}"? It must be empty.', { name: mb.name }), okLabel: t('Delete'), danger: true });
   if (!ok) return;
   try {
     const wasOpen = mail.state.view.mailboxId === mb.id && mail.viewAccount() === accountId;
     await mail.deleteMailbox(mb.id, accountId);
-    toast('Folder deleted');
+    toast(t('Folder deleted'));
     if (wasOpen) onOpenFolder(mail.state.view.mailboxId, accountId);
   } catch (e) { toast(e.message, false); }
 }
@@ -71,17 +72,17 @@ function folderRows(accountId) {
     },
       icon(ROLE_ICON[mb.role] || 'folder', 18, 1.5),
       h('span', { class: 'sb-name' }, mail.mailboxName(mb)),
-      h('span', { class: 'sb-count' + (unread > 0 ? ' unread' : ''), 'aria-label': unread ? unread + ' unread' : null }, countText));
+      h('span', { class: 'sb-count' + (unread > 0 ? ' unread' : ''), 'aria-label': unread ? t('{n} unread', { n: unread }) : null }, countText));
     btn.addEventListener('click', () => onOpenFolder(mb.id, accountId));
     const row = h('div', { class: 'folder-row', style: { '--depth': String(mb.depth || 0) } }, btn);
     if (!mb.role || mb.role === 'archive') {
-      const more = h('button', { type: 'button', class: 'folder-more', title: 'Folder actions', 'aria-label': 'Actions for ' + mb.name }, icon('dots', 14));
+      const more = h('button', { type: 'button', class: 'folder-more', title: t('Folder actions'), 'aria-label': t('Actions for {name}', { name: mb.name }) }, icon('dots', 14));
       more.addEventListener('click', e => {
         e.stopPropagation();
-        const items = [{ label: 'New sub-folder', icon: 'folder', run: () => newFolder(mb.id, accountId) }];
+        const items = [{ label: t('New sub-folder'), icon: 'folder', run: () => newFolder(mb.id, accountId) }];
         if (!mb.role) {
-          items.push({ label: 'Rename', icon: 'drafts', run: () => renameFolder(mb, accountId) });
-          items.push({ label: 'Delete', icon: 'trash', danger: true, run: () => deleteFolder(mb, accountId) });
+          items.push({ label: t('Rename'), icon: 'drafts', run: () => renameFolder(mb, accountId) });
+          items.push({ label: t('Delete'), icon: 'trash', danger: true, run: () => deleteFolder(mb, accountId) });
         }
         openMenu(more, items);
       });
@@ -105,7 +106,7 @@ function folderRows(accountId) {
 function render() {
   const own = api.accountId();
   const rows = folderRows(own);
-  $('#folderList').replaceChildren(...(rows.length ? rows : [h('div', { class: 'loading-text' }, 'No folders')]));
+  $('#folderList').replaceChildren(...(rows.length ? rows : [h('div', { class: 'loading-text' }, t('No folders'))]));
 
   // Team mailboxes: one entry each; the viewed one shows its folders.
   const teams = api.mailAccounts().filter(a => !a.personal);
@@ -135,11 +136,11 @@ function renderLabels() {
     const btn = h('button', { type: 'button', class: 'sb-btn' + (active ? ' active' : ''), 'aria-current': active ? 'page' : null, dataset: { label: l.slug }, title: l.name },
       h('span', { class: 'lbl-dot c-' + l.color }), h('span', { class: 'sb-name' }, l.name));
     btn.addEventListener('click', () => onOpenLabel(l.slug));
-    const more = h('button', { type: 'button', class: 'folder-more', title: 'Label actions', 'aria-label': 'Actions for label ' + l.name }, icon('dots', 14));
+    const more = h('button', { type: 'button', class: 'folder-more', title: t('Label actions'), 'aria-label': t('Actions for label {name}', { name: l.name }) }, icon('dots', 14));
     more.addEventListener('click', e => { e.stopPropagation(); openMenu(more, labels.menuFor(l, () => { if (mail.state.view.label === l.slug) onOpenFolder(null, api.accountId()); })); });
     return h('div', { class: 'folder-row' }, btn, more);
   });
-  $('#labelList').replaceChildren(...(rows.length ? rows : [h('div', { class: 'sb-hint' }, 'Labels group messages across folders.')]));
+  $('#labelList').replaceChildren(...(rows.length ? rows : [h('div', { class: 'sb-hint' }, t('Labels group messages across folders.'))]));
 }
 
 export function updateTitle() {
@@ -151,11 +152,11 @@ export function updateTitle() {
 
 export function renderQuota(q) {
   const text = $('#quotaText'), fill = $('#quotaFill');
-  if (!q) { text.textContent = 'No storage limit set'; fill.style.width = '0'; return; }
+  if (!q) { text.textContent = t('No storage limit set'); fill.style.width = '0'; return; }
   const used = q.used || 0, limit = q.hardLimit || q.warnLimit || 0;
-  if (!limit) { text.textContent = formatSize(used) + ' used'; fill.style.width = '0'; return; }
+  if (!limit) { text.textContent = t('{size} used', { size: formatSize(used) }); fill.style.width = '0'; return; }
   const pct = Math.min(100, Math.round(used / limit * 100));
-  text.textContent = `${formatSize(used)} of ${formatSize(limit)} (${pct}%)`;
+  text.textContent = t('{used} of {limit} ({pct}%)', { used: formatSize(used), limit: formatSize(limit), pct });
   fill.style.width = Math.max(pct, 1) + '%';
   fill.classList.toggle('warn', pct >= 80 && pct < 95);
   fill.classList.toggle('full', pct >= 95);

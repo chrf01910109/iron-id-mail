@@ -1,6 +1,6 @@
 // IRON ID Mail — webmail entry point: sign-in, wiring, actions, shortcuts, live updates.
 
-import './i18n.js'; // first: translates the page before anything else runs
+import { t, tn, lang as pageLang, setLang } from './i18n.js'; // first: translates the page before anything else runs
 import * as api from './api.js';
 import * as mail from './mail.js';
 import * as sidebar from './sidebar.js';
@@ -28,16 +28,31 @@ function showLogin(prefill = '', message = '') {
 }
 const hideLogin = () => $('#loginScreen').classList.remove('open');
 
+// Language buttons on the sign-in card. The choice is remembered by this browser at once and
+// saved to the account when the person signs in.
+const LANG_PICKED = 'ironid.langPicked';
+for (const b of document.querySelectorAll('.login-lang [data-lang]')) {
+  b.setAttribute('aria-pressed', String(b.dataset.lang === pageLang));
+  b.addEventListener('click', () => {
+    try { sessionStorage.setItem(LANG_PICKED, b.dataset.lang); } catch (e) { /* storage blocked */ }
+    setLang(b.dataset.lang);
+  });
+}
+
 $('#loginForm').addEventListener('submit', async e => {
   e.preventDefault();
   const email = $('#loginEmail').value.trim(), password = $('#loginPassword').value;
   const codeRow = $('#loginCodeRow');
   const code = codeRow.classList.contains('hidden') ? '' : $('#loginCode').value.replace(/\s+/g, '');
   const btn = $('#loginSubmitBtn');
-  btn.disabled = true; btn.querySelector('span').textContent = 'Signing in…';
+  btn.disabled = true; btn.querySelector('span').textContent = t('Signing in…');
   $('#loginAlert').className = 'hidden';
   try {
-    const data = await api.signIn(email, password, code);
+    let picked = '';
+    try { picked = sessionStorage.getItem(LANG_PICKED) || ''; } catch (e) { /* storage blocked */ }
+    const data = await api.signIn(email, password, code, picked);
+    try { sessionStorage.removeItem(LANG_PICKED); } catch (e) { /* storage blocked */ }
+    if (data.lang && data.lang !== pageLang) { window.location.replace('/'); return; } // the account's language: reload in it
     $('#loginPassword').value = '';
     $('#loginCode').value = '';
     codeRow.classList.add('hidden');
@@ -56,19 +71,19 @@ $('#loginForm').addEventListener('submit', async e => {
       codeRow.classList.remove('hidden');
       $('#loginCode').value = '';
       setTimeout(() => $('#loginCode').focus(), 30);
-      if (first) { a.className = 'login-alert info'; a.textContent = 'Two-step sign-in is on for this mailbox. ' + err.message; }
+      if (first) { a.className = 'login-alert info'; a.textContent = t('Two-step sign-in is on for this mailbox. {message}', { message: err.message }); }
       else { a.className = 'login-alert'; a.textContent = err.message; }
     } else {
       a.className = 'login-alert'; a.textContent = err.message;
     }
   } finally {
-    btn.disabled = false; btn.querySelector('span').textContent = 'Sign in';
+    btn.disabled = false; btn.querySelector('span').textContent = t('Sign in');
   }
 });
 
 api.onSessionEnded(() => {
   stopLive();
-  if (!$('#loginScreen').classList.contains('open')) showLogin(mail.state.user.email, 'Your session has ended. Please sign in again.');
+  if (!$('#loginScreen').classList.contains('open')) showLogin(mail.state.user.email, t('Your session has ended. Please sign in again.'));
 });
 
 async function signOut() {
@@ -85,7 +100,7 @@ async function boot() {
   try { sessionStorage.removeItem('iron_id_auth'); localStorage.removeItem('iron_id_auth'); } catch (e) { /* ignore */ }
   let session;
   try { session = await api.loadSession(); }
-  catch (e) { setConn(false, 'Offline'); $('#emailList').textContent = e.message; return; }
+  catch (e) { setConn(false, t('Offline')); $('#emailList').textContent = e.message; return; }
   if (!session) { showLogin(); return; }
   mail.state.user.email = session.username;
   // Admin access, team mailboxes (with members, for assigning) and labels.
@@ -102,7 +117,7 @@ async function boot() {
     await Promise.all([mail.loadMailboxes(), mail.loadIdentities()]);
   } catch (e) {
     if (e instanceof api.SessionEndedError) return;
-    toast('Could not load your mailbox: ' + e.message, false);
+    toast(t('Could not load your mailbox: {error}', { error: e.message }), false);
     return;
   }
   profileChanged();
@@ -207,7 +222,7 @@ async function moveThread(toId, label, opts = {}) {
   const fromId = mail.state.list.searchAll ? null : (opts.fromId !== undefined ? opts.fromId : mail.state.view.mailboxId);
   try {
     const undo = await mail.moveEmails(emails, toId, { fromId, extra: opts.extra });
-    toast(label, true, { label: 'Undo', run: async () => { try { await undo(); toast('Undone'); mail.loadList(); mail.refreshCountsSoon(); } catch (e) { toast(e.message, false); } } });
+    toast(label, true, { label: t('Undo'), run: async () => { try { await undo(); toast(t('Undone')); mail.loadList(); mail.refreshCountsSoon(); } catch (e) { toast(e.message, false); } } });
     await advance(cur.threadId);
   } catch (e) { toast(e.message, false); }
 }
@@ -219,13 +234,13 @@ async function action(name, anchor) {
   try {
     if (name === 'archive') {
       const to = await mail.ensureRoleMailbox('archive');
-      return moveThread(to, 'Archived');
+      return moveThread(to, t('Archived'));
     }
     if (name === 'delete') {
       const inTrash = cur.shown.every(e => roles.trash && e.mailboxIds[roles.trash]);
       if (inTrash) {
         if (mail.state.prefs.confirmDelete) {
-          const ok = await dialog({ title: 'Delete forever', text: `Permanently delete ${cur.shown.length === 1 ? 'this message' : 'these ' + cur.shown.length + ' messages'}? This cannot be undone.`, okLabel: 'Delete forever', danger: true });
+          const ok = await dialog({ title: t('Delete forever'), text: tn('Permanently delete this message? This cannot be undone.', 'Permanently delete these {n} messages? This cannot be undone.', cur.shown.length), okLabel: t('Delete forever'), danger: true });
           if (!ok) return;
         }
         // Copies also filed in another folder only leave the Trash; the rest are destroyed.
@@ -233,31 +248,31 @@ async function action(name, anchor) {
         const alsoElsewhere = cur.shown.filter(e => !onlyTrash.includes(e));
         await mail.destroyEmails(onlyTrash.map(e => e.id));
         if (alsoElsewhere.length) await mail.removeFromMailbox(alsoElsewhere.map(e => e.id), roles.trash);
-        toast('Deleted forever');
+        toast(t('Deleted forever'));
         return advance(cur.threadId);
       }
       const to = await mail.ensureRoleMailbox('trash');
-      return moveThread(to, 'Moved to Trash');
+      return moveThread(to, t('Moved to Trash'));
     }
     if (name === 'restore') {
       const inbox = roles.inbox;
-      return moveThread(inbox, 'Moved to Inbox', { emails: cur.shown.filter(e => e.mailboxIds[roles.trash]), fromId: roles.trash });
+      return moveThread(inbox, t('Moved to Inbox'), { emails: cur.shown.filter(e => e.mailboxIds[roles.trash]), fromId: roles.trash });
     }
     if (name === 'spam') {
       const to = await mail.ensureRoleMailbox('junk');
-      return moveThread(to, 'Reported as spam', { extra: { 'keywords/$junk': true, 'keywords/$notjunk': null } });
+      return moveThread(to, t('Reported as spam'), { extra: { 'keywords/$junk': true, 'keywords/$notjunk': null } });
     }
     if (name === 'notSpam') {
-      return moveThread(roles.inbox, 'Moved to Inbox', { emails: cur.shown.filter(e => e.mailboxIds[roles.junk]), fromId: roles.junk,
+      return moveThread(roles.inbox, t('Moved to Inbox'), { emails: cur.shown.filter(e => e.mailboxIds[roles.junk]), fromId: roles.junk,
         extra: { 'keywords/$junk': null, 'keywords/$notjunk': true } });
     }
     if (name === 'move') {
       const here = mail.state.view.mailboxId;
       const items = mail.state.mailboxes.filter(m => m.id !== here && m.role !== 'drafts').map(m => ({
         label: mail.mailboxName(m), indent: m.depth, icon: m.role === 'trash' ? 'trash' : m.role === 'junk' ? 'junk' : m.role === 'inbox' ? 'inbox' : m.role === 'archive' ? 'archive' : 'folder',
-        run: () => moveThread(m.id, 'Moved to ' + mail.mailboxName(m))
+        run: () => moveThread(m.id, t('Moved to {folder}', { folder: mail.mailboxName(m) }))
       }));
-      openMenu(anchor || $('#readerPane .ev-toolbar') || $('#readerPane'), [{ title: 'Move to' }, ...items]);
+      openMenu(anchor || $('#readerPane .ev-toolbar') || $('#readerPane'), [{ title: t('Move to') }, ...items]);
       return;
     }
     if (name === 'read' || name === 'unread') {
@@ -265,7 +280,7 @@ async function action(name, anchor) {
       const ids = name === 'read' ? own.map(e => e.id) : [own[own.length - 1].id];
       await mail.setKeyword(ids, '$seen', name === 'read');
       for (const e of cur.shown) if (ids.includes(e.id)) { e.keywords = { ...(e.keywords || {}) }; if (name === 'read') e.keywords.$seen = true; else delete e.keywords.$seen; }
-      toast(name === 'read' ? 'Marked as read' : 'Marked as unread');
+      toast(name === 'read' ? t('Marked as read') : t('Marked as unread'));
       if (name === 'unread') { mail.state.selected = null; reader.clear(); showList(); mail.emit('list'); }
       else reader.refresh();
       return;
@@ -288,7 +303,7 @@ async function dropThread(threadId, toId) {
   try {
     const undo = await mail.moveEmails(emails, toId, { fromId: mail.state.list.searchAll ? null : v.mailboxId });
     const mb = mail.state.byId.get(toId);
-    toast('Moved to ' + mail.mailboxName(mb), true, { label: 'Undo', run: async () => { await undo(); mail.loadList(); mail.refreshCountsSoon(); } });
+    toast(t('Moved to {folder}', { folder: mail.mailboxName(mb) }), true, { label: t('Undo'), run: async () => { await undo(); mail.loadList(); mail.refreshCountsSoon(); } });
     if (mail.state.selected === threadId) { mail.state.selected = null; reader.clear(); }
     mail.loadList(); mail.refreshCountsSoon();
   } catch (e) { toast(e.message, false); }
@@ -310,29 +325,29 @@ const onRemoteChange = debounce(async () => {
 
 function startLive() {
   stopLive();
-  setConn(true, 'Online');
+  setConn(true, t('Online'));
   events = api.openEventSource('Email,Mailbox,Thread,EmailDelivery');
   if (!events) { startPolling(); return; }
   let failures = 0;
-  events.addEventListener('open', () => { failures = 0; setConn(true, 'Live'); stopPolling(); });
+  events.addEventListener('open', () => { failures = 0; setConn(true, t('Live')); stopPolling(); });
   const handle = ev => {
     if (!ev.data) return;
-    setConn(true, 'Live');
+    setConn(true, t('Live'));
     try { const d = JSON.parse(ev.data); if (d && d['@type'] === 'StateChange') onRemoteChange(); } catch (e) { /* ping */ }
   };
   events.addEventListener('state', handle);
   events.addEventListener('message', handle);
-  events.addEventListener('ping', () => setConn(true, 'Live'));
+  events.addEventListener('ping', () => setConn(true, t('Live')));
   events.addEventListener('error', () => {
     failures++;
-    setConn(false, 'Reconnecting…');
+    setConn(false, t('Reconnecting…'));
     if (events && events.readyState === EventSource.CLOSED || failures > 5) { if (events) events.close(); events = null; startPolling(); }
   });
 }
 
 function startPolling() {
   stopPolling();
-  setConn(true, 'Online');
+  setConn(true, t('Online'));
   pollTimer = setInterval(() => { if (!document.hidden) onRemoteChange(); }, 60000);
 }
 function stopPolling() { clearInterval(pollTimer); pollTimer = null; }

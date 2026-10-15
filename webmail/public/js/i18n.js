@@ -57,6 +57,16 @@ export function t(msg, vars) {
   return fill(s, vars);
 }
 
+/**
+ * Same as t(), for a word whose French depends on where it is used ("Archive": the folder
+ * "Archives" or the action "Archiver"). The French key is "context|English"; English stays as is.
+ */
+export function tx(context, msg, vars) {
+  const key = context + '|' + msg;
+  if (DICT && Object.prototype.hasOwnProperty.call(DICT, key)) return fill(DICT[key], vars);
+  return t(msg, vars);
+}
+
 /** Singular or plural by the language's rules (French uses the singular for 0 and 1). {n} is the count. */
 export function tn(one, other, n, vars) {
   const form = plural.select(Number(n)) === 'one' ? one : other;

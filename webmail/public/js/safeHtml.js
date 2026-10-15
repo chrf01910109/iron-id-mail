@@ -9,6 +9,7 @@
 
 import DOMPurify from '../vendor/purify.es.mjs';
 import { h } from './util.js';
+import { t } from './i18n.js';
 
 const FORBID_TAGS = ['form', 'input', 'button', 'select', 'option', 'textarea', 'iframe', 'frame', 'frameset', 'object',
   'embed', 'applet', 'meta', 'link', 'base', 'script', 'noscript', 'template', 'portal', 'dialog', 'audio', 'video', 'source', 'track'];
@@ -113,7 +114,7 @@ export function renderHtmlEmail(container, html, { cidMap, allowRemote = false }
     class: 'mail-frame',
     sandbox: 'allow-same-origin allow-popups allow-popups-to-escape-sandbox',
     referrerpolicy: 'no-referrer',
-    title: 'Message content',
+    title: t('Message content'),
     scrolling: 'no'
   });
   frame.srcdoc = doc;
@@ -166,9 +167,9 @@ export function renderPlainText(container, text) {
   const flushQuote = () => {
     if (!quote.length) return;
     const q = h('div', { class: 'plain-quote hidden' }, ...linkify(quote.join('\n')));
-    const t = h('button', { type: 'button', class: 'quote-toggle', title: 'Show quoted text', 'aria-expanded': 'false' }, '•••');
-    t.addEventListener('click', () => { const hid = q.classList.toggle('hidden'); t.setAttribute('aria-expanded', String(!hid)); });
-    root.append(t, q, '\n');
+    const tog = h('button', { type: 'button', class: 'quote-toggle', title: t('Show quoted text'), 'aria-expanded': 'false' }, '•••');
+    tog.addEventListener('click', () => { const hid = q.classList.toggle('hidden'); tog.setAttribute('aria-expanded', String(!hid)); });
+    root.append(tog, q, '\n');
     quote = [];
   };
   for (const line of lines) {

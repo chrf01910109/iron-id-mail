@@ -222,6 +222,8 @@ a.att:hover { border-color: var(--color-accent); background: var(--color-accent-
 .popover .pop-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-faint); padding: 6px 10px 4px; }
 
 /* ——— Sign-in & toast ——— */
+.login-lang { display: flex; gap: 6px; justify-content: center; }
+.login-lang .preset-btn[aria-pressed="true"] { background: var(--color-accent-light); border-color: var(--color-accent); color: var(--color-accent-dark); }
 .login-logo { width: 42px; height: 42px; font-size: 16px; }
 .login-title { font-weight: 700; font-size: 18px; }
 .login-submit-btn { width: 100%; font-family: var(--font-body); }

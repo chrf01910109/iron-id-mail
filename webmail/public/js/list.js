@@ -2,6 +2,7 @@
 
 import * as mail from './mail.js';
 import { h, $, $$, icon, avatar, shortDate, toast, debounce } from './util.js';
+import { t, locale } from './i18n.js';
 
 let onOpenThread = () => {};
 const listEl = () => $('#emailList');
@@ -10,7 +11,7 @@ export function init({ openThread }) {
   onOpenThread = openThread;
   mail.on('list', render);
   mail.on('list-loading', () => {
-    if (!mail.state.list.items.length) listEl().replaceChildren(h('div', { class: 'loading-text' }, 'Loading…'));
+    if (!mail.state.list.items.length) listEl().replaceChildren(h('div', { class: 'loading-text' }, t('Loading…')));
   });
   mail.on('mailboxes', renderHeader);
 
@@ -28,7 +29,7 @@ export function init({ openThread }) {
   $('#btnMarkAllRead').addEventListener('click', async () => {
     const id = mail.state.view.mailboxId;
     if (!id) return;
-    try { await mail.markFolderRead(id); toast('All messages marked as read'); await Promise.all([mail.loadMailboxes(), mail.loadList()]); }
+    try { await mail.markFolderRead(id); toast(t('All messages marked as read')); await Promise.all([mail.loadMailboxes(), mail.loadList()]); }
     catch (e) { toast(e.message, false); }
   });
 
@@ -72,8 +73,8 @@ export function renderHeader() {
   const team = mail.isTeamView() ? mail.teamFor(mail.viewAccount()) : null;
   const searching = !!v.search;
   const p = searching ? mail.parseSearch(v.search) : null;
-  const place = label ? label.name : (mb ? mail.mailboxName(mb) : 'Mail');
-  $('#activeFolderName').textContent = searching ? 'Search results' : (team ? (team.name || team.email) + ' · ' : '') + place;
+  const place = label ? label.name : (mb ? mail.mailboxName(mb) : t('Mail'));
+  $('#activeFolderName').textContent = searching ? t('Search results') : (team ? (team.name || team.email) + ' · ' : '') + place;
   const badge = $('#activeFolderBadge');
   badge.classList.toggle('hidden', !!label);
   if (!searching && mb) badge.textContent = String(mb.totalThreads || mb.totalEmails || 0);
@@ -81,7 +82,7 @@ export function renderHeader() {
   $('#filterMine').classList.toggle('hidden', !team);
   const sb = $('#searchBadge');
   sb.classList.toggle('hidden', !searching);
-  sb.textContent = searching ? (p.all ? 'in all folders' : 'in ' + place) : '';
+  sb.textContent = searching ? (p.all ? t('in all folders') : t('in {folder}', { folder: place })) : '';
   const unread = mb ? (mb.unreadThreads || mb.unreadEmails || 0) : 0;
   $('#unreadFilterCount').textContent = unread ? `(${unread})` : '';
 }
@@ -118,10 +119,11 @@ function itemFor(rep) {
   const selected = mail.state.selected === rep.threadId;
   const terms = mail.state.list.terms;
   const lead = s.inSent ? (rep.to && rep.to[0]) : (rep.from && rep.from[0]);
-  const who = s.names.length ? (s.inSent ? 'To: ' : '') + s.names.slice(0, 3).join(', ') + (s.names.length > 3 ? '…' : '') : (s.inSent ? '(no recipient)' : 'Unknown');
+  const names = s.names.slice(0, 3).join(', ') + (s.names.length > 3 ? '…' : '');
+  const who = s.names.length ? (s.inSent ? t('To: {names}', { names }) : names) : (s.inSent ? t('(no recipient)') : t('Unknown'));
   const star = h('button', {
-    type: 'button', class: 'ei-star' + (s.flagged ? ' on' : ''), title: s.flagged ? 'Remove star' : 'Star',
-    'aria-label': s.flagged ? 'Remove star' : 'Star', 'aria-pressed': String(s.flagged)
+    type: 'button', class: 'ei-star' + (s.flagged ? ' on' : ''), title: s.flagged ? t('Remove star') : t('Star'),
+    'aria-label': s.flagged ? t('Remove star') : t('Star'), 'aria-pressed': String(s.flagged)
   }, icon('star', 14, 1.8));
   star.addEventListener('click', async e => {
     e.stopPropagation();
@@ -133,20 +135,20 @@ function itemFor(rep) {
     role: 'option', 'aria-selected': String(selected), tabindex: selected ? '0' : '-1',
     draggable: 'true', dataset: { thread: rep.threadId, id: rep.id }
   },
-    s.unread ? h('div', { class: 'ei-unread-dot', 'aria-label': 'Unread' }) : null,
+    s.unread ? h('div', { class: 'ei-unread-dot', 'aria-label': t('Unread') }) : null,
     avatar(lead && lead.name, lead && lead.email),
     h('div', { class: 'ei-body' },
       h('div', { class: 'ei-top' },
         h('span', { class: 'ei-sender' }, ...highlight(who, terms),
           s.count > 1 ? h('span', { class: 'ei-count' }, String(s.count)) : null,
-          s.draft ? h('span', { class: 'ei-draft' }, ' Draft') : null),
+          s.draft ? h('span', { class: 'ei-draft' }, ' ' + t('Draft')) : null),
         h('span', { class: 'ei-meta' },
-          s.attachment ? h('span', { class: 'ei-icon', title: 'Has attachments' }, icon('clip', 13)) : null,
-          h('span', { class: 'ei-time', title: new Date(rep.receivedAt).toLocaleString() }, shortDate(rep.receivedAt)))),
-      h('div', { class: 'ei-subject', dir: 'auto' }, ...highlight(rep.subject || '(no subject)', terms)),
+          s.attachment ? h('span', { class: 'ei-icon', title: t('Has attachments') }, icon('clip', 13)) : null,
+          h('span', { class: 'ei-time', title: new Date(rep.receivedAt).toLocaleString(locale) }, shortDate(rep.receivedAt)))),
+      h('div', { class: 'ei-subject', dir: 'auto' }, ...highlight(rep.subject || t('(no subject)'), terms)),
       (s.labels.length || s.assignee) ? h('div', { class: 'ei-tags' },
         ...s.labels.map(mail.labelOf).filter(Boolean).map(l => h('span', { class: 'label-chip c-' + l.color }, l.name)),
-        s.assignee ? h('span', { class: 'assign-chip', title: 'Assigned to ' + s.assignee }, icon('user', 11), s.assignee === mail.state.user.email.toLowerCase() ? 'me' : s.assignee.split('@')[0]) : null) : null,
+        s.assignee ? h('span', { class: 'assign-chip', title: t('Assigned to {name}', { name: s.assignee }) }, icon('user', 11), s.assignee === mail.state.user.email.toLowerCase() ? t('me') : s.assignee.split('@')[0]) : null) : null,
       h('div', { class: 'ei-top' },
         h('div', { class: 'ei-preview', dir: 'auto' }, ...highlight((rep.preview || '').slice(0, 160), terms)),
         star)));
@@ -165,20 +167,20 @@ export function render() {
   const el = listEl();
   renderHeader();
   if (L.error && !L.items.length) {
-    el.replaceChildren(h('div', { class: 'loading-text list-error' }, 'Could not load messages: ' + L.error.message));
+    el.replaceChildren(h('div', { class: 'loading-text list-error' }, t('Could not load messages: {error}', { error: L.error.message })));
     return;
   }
   if (!L.items.length) {
     const v = mail.state.view;
-    const msg = v.search ? 'No messages match your search.' : v.filter === 'unread' ? 'No unread messages.' : v.filter === 'starred' ? 'No starred messages.'
-      : v.filter === 'mine' ? 'Nothing is assigned to you here.' : v.label ? 'No messages with this label.' : 'No messages in this folder.';
-    el.replaceChildren(h('div', { class: 'loading-text' }, L.loading ? 'Loading…' : msg));
+    const msg = v.search ? t('No messages match your search.') : v.filter === 'unread' ? t('No unread messages.') : v.filter === 'starred' ? t('No starred messages.')
+      : v.filter === 'mine' ? t('Nothing is assigned to you here.') : v.label ? t('No messages with this label.') : t('No messages in this folder.');
+    el.replaceChildren(h('div', { class: 'loading-text' }, L.loading ? t('Loading…') : msg));
     return;
   }
   const scroll = el.scrollTop;
   const nodes = L.items.map(itemFor);
   if (mail.hasMore()) {
-    const more = h('div', { class: 'list-more' }, L.loading ? h('span', { class: 'muted small' }, 'Loading…') : h('button', { type: 'button', class: 'lh-link' }, `Show more (${L.total - L.items.length} left)`));
+    const more = h('div', { class: 'list-more' }, L.loading ? h('span', { class: 'muted small' }, t('Loading…')) : h('button', { type: 'button', class: 'lh-link' }, t('Show more ({n} left)', { n: L.total - L.items.length })));
     const b = more.querySelector('button');
     if (b) b.addEventListener('click', () => mail.loadList({ append: true }));
     nodes.push(more);

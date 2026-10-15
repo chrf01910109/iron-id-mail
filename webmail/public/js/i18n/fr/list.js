@@ -1,3 +1,28 @@
 // French for list — keys are the exact English text.
 export default {
+  'Loading…': 'Chargement…',
+  'All messages marked as read': 'Tous les messages ont été marqués comme lus',
+  'Mail': 'Messagerie',
+  'Search results': 'Résultats de recherche',
+  'in all folders': 'dans tous les dossiers',
+  'in {folder}': 'dans {folder}',
+  'To: {names}': 'À : {names}',
+  '(no recipient)': '(aucun destinataire)',
+  'Unknown': 'Inconnu',
+  'Remove star': 'Ne plus suivre',
+  'Star': 'Suivre',
+  'Unread': 'Non lus',
+  'Draft': 'Brouillon',
+  'Has attachments': 'Contient des pièces jointes',
+  '(no subject)': '(sans objet)',
+  'Assigned to {name}': 'Assigné à {name}',
+  'me': 'moi',
+  'Could not load messages: {error}': 'Impossible de charger les messages : {error}',
+  'No messages match your search.': 'Aucun message ne correspond à votre recherche.',
+  'No unread messages.': 'Aucun message non lu.',
+  'No starred messages.': 'Aucun message suivi.',
+  'Nothing is assigned to you here.': 'Rien ne vous est assigné ici.',
+  'No messages with this label.': 'Aucun message avec ce libellé.',
+  'No messages in this folder.': 'Aucun message dans ce dossier.',
+  'Show more ({n} left)': 'Afficher plus (encore {n})'
 };

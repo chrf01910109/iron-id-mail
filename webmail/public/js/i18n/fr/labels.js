@@ -1,3 +1,32 @@
 // French for labels — keys are the exact English text.
 export default {
+  // Colour names
+  'Grey': 'Gris',
+  'Red': 'Rouge',
+  'Orange': 'Orange',
+  'Yellow': 'Jaune',
+  'Green': 'Vert',
+  'Teal': 'Bleu canard',
+  'Blue': 'Bleu',
+  'Indigo': 'Indigo',
+  'Purple': 'Violet',
+  'Pink': 'Rose',
+  'Please enter a name.': 'Veuillez saisir un nom.',
+  'Use 40 characters or fewer.': 'Utilisez 40 caractères au maximum.',
+  'New label': 'Nouveau libellé',
+  'Label name': 'Nom du libellé',
+  'Create': 'Créer',
+  'Label "{name}" created': 'Libellé « {name} » créé',
+  'Rename': 'Renommer',
+  'Rename label': 'Renommer le libellé',
+  'New name': 'Nouveau nom',
+  'Colour': 'Couleur',
+  'Delete label': 'Supprimer le libellé',
+  'Delete the label "{name}"? The messages stay where they are; only the label is removed.': 'Supprimer le libellé « {name} » ? Les messages restent où ils sont ; seul le libellé est retiré.',
+  'Delete': 'Supprimer',
+  'Label deleted': 'Libellé supprimé',
+  'Label as': 'Appliquer le libellé',
+  'Labelled "{name}"': 'Libellé « {name} » appliqué',
+  'Label "{name}" removed': 'Libellé « {name} » retiré',
+  'New label…': 'Nouveau libellé…'
 };

@@ -4,23 +4,24 @@
 import * as api from './api.js';
 import * as mail from './mail.js';
 import { toast, dialog } from './util.js';
+import { t } from './i18n.js';
 
 export const COLORS = ['blue', 'green', 'amber', 'red', 'purple', 'teal', 'orange', 'pink', 'indigo', 'slate'];
-const COLOR_NAMES = { slate: 'Grey', red: 'Red', orange: 'Orange', amber: 'Yellow', green: 'Green', teal: 'Teal', blue: 'Blue', indigo: 'Indigo', purple: 'Purple', pink: 'Pink' };
+const COLOR_NAMES = { slate: t('Grey'), red: t('Red'), orange: t('Orange'), amber: t('Yellow'), green: t('Green'), teal: t('Teal'), blue: t('Blue'), indigo: t('Indigo'), purple: t('Purple'), pink: t('Pink') };
 
 function sortLabels() { mail.state.labels.sort((a, b) => a.name.localeCompare(b.name)); }
-const validName = v => !v ? 'Please enter a name.' : v.length > 40 ? 'Use 40 characters or fewer.' : null;
+const validName = v => !v ? t('Please enter a name.') : v.length > 40 ? t('Use 40 characters or fewer.') : null;
 
 /** Asks for a name and creates the label. Returns it, or null. */
 export async function promptNew() {
-  const name = await dialog({ title: 'New label', text: 'Label name', input: '', okLabel: 'Create', validate: validName });
+  const name = await dialog({ title: t('New label'), text: t('Label name'), input: '', okLabel: t('Create'), validate: validName });
   if (!name) return null;
   const color = COLORS[mail.state.labels.length % COLORS.length];
   try {
     const l = await api.account('labels', { name, color });
     mail.state.labels.push(l); sortLabels();
     mail.emit('labels');
-    toast(`Label "${l.name}" created`);
+    toast(t('Label "{name}" created', { name: l.name }));
     return l;
   } catch (e) { toast(e.message, false); return null; }
 }
@@ -34,14 +35,14 @@ export function menuFor(l, onDeleted) {
     } catch (e) { toast(e.message, false); }
   };
   return [
-    { label: 'Rename', icon: 'drafts', run: async () => {
-      const name = await dialog({ title: 'Rename label', text: 'New name', input: l.name, okLabel: 'Rename', validate: validName });
+    { label: t('Rename'), icon: 'drafts', run: async () => {
+      const name = await dialog({ title: t('Rename label'), text: t('New name'), input: l.name, okLabel: t('Rename'), validate: validName });
       if (name && name !== l.name) save({ name });
     } },
-    { title: 'Colour' },
+    { title: t('Colour') },
     ...COLORS.map(c => ({ label: COLOR_NAMES[c], dot: c, checked: l.color === c, run: () => save({ color: c }) })),
-    { label: 'Delete label', icon: 'trash', danger: true, run: async () => {
-      const ok = await dialog({ title: 'Delete label', text: `Delete the label "${l.name}"? The messages stay where they are; only the label is removed.`, okLabel: 'Delete', danger: true });
+    { label: t('Delete label'), icon: 'trash', danger: true, run: async () => {
+      const ok = await dialog({ title: t('Delete label'), text: t('Delete the label "{name}"? The messages stay where they are; only the label is removed.', { name: l.name }), okLabel: t('Delete'), danger: true });
       if (!ok) return;
       try {
         await api.account('labels/delete', { slug: l.slug });
@@ -49,7 +50,7 @@ export function menuFor(l, onDeleted) {
         mail.emit('labels');
         if (onDeleted) onDeleted();
         mail.clearLabelEverywhere(l.slug).then(() => mail.emit('list')).catch(() => {});
-        toast('Label deleted');
+        toast(t('Label deleted'));
       } catch (e) { toast(e.message, false); }
     } }
   ];
@@ -59,17 +60,17 @@ export function menuFor(l, onDeleted) {
 export function applyMenu(emails, done) {
   const has = slug => emails.some(e => e.keywords && e.keywords['label:' + slug]);
   return [
-    { title: 'Label as' },
+    { title: t('Label as') },
     ...mail.state.labels.map(l => ({ label: l.name, dot: l.color, checked: has(l.slug), run: async () => {
       const on = !has(l.slug);
       try {
         await mail.setLabel(emails.map(e => e.id), l.slug, on);
         for (const e of emails) { e.keywords = { ...(e.keywords || {}) }; if (on) e.keywords['label:' + l.slug] = true; else delete e.keywords['label:' + l.slug]; }
-        toast(on ? `Labelled "${l.name}"` : `Label "${l.name}" removed`);
+        toast(on ? t('Labelled "{name}"', { name: l.name }) : t('Label "{name}" removed', { name: l.name }));
         if (done) done();
       } catch (e) { toast(e.message, false); }
     } })),
-    { label: 'New label…', icon: 'plus', run: async () => {
+    { label: t('New label…'), icon: 'plus', run: async () => {
       const l = await promptNew();
       if (!l) return;
       try {

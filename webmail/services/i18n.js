@@ -76,10 +76,27 @@ function translate(lang, msg) {
   return msg;
 }
 
+// Fields of a JSON answer that carry the gateway's own English text for people (never mail
+// data): error messages, and the admin console's DNS checks and account notes.
+const MESSAGE_FIELDS = new Set(['error', 'problem', 'purpose', 'warnings', 'protected']);
+
+/** A copy of a JSON answer with its message fields in `lang`. Other fields are left alone. */
+function translateMessages(lang, value, depth = 0) {
+  if (lang === 'en' || depth > 8 || value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(v => translateMessages(lang, v, depth + 1));
+  const out = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (MESSAGE_FIELDS.has(k) && typeof v === 'string') out[k] = translate(lang, v);
+    else if (MESSAGE_FIELDS.has(k) && Array.isArray(v)) out[k] = v.map(x => (typeof x === 'string' ? translate(lang, x) : x));
+    else out[k] = translateMessages(lang, v, depth + 1);
+  }
+  return out;
+}
+
 /** The page markup with <html lang> set, and the page hidden until its text is translated (a CSS fallback shows it after 3 s regardless). */
 function htmlFor(html, lang) {
   const cls = lang === 'en' ? '' : ' class="i18n-wait"';
   return html.replace(/<html lang="[a-z]{2}"[^>]*>/, `<html lang="${lang}"${cls}>`);
 }
 
-module.exports = { SUPPORTED, COOKIE, langFrom, validLang, langCookie, translate, htmlFor, FR };
+module.exports = { SUPPORTED, COOKIE, langFrom, validLang, langCookie, translate, translateMessages, htmlFor, FR };

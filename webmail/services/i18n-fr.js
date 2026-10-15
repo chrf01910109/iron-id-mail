@@ -1,6 +1,213 @@
 /**
  * French for the gateway's messages. Keys are the exact English text from the code;
  * {placeholders} match the parts that change. See i18n.js.
+ *
+ * Order matters for keys with placeholders: the first one that matches wins, so a key with
+ * more fixed text comes before a more general one ("… staff (Special permissions)." before
+ * "… staff ({reason}).").
  */
-module.exports = {
+const FR = {
+  /* ——— Sign-in and requests (server.js) ——— */
+  'The server is starting. Please try again in a moment.': 'Le serveur démarre. Veuillez réessayer dans un instant.',
+  'Forbidden': 'Accès refusé',
+  'Invalid request': 'Requête non valide',
+  'Not found': 'Introuvable',
+  'Not signed in': 'Non connecté',
+  'Request too large': 'Requête trop volumineuse',
+  'Not allowed from the webmail': 'Non autorisé depuis la messagerie web',
+  'Email and password are required.': 'L’adresse e-mail et le mot de passe sont obligatoires.',
+  'Too many failed sign-in attempts. Please wait 15 minutes and try again.': 'Trop de tentatives de connexion échouées. Veuillez patienter 15 minutes, puis réessayer.',
+  'Too many failed attempts. Please wait 15 minutes and try again.': 'Trop de tentatives échouées. Veuillez patienter 15 minutes, puis réessayer.',
+  'Invalid mailbox credentials': 'Identifiants de boîte mail incorrects',
+  'Enter the 6-digit code from your authenticator app.': 'Saisissez le code à 6 chiffres de votre application d’authentification.',
+  'Enter the current 6-digit code from your authenticator app.': 'Saisissez le code à 6 chiffres affiché en ce moment par votre application d’authentification.',
+  'That code is not right. Wait for a new code and try again.': 'Ce code n’est pas correct. Attendez un nouveau code et réessayez.',
+  'That code was already used. Wait for the next one.': 'Ce code a déjà été utilisé. Attendez le suivant.',
+  'That code is not right. Check that your app shows "{email}" and enter the current code.': 'Ce code n’est pas correct. Vérifiez que votre application affiche « {email} » et saisissez le code actuel.',
+  'Mail engine is temporarily unavailable. Please try again shortly.': 'Le moteur de messagerie est momentanément indisponible. Veuillez réessayer dans quelques instants.',
+  'Your session has ended. Please sign in again.': 'Votre session a expiré. Veuillez vous reconnecter.',
+
+  /* ——— Account security (server.js, accountSecurity.js) ——— */
+  'New password must be at least 12 characters.': 'Le nouveau mot de passe doit comporter au moins 12 caractères.',
+  'The new password must be different from the current one.': 'Le nouveau mot de passe doit être différent de l’actuel.',
+  'Your current password or the code is not right.': 'Votre mot de passe actuel ou le code n’est pas correct.',
+  'Your current password is incorrect.': 'Votre mot de passe actuel est incorrect.',
+  'Your password or the code is not right.': 'Votre mot de passe ou le code n’est pas correct.',
+  'Your password is incorrect.': 'Votre mot de passe est incorrect.',
+  'The password could not be changed.': 'Le mot de passe n’a pas pu être modifié.',
+  'The change was refused': 'La modification a été refusée',
+  'That code is not right. Use the current code from your authenticator app.': 'Ce code n’est pas correct. Utilisez le code actuel de votre application d’authentification.',
+  'Enter your current password.': 'Saisissez votre mot de passe actuel.',
+  'Start the setup again.': 'Recommencez la configuration.',
+  'Two-step sign-in is already on.': 'La validation en deux étapes est déjà activée.',
+  'That browser is already signed out.': 'Ce navigateur est déjà déconnecté.',
+  'Choose English or French.': 'Choisissez l’anglais ou le français.',
+  'That app password no longer exists.': 'Ce mot de passe d’application n’existe plus.',
+  'This mailbox already has the maximum number of app passwords. Remove one in Settings → Security, then try again.': 'Cette boîte mail a déjà le nombre maximal de mots de passe d’application. Supprimez-en un dans Paramètres → Sécurité, puis réessayez.',
+  'Give the app password a name, for example "Outlook on my laptop".': 'Donnez un nom au mot de passe d’application, par exemple « Outlook sur mon ordinateur portable ».',
+  'That name is reserved. Please choose another.': 'Ce nom est réservé. Veuillez en choisir un autre.',
+
+  /* ——— Labels (labels.js) ——— */
+  'Enter a label name.': 'Saisissez un nom de libellé.',
+  'You can have up to {n} labels.': 'Vous pouvez avoir jusqu’à {n} libellés.',
+  'You already have a label with that name.': 'Vous avez déjà un libellé portant ce nom.',
+  'That label was not found.': 'Ce libellé est introuvable.',
+
+  /* ——— DNS (dnsCheck.js) ——— */
+  'lookup failed': 'échec de la recherche DNS',
+
+  /* ——— Admin console (adminConsole.js) ——— */
+  'JSON expected': 'JSON attendu',
+  'Please sign in with your mailbox.': 'Veuillez vous connecter avec votre boîte mail.',
+  'This mailbox is not an administrator.': 'Cette boîte mail n’a pas les droits d’administration.',
+  'The mail server could not complete this. Please try again.': 'Le serveur de messagerie n’a pas pu terminer cette opération. Veuillez réessayer.',
+  'Admin access to the mail engine is not set up yet. See the setup notes (STALWART_RECOVERY_ADMIN, one deploy).': 'L’accès administrateur au moteur de messagerie n’est pas encore configuré. Consultez les notes d’installation (STALWART_RECOVERY_ADMIN, un déploiement).',
+  'The gateway is not allowed to do this yet. Deploy once with STALWART_RECOVERY_ADMIN set so it can update its permissions, then remove it again.': 'La passerelle n’est pas encore autorisée à effectuer cette action. Déployez une fois avec STALWART_RECOVERY_ADMIN défini pour qu’elle puisse mettre à jour ses autorisations, puis retirez-le.',
+  'Only IRON ID staff can do this.': 'Seule l’équipe IRON ID peut effectuer cette action.',
+
+  // Input checks
+  'Enter a domain name such as company.dz.': 'Saisissez un nom de domaine, par exemple entreprise.dz.',
+  'Enter a full email address.': 'Saisissez une adresse e-mail complète.',
+  '"{local}" can\'t be used before the @. Use letters, numbers, dots, dashes or underscores.': '« {local} » ne peut pas être utilisé avant le @. Utilisez des lettres, des chiffres, des points, des tirets ou des tirets bas.',
+  'Mailboxes must be a whole number between {min} and {max}.': 'Le nombre de boîtes mail doit être un nombre entier entre {min} et {max}.',
+  'Storage per mailbox (MB) must be a whole number between {min} and {max}.': 'Le stockage par boîte mail (Mo) doit être un nombre entier entre {min} et {max}.',
+  'Storage (MB) must be a whole number between {min} and {max}.': 'Le stockage (Mo) doit être un nombre entier entre {min} et {max}.',
+  'Days must be a whole number between {min} and {max}.': 'Le nombre de jours doit être un nombre entier entre {min} et {max}.',
+  'value must be a whole number between {min} and {max}.': 'La valeur doit être un nombre entier entre {min} et {max}.',
+  '{name} must be a whole number between {min} and {max}.': '{name} : saisissez un nombre entier entre {min} et {max}.',
+
+  // Customers
+  'Unknown customer.': 'Client inconnu.',
+  'Unknown status.': 'Statut inconnu.',
+  'Enter the customer’s name.': 'Saisissez le nom du client.',
+  'The IRON ID customer cannot be suspended.': 'Le client IRON ID ne peut pas être suspendu.',
+  'The IRON ID customer cannot be deleted.': 'Le client IRON ID ne peut pas être supprimé.',
+  'Remove this customer’s domains first.': 'Retirez d’abord les domaines de ce client.',
+
+  // Admins
+  'Create that mailbox first: admins sign in with a mailbox on one of the organisation’s own domains.': 'Créez d’abord cette boîte mail : les administrateurs se connectent avec une boîte mail sur l’un des domaines de l’organisation.',
+  'Add IRON ID staff as platform admins instead.': 'Ajoutez plutôt les membres de l’équipe IRON ID comme administrateurs de la plateforme.',
+  'You cannot remove your own admin access. Ask another admin.': 'Vous ne pouvez pas retirer votre propre accès administrateur. Demandez à un autre administrateur.',
+  'That admin was not found.': 'Cet administrateur est introuvable.',
+
+  // Plans
+  'That plan does not exist.': 'Cette offre n’existe pas.',
+  'That plan was not found.': 'Cette offre est introuvable.',
+  'Enter a plan name.': 'Saisissez un nom d’offre.',
+  'Enter a valid price.': 'Saisissez un prix valide.',
+  'Currency must be a 3-letter code such as DZD or EUR.': 'La devise doit être un code à 3 lettres, par exemple DZD ou EUR.',
+  'Customers still use this plan. Move them to another plan first.': 'Des clients utilisent encore cette offre. Passez-les d’abord à une autre offre.',
+  'The {plan} plan allows up to {n} teams. Ask IRON ID to change the plan.': 'L’offre {plan} permet jusqu’à {n} équipes. Demandez à IRON ID de changer d’offre.',
+  'The {plan} plan includes {n} mailboxes, and all are in use. Ask IRON ID to change the plan.': 'L’offre {plan} comprend {n} boîtes mail, et toutes sont utilisées. Demandez à IRON ID de changer d’offre.',
+  'The plan allows up to {n} MB per mailbox.': 'L’offre permet jusqu’à {n} Mo par boîte mail.',
+
+  // Domains and DNS
+  'That domain was not found.': 'Ce domaine est introuvable.',
+  '{domain} addresses belong to IRON ID.': 'Les adresses {domain} appartiennent à IRON ID.',
+  'This domain is already on IRON ID. If it is yours, contact IRON ID support.': 'Ce domaine est déjà sur IRON ID. S’il vous appartient, contactez le support IRON ID.',
+  'This domain is already on IRON ID. Contact IRON ID support to have it assigned to you.': 'Ce domaine est déjà sur IRON ID. Contactez le support IRON ID pour qu’il vous soit attribué.',
+  'Verify or remove your other new domains first (at most {n} waiting at a time).': 'Vérifiez ou retirez d’abord vos autres nouveaux domaines ({n} en attente au maximum).',
+  'This domain is already verified.': 'Ce domaine est déjà vérifié.',
+  'The verification record was not found yet. DNS changes can take from a few minutes to a few hours; try again later.': 'L’enregistrement de vérification est encore introuvable. Les modifications DNS peuvent prendre de quelques minutes à quelques heures ; réessayez plus tard.',
+  'Verify the domain first.': 'Vérifiez d’abord le domaine.',
+  'Add and verify that domain first.': 'Ajoutez et vérifiez d’abord ce domaine.',
+  'Verify the domain before adding mailboxes.': 'Vérifiez le domaine avant d’ajouter des boîtes mail.',
+  'Verify the domain before adding teams.': 'Vérifiez le domaine avant d’ajouter des équipes.',
+  'The catch-all address must end with @{domain}.': 'L’adresse fourre-tout doit se terminer par @{domain}.',
+  'Create that mailbox or team first.': 'Créez d’abord cette boîte mail ou cette équipe.',
+  'Too many new keys today. Try again tomorrow.': 'Trop de nouvelles clés aujourd’hui. Réessayez demain.',
+  'There are no new keys to switch to. Create new keys first.': 'Il n’y a aucune nouvelle clé vers laquelle basculer. Créez d’abord de nouvelles clés.',
+  'The record {selector}._domainkey is not visible in DNS yet. Add it, wait a little, and try again.': 'L’enregistrement {selector}._domainkey n’est pas encore visible dans le DNS. Ajoutez-le, patientez un peu, puis réessayez.',
+  'There are no old keys to remove.': 'Il n’y a aucune ancienne clé à retirer.',
+  'Keep at least one active key.': 'Conservez au moins une clé active.',
+  '{domain} cannot be removed.': '{domain} ne peut pas être retiré.',
+  'Type the domain name to confirm.': 'Saisissez le nom de domaine pour confirmer.',
+  'Delete this domain’s mailboxes and teams first.': 'Supprimez d’abord les boîtes mail et les équipes de ce domaine.',
+  '{email} still has an alias on {domain}. Remove it first.': '{email} a encore un alias sur {domain}. Retirez-le d’abord.',
+
+  // Mailboxes, teams, aliases
+  'That mailbox was not found.': 'Cette boîte mail est introuvable.',
+  'That team was not found.': 'Cette équipe est introuvable.',
+  '{email} already exists.': '{email} existe déjà.',
+  'Aliases must be a list of addresses.': 'Les alias doivent être une liste d’adresses.',
+  'Aliases must use one of your verified domains ({email}).': 'Les alias doivent utiliser l’un de vos domaines vérifiés ({email}).',
+  '{domain} is not ready yet.': '{domain} n’est pas encore prêt.',
+  '{email} is already used by {owner}.': '{email} est déjà utilisé par {owner}.',
+  'Members must be a list of addresses.': 'Les membres doivent être une liste d’adresses.',
+  '{email} is not one of your mailboxes.': '{email} ne fait pas partie de vos boîtes mail.',
+  '{email} is managed by IRON ID staff in the engine.': '{email} est géré par l’équipe IRON ID dans le moteur de messagerie.',
+  '{email} is managed by IRON ID staff and can\'t be added here.': '{email} est géré par l’équipe IRON ID et ne peut pas être ajouté ici.',
+  '{email} is an administrator elsewhere on IRON ID. Ask IRON ID support.': '{email} est administrateur ailleurs sur IRON ID. Contactez le support IRON ID.',
+  'You cannot do this to your own mailbox from here. Use Settings → Security in the webmail.': 'Vous ne pouvez pas effectuer cette action sur votre propre boîte mail depuis cette page. Utilisez Paramètres → Sécurité dans la messagerie web.',
+  'Type the mailbox address to confirm.': 'Saisissez l’adresse de la boîte mail pour confirmer.',
+  'Type the team address to confirm.': 'Saisissez l’adresse de l’équipe pour confirmer.',
+  'Enter a number of days.': 'Saisissez un nombre de jours.'
 };
+
+// "{email} is managed by IRON ID staff ({reason})." — the reasons from protectedReason().
+const REASONS = {
+  'IRON ID service account': 'compte de service IRON ID',
+  'Mail engine administrator': 'administrateur du moteur de messagerie',
+  'Special engine role': 'rôle spécial dans le moteur de messagerie',
+  'Special permissions': 'autorisations spéciales'
+};
+for (const [en, fr] of Object.entries(REASONS)) {
+  FR[`{email} is managed by IRON ID staff (${en}).`] = `{email} est géré par l’équipe IRON ID (${fr}).`;
+}
+FR['{email} is managed by IRON ID staff ({reason}).'] = '{email} est géré par l’équipe IRON ID ({reason}).';
+
+// The same reasons shown on their own (badge on a mailbox the console can't change).
+FR['IRON ID service account'] = 'Compte de service IRON ID';
+FR['Mail engine administrator'] = 'Administrateur du moteur de messagerie';
+FR['Special engine role'] = 'Rôle spécial dans le moteur de messagerie';
+FR['Special permissions'] = 'Autorisations spéciales';
+
+// DNS records and checks shown in the admin console (fields purpose / problem / warnings).
+Object.assign(FR, {
+  'Proves that you own this domain': 'Prouve que ce domaine vous appartient',
+  'Delivers this domain’s mail to IRON ID': 'Achemine le courrier de ce domaine vers IRON ID',
+  'Allows IRON ID to send mail for this domain (SPF)': 'Autorise IRON ID à envoyer du courrier pour ce domaine (SPF)',
+  'New signing key (DKIM) — add it before switching': 'Nouvelle clé de signature (DKIM) — ajoutez-la avant de changer de clé',
+  'Signs outgoing mail (DKIM)': 'Signe le courrier sortant (DKIM)',
+  'Tells receivers what to do with mail that fails the checks (DMARC). Start with p=none.': 'Indique aux destinataires quoi faire du courrier qui échoue aux contrôles (DMARC). Commencez par p=none.',
+  'Could not look this up right now.': 'Vérification impossible pour le moment.',
+  'There is more than one SPF record. Merge them into one.': 'Il y a plusieurs enregistrements SPF. Regroupez-les en un seul.',
+  'The SPF record does not allow IRON ID yet: add "mx".': 'L’enregistrement SPF n’autorise pas encore IRON ID : ajoutez « mx ».',
+  'There is more than one DMARC record.': 'Il y a plusieurs enregistrements DMARC.',
+  'This domain still signs mail with keys that were exposed. Create new DKIM keys and switch to them.': 'Ce domaine signe encore le courrier avec des clés qui ont été exposées. Créez de nouvelles clés DKIM et passez à celles-ci.',
+  'MX, SPF and DMARC for {domain} are managed separately and are not changed from here.': 'Les enregistrements MX, SPF et DMARC de {domain} sont gérés à part et ne sont pas modifiés ici.'
+});
+
+// engineMessage() in adminConsole.js: "Could not <what>…", for each action passed to engineSet().
+const ACTIONS = {
+  'create the signing keys': 'créer les clés de signature',
+  'add the domain to the mail server': 'ajouter le domaine au serveur de messagerie',
+  'save the domain settings': 'enregistrer les paramètres du domaine',
+  'switch the domain to managed keys': 'passer le domaine en clés gérées',
+  'replace the earlier new keys': 'remplacer les nouvelles clés précédentes',
+  'switch keys': 'changer de clés',
+  'remove the old keys': 'retirer les anciennes clés',
+  'remove the signing keys': 'retirer les clés de signature',
+  'remove the domain': 'retirer le domaine',
+  'create the mailbox': 'créer la boîte mail',
+  'save the mailbox': 'enregistrer la boîte mail',
+  'reset the sign-in': 'réinitialiser la connexion',
+  'suspend the mailbox': 'suspendre la boîte mail',
+  'restore the mailbox': 'réactiver la boîte mail',
+  'clear the catch-all address': 'effacer l’adresse fourre-tout',
+  'delete the mailbox': 'supprimer la boîte mail',
+  'update the team members': 'mettre à jour les membres de l’équipe',
+  'create the team': 'créer l’équipe',
+  'save the team': 'enregistrer l’équipe',
+  'delete the team': 'supprimer l’équipe',
+  'save the retention rule': 'enregistrer la règle de conservation'
+};
+for (const [en, fr] of Object.entries(ACTIONS)) {
+  const cannot = (/^[aeéiou]/i.test(fr) ? 'Impossible d’' : 'Impossible de ') + fr;
+  FR[`Could not ${en}: that address or name is already in use.`] = `${cannot} : cette adresse ou ce nom est déjà utilisé.`;
+  FR[`Could not ${en}: not allowed.`] = `${cannot} : action non autorisée.`;
+  FR[`Could not ${en}.`] = `${cannot}.`;
+  FR[`Could not ${en}: {detail}`] = `${cannot} : {detail}`; // the engine's own description
+}
+
+module.exports = FR;

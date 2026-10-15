@@ -1,6 +1,8 @@
 // Small helpers shared by the webmail views.
 // Untrusted text (subjects, names, bodies) is only ever inserted with textContent via h().
 
+import { t, locale } from './i18n.js';
+
 /** Creates an element. attrs: class, dataset {…}, on {event: fn}, any attribute. Children: nodes or strings. */
 export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -98,24 +100,25 @@ const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() ==
 export function shortDate(iso) {
   if (!iso) return '';
   const d = new Date(iso), now = new Date();
-  if (sameDay(d, now)) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (sameDay(d, now)) return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   const y = new Date(now); y.setDate(now.getDate() - 1);
-  if (sameDay(d, y)) return 'Yesterday';
-  if (d.getFullYear() === now.getFullYear()) return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
-  return d.toLocaleDateString();
+  if (sameDay(d, y)) return t('Yesterday');
+  if (d.getFullYear() === now.getFullYear()) return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString(locale);
 }
 
 export function longDate(iso) {
   if (!iso) return '';
-  return new Date(iso).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export function formatSize(bytes) {
   if (bytes === undefined || bytes === null) return '';
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(bytes < 10240 ? 1 : 0) + ' KB';
-  if (bytes < 1024 ** 3) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-  return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+  const n = s => (locale === 'fr-FR' ? s.replace('.', ',') : s); // decimal comma in French
+  if (bytes < 1024) return t('{n} B', { n: bytes });
+  if (bytes < 1024 * 1024) return t('{n} KB', { n: n((bytes / 1024).toFixed(bytes < 10240 ? 1 : 0)) });
+  if (bytes < 1024 ** 3) return t('{n} MB', { n: n((bytes / 1024 / 1024).toFixed(1)) });
+  return t('{n} GB', { n: n((bytes / 1024 ** 3).toFixed(2)) });
 }
 
 export function displayName(addr) {
@@ -217,7 +220,7 @@ export function toast(msg, ok = true, action = null) {
 
 /* ——— Dialog: confirm / prompt without browser popups ——— */
 let dialogResolve = null;
-export function dialog({ title, text = '', input = null, okLabel = 'OK', danger = false, validate = null }) {
+export function dialog({ title, text = '', input = null, okLabel = t('OK'), danger = false, validate = null }) {
   return new Promise(resolve => {
     if (dialogResolve) dialogResolve(null);
     dialogResolve = resolve;

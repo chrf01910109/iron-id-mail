@@ -6,11 +6,13 @@
  *   node tests/i18n/check-translations.js --verbose  # also list unused French entries
  *
  * What it reads (no browser, no server needed):
- *   - webmail/public/js/**  : the first argument of t('…') and both arguments of tn('…', '…', n)
+ *   - webmail/public/js/**  : the first argument of t('…'), both arguments of tn('…', '…', n),
+ *     and tx('context', '…') (French key "context|…")
  *   - webmail/public/index.html, admin.html : text and the placeholder/title/aria-label/alt
  *     attributes, exactly what i18n.js translates when the page loads
  *   - webmail/server.js, webmail/services/*.js : messages sent to people
- *     (error: '…', fail('…'), new LabelError('…'), new UserError('…'), new Error('…') marked userError)
+ *     (error: '…', problem: '…', purpose: '…', warnings.push('…'), fail('…'), new LabelError('…'),
+ *     new UserError('…'), new Error('…') marked userError; 'a' + x + 'b' is read as "a{}b")
  * and the French in webmail/public/js/i18n/fr/*.js and webmail/services/i18n-fr.js.
  *
  * Also checks that each French entry keeps the same {placeholders} as its English key.
@@ -82,13 +84,19 @@ function clientMessages() {
     if (file.endsWith(path.join('js', 'i18n.js'))) continue;
     const src = fs.readFileSync(file, 'utf8');
     const rel = path.relative(ROOT, file);
-    const re = /(^|[^\w$.])(tn?)\(/g;
+    const re = /(^|[^\w$.])(tn|tx|t)\(/g;
     let m;
     while ((m = re.exec(src))) {
       const fn = m[2];
       let i = skipWs(src, m.index + m[0].length);
       const line = src.slice(0, m.index).split('\n').length;
-      const a = readString(src, i);
+      let a = readString(src, i);
+      if (a && fn === 'tx') {
+        const ctx = a.value;
+        i = skipWs(src, a.end);
+        a = src[i] === ',' ? readString(src, skipWs(src, i + 1)) : null;
+        if (a) { found.push({ msg: ctx + '|' + a.value, where: `${rel}:${src.slice(0, m.index).split('\n').length}`, fallback: a.value }); continue; }
+      }
       if (!a) { dynamic.push(`${rel}:${line} ${fn}(${src.slice(i, i + 30).split('\n')[0]}…)`); continue; }
       if (a.template && a.value.includes('{}')) dynamic.push(`${rel}:${line} ${fn}() with \${…} — use {placeholders}`);
       found.push({ msg: a.value, where: `${rel}:${line}` });
@@ -152,11 +160,30 @@ function htmlMessages(file) {
 }
 
 /* ——— Server messages ——— */
+// Reads 'a' + x + 'b' (string concatenation) as "a{}b".
+function readJoined(src, i) {
+  const first = readString(src, i);
+  if (!first) return null;
+  let value = first.value, end = first.end;
+  for (;;) {
+    let j = skipWs(src, end);
+    if (src[j] !== '+') break;
+    j = skipWs(src, j + 1);
+    const next = readString(src, j);
+    if (next) { value += next.value; end = next.end; continue; }
+    const expr = /^[\w$.]+(?:\([^()]*\))?/.exec(src.slice(j));
+    if (!expr) break;
+    value += '{}'; end = j + expr[0].length;
+  }
+  return { value, end };
+}
 function serverMessages() {
   const files = [path.join(WEB, 'server.js'), ...fs.readdirSync(path.join(WEB, 'services')).filter(f => f.endsWith('.js') && !f.startsWith('i18n')).map(f => path.join(WEB, 'services', f))];
   const found = [];
   const patterns = [
-    { re: /\berror:\s*(?=['"`])/g },
+    { re: /[{,]\s*(?:error|problem|purpose):\s*(?=['"`])/g },
+    { re: /\b(?:problem|purpose):\s*[^,'"`}]{1,80}\?\s*(?=['"`])/g },
+    { re: /warnings\.push\(\s*(?=['"`])/g },
     { re: /\bfail\(\s*(?=['"`])/g },
     { re: /\bnew (?:LabelError|UserError)\(\s*(?=['"`])/g },
     { re: /new Error\(\s*(?=['"`])/g, userErrorOnly: true }
@@ -168,7 +195,7 @@ function serverMessages() {
       re.lastIndex = 0;
       let m;
       while ((m = re.exec(src))) {
-        const s = readString(src, m.index + m[0].length);
+        const s = readJoined(src, m.index + m[0].length);
         if (!s) continue;
         if (userErrorOnly && !/^\s*\)\s*,\s*\{[^}]*userError\s*:\s*true/.test(src.slice(s.end, s.end + 200))) continue;
         found.push({ msg: s.value, where: `${rel}:${src.slice(0, m.index).split('\n').length}` });
@@ -186,8 +213,9 @@ function check(label, items, dict) {
   const keysByNorm = new Map(Object.keys(dict).map(k => [norm(k), k]));
   const missing = [];
   const used = new Set();
-  for (const { msg, where } of items) {
-    if (!hasWords(msg) || SAME.has(msg)) continue;
+  for (const { msg, where, fallback } of items) {
+    if (!hasWords(msg) || SAME.has(msg) || (fallback && SAME.has(fallback))) continue;
+    if (fallback && !Object.prototype.hasOwnProperty.call(dict, msg) && Object.prototype.hasOwnProperty.call(dict, fallback)) { used.add(fallback); continue; }
     if (Object.prototype.hasOwnProperty.call(dict, msg)) { used.add(msg); continue; }
     const k = keysByNorm.get(norm(msg));
     if (k) { used.add(k); continue; }

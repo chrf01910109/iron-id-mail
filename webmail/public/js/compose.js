@@ -3,7 +3,8 @@
 import * as api from './api.js';
 import * as mail from './mail.js';
 import { messageText } from './reader.js';
-import { h, $, icon, toast, dialog, debounce, parseAddresses, formatAddress, formatAddressList, longDate, formatSize, displayName } from './util.js';
+import { h, $, icon, toast, dialog, debounce, parseAddresses, formatAddress, formatAddressList, formatSize, displayName } from './util.js';
+import { t, tn, locale } from './i18n.js';
 
 const AUTOSAVE_MS = 2500;
 let c = null;          // the message being written
@@ -98,7 +99,7 @@ export async function open(opts = {}) {
     inReplyTo: opts.inReplyTo || null,
     references: opts.references || null,
     original: opts.original || null,
-    attachments: (opts.attachments || []).map(a => ({ key: ++attSeq, name: a.name || 'attachment', type: a.type, size: a.size, blobId: a.blobId, status: 'done' })),
+    attachments: (opts.attachments || []).map(a => ({ key: ++attSeq, name: a.name || t('attachment'), type: a.type, size: a.size, blobId: a.blobId, status: 'done' })),
     dirty: false
   };
   fillFrom(opts.identityId);
@@ -112,8 +113,8 @@ export async function open(opts = {}) {
   }
   $('#cmpSub').value = opts.subject || '';
   $('#cmpBody').value = opts.body !== undefined ? opts.body : signature(identity());
-  $('#composeTitle').textContent = opts.title || 'New message';
-  setAlert(''); setStatus(c.draftId ? 'Draft' : '');
+  $('#composeTitle').textContent = opts.title || t('New message');
+  setAlert(''); setStatus(c.draftId ? t('Draft') : '');
   renderAttachments();
   modal().classList.add('open');
   modal().setAttribute('aria-hidden', 'false');
@@ -128,6 +129,12 @@ export async function open(opts = {}) {
     if (el === $('#cmpBody')) { el.setSelectionRange(0, 0); el.scrollTop = 0; }
   }, 30);
   mail.loadAddressBook().catch(() => {});
+}
+
+/** Date in the quote header of a reply or forward, in the page's language. */
+function quoteDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 /** Reply / reply all / forward. Messages of a team mailbox are answered from the person's own mailbox. */
@@ -146,8 +153,8 @@ export async function openReply(kind, e) {
   const quoted = messageText(e).replace(/\r\n/g, '\n').trimEnd();
 
   if (kind === 'forward') {
-    const header = ['---------- Forwarded message ----------', `From: ${formatAddress(from)}`, `Date: ${longDate(e.receivedAt)}`, `Subject: ${subj}`,
-      `To: ${formatAddressList(e.to)}`, e.cc && e.cc.length ? `Cc: ${formatAddressList(e.cc)}` : null].filter(Boolean).join('\n');
+    const header = [t('---------- Forwarded message ----------'), t('From: {from}', { from: formatAddress(from) }), t('Date: {date}', { date: quoteDate(e.receivedAt) }), t('Subject: {subject}', { subject: subj }),
+      t('To: {to}', { to: formatAddressList(e.to) }), e.cc && e.cc.length ? t('Cc: {cc}', { cc: formatAddressList(e.cc) }) : null].filter(Boolean).join('\n');
     let attachments = (e.attachments || []).filter(a => a.blobId);
     if (attachments.length && fromAccount !== api.accountId()) {
       // Files of a team mailbox are copied into the person's own mailbox first.
@@ -155,14 +162,14 @@ export async function openReply(kind, e) {
         const map = await mail.copyBlobs(fromAccount, attachments.map(a => a.blobId));
         const missing = attachments.filter(a => !map.has(a.blobId)).length;
         attachments = attachments.filter(a => map.has(a.blobId)).map(a => ({ ...a, blobId: map.get(a.blobId) }));
-        if (missing) toast(`${missing} attachment${missing > 1 ? 's' : ''} could not be included`, false);
-      } catch (err) { attachments = []; toast('The attachments could not be included: ' + err.message, false); }
+        if (missing) toast(tn('{n} attachment could not be included', '{n} attachments could not be included', missing), false);
+      } catch (err) { attachments = []; toast(t('The attachments could not be included: {error}', { error: err.message }), false); }
     }
     return open({
       identityId: ident.id, subject: /^(fwd?|tr):/i.test(subj) ? subj : 'Fwd: ' + subj,
       body: '\n' + sig + '\n\n' + header + '\n\n' + quoted,
       attachments,
-      original: { id: e.id, keyword: '$forwarded', accountId: fromAccount }, title: 'Forward', focus: 'to'
+      original: { id: e.id, keyword: '$forwarded', accountId: fromAccount }, title: t('Forward'), focus: 'to'
     });
   }
   let to, cc = [];
@@ -173,7 +180,7 @@ export async function openReply(kind, e) {
     to = (e.replyTo && e.replyTo.length ? e.replyTo : e.from) || [];
     if (kind === 'replyAll') {
       to = dedupe([...to, ...(e.to || []).filter(notMe)]);
-      cc = dedupe((e.cc || []).filter(notMe)).filter(a => !to.some(t => t.email.toLowerCase() === a.email.toLowerCase()));
+      cc = dedupe((e.cc || []).filter(notMe)).filter(a => !to.some(x => x.email.toLowerCase() === a.email.toLowerCase()));
     }
   }
   const lines = quoted.split('\n').map(l => '> ' + l).join('\n');
@@ -181,11 +188,11 @@ export async function openReply(kind, e) {
   return open({
     identityId: ident.id, to, cc,
     subject: /^(re|aw|réf?):/i.test(subj) ? subj : 'Re: ' + subj,
-    body: '\n' + sig + '\n\nOn ' + longDate(e.receivedAt) + ', ' + (displayName(from) || from.email) + ' wrote:\n' + lines,
+    body: '\n' + sig + '\n\n' + t('On {date}, {name} wrote:', { date: quoteDate(e.receivedAt), name: displayName(from) || from.email }) + '\n' + lines,
     inReplyTo: e.messageId && e.messageId.length ? e.messageId : null,
     references: refs.length ? refs : null,
     original: { id: e.id, keyword: '$answered', accountId: fromAccount },
-    title: kind === 'replyAll' ? 'Reply all' : 'Reply', focus: 'body'
+    title: kind === 'replyAll' ? t('Reply all') : t('Reply'), focus: 'body'
   });
 }
 
@@ -197,7 +204,7 @@ export function openDraft(e) {
   return open({
     draftId: e.id, identityId: ident && ident.id, to: e.to, cc: e.cc, bcc: e.bcc, subject: e.subject || '',
     body: text || messageText(e), attachments: (e.attachments || []).filter(a => a.blobId),
-    inReplyTo: e.inReplyTo, references: e.references, title: 'Draft'
+    inReplyTo: e.inReplyTo, references: e.references, title: t('Draft')
   });
 }
 
@@ -205,9 +212,9 @@ export function openDraft(e) {
 function renderAttachments() {
   const box = $('#cmpAtt');
   box.replaceChildren(...c.attachments.map(a => {
-    const x = h('button', { type: 'button', class: 'att-x', title: 'Remove', 'aria-label': 'Remove ' + a.name }, '×');
+    const x = h('button', { type: 'button', class: 'att-x', title: t('Remove'), 'aria-label': t('Remove {name}', { name: a.name }) }, '×');
     x.addEventListener('click', () => { c.attachments = c.attachments.filter(y => y.key !== a.key); renderAttachments(); changed(); });
-    const status = a.status === 'uploading' ? Math.round((a.progress || 0) * 100) + '%' : a.status === 'failed' ? 'failed' : formatSize(a.size);
+    const status = a.status === 'uploading' ? Math.round((a.progress || 0) * 100) + '%' : a.status === 'failed' ? t('failed') : formatSize(a.size);
     return h('span', { class: 'att' + (a.status === 'uploading' ? ' uploading' : '') + (a.status === 'failed' ? ' failed' : ''), title: a.error || a.name },
       icon('clip', 13), h('span', { class: 'att-name' }, a.name), h('span', { class: 'att-size' }, status), x);
   }));
@@ -218,7 +225,7 @@ function addFiles(files) {
   const limit = (api.mailLimits().maxSizeAttachmentsPerEmail) || 50e6;
   for (const f of files) {
     const total = c.attachments.reduce((s, a) => s + (a.size || 0), 0) + f.size;
-    if (total > limit) { toast(`Attachments are limited to ${formatSize(limit)} per message`, false); break; }
+    if (total > limit) { toast(t('Attachments are limited to {size} per message', { size: formatSize(limit) }), false); break; }
     const a = { key: ++attSeq, name: f.name, type: f.type || 'application/octet-stream', size: f.size, status: 'uploading', progress: 0 };
     c.attachments.push(a);
     const mine = c;
@@ -269,7 +276,7 @@ function saveDraft({ keepalive = false } = {}) {
     const f = fields();
     if (isEmpty(f) && !mine.draftId) { mine.dirty = false; return; }
     mine.dirty = false;
-    if (mine === c) setStatus('Saving…');
+    if (mine === c) setStatus(t('Saving…'));
     try {
       const draftsId = await mail.ensureRoleMailbox('drafts', { personal: true });
       const acc = api.accountId();
@@ -286,11 +293,11 @@ function saveDraft({ keepalive = false } = {}) {
       const old = mine.draftId;
       mine.draftId = r.get('s').created.d.id;
       if (old) api.call([['Email/set', { accountId: acc, destroy: [old] }, 'x']]).catch(() => {});
-      if (mine === c) setStatus('Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      if (mine === c) setStatus(t('Saved {time}', { time: new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) }));
       mail.refreshCountsSoon();
     } catch (e) {
       mine.dirty = true;
-      if (mine === c) setStatus('Not saved');
+      if (mine === c) setStatus(t('Not saved'));
       if (!(e instanceof api.SessionEndedError)) console.warn('[draft]', e);
     }
   };
@@ -306,21 +313,21 @@ async function send() {
   setAlert('');
   const f = fields();
   const bad = [...f.to.invalid, ...f.cc.invalid, ...f.bcc.invalid];
-  if (bad.length) return setAlert('These are not valid email addresses: ' + bad.join(', '));
+  if (bad.length) return setAlert(t('These are not valid email addresses: {list}', { list: bad.join(', ') }));
   const rcpts = [...f.to.list, ...f.cc.list, ...f.bcc.list];
-  if (!rcpts.length) { setAlert('Add at least one recipient.'); $('#cmpTo').focus(); return; }
-  if (c.attachments.some(a => a.status === 'uploading')) return setAlert('Please wait until the attachments have finished uploading.');
-  if (c.attachments.some(a => a.status === 'failed')) return setAlert('An attachment failed to upload. Remove it or try again.');
+  if (!rcpts.length) { setAlert(t('Add at least one recipient.')); $('#cmpTo').focus(); return; }
+  if (c.attachments.some(a => a.status === 'uploading')) return setAlert(t('Please wait until the attachments have finished uploading.'));
+  if (c.attachments.some(a => a.status === 'failed')) return setAlert(t('An attachment failed to upload. Remove it or try again.'));
   if (!f.subject) {
-    const ok = await dialog({ title: 'No subject', text: 'Send this message without a subject?', okLabel: 'Send anyway' });
+    const ok = await dialog({ title: t('No subject'), text: t('Send this message without a subject?'), okLabel: t('Send anyway') });
     if (!ok) return;
   }
   if (/\b(attach|attached|attachment|pièce jointe|ci-joint|مرفق)/i.test(f.body.split(/\n>|\n-- \n/)[0]) && !c.attachments.length) {
-    const ok = await dialog({ title: 'Forgot the attachment?', text: 'Your message mentions an attachment, but nothing is attached. Send anyway?', okLabel: 'Send anyway' });
+    const ok = await dialog({ title: t('Forgot the attachment?'), text: t('Your message mentions an attachment, but nothing is attached. Send anyway?'), okLabel: t('Send anyway') });
     if (!ok) return;
   }
   btn.disabled = true;
-  btn.querySelector('span').textContent = 'Sending…';
+  btn.querySelector('span').textContent = t('Sending…');
   autosave.cancel();
   const mine = c;
   try {
@@ -341,13 +348,13 @@ async function send() {
     ];
     const r = await api.call(calls, { using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail', 'urn:ietf:params:jmap:submission'], allowErrors: true });
     const created = r.get('e');
-    if (!created || created.error) throw new Error((created && created.error && created.error.description) || 'The message could not be created.');
+    if (!created || created.error) throw new Error((created && created.error && created.error.description) || t('The message could not be created.'));
     api.checkSet(created, 'create the message');
     const newId = created.created.m.id;
     // The submission and the server's follow-up Email/set share the call id 'u'.
     const subResp = r.responses.find(x => x.id === 'u' && (x.name === 'EmailSubmission/set' || x.name === 'error'));
     const sub = subResp && subResp.args;
-    const subErr = !sub || sub.error ? ((sub && sub.error) || { type: 'serverFail', description: 'no answer from the mail server' }) : (sub.notCreated && sub.notCreated.s);
+    const subErr = !sub || sub.error ? ((sub && sub.error) || { type: 'serverFail', description: t('no answer from the mail server') }) : (sub.notCreated && sub.notCreated.s);
     if (subErr) {
       // Keep what was written as a draft so nothing is lost.
       const old = mine.draftId; mine.draftId = newId;
@@ -360,7 +367,7 @@ async function send() {
     if (!moved) {
       api.call([['Email/set', { accountId: acc, update: { [newId]: { ['mailboxIds/' + draftsId]: null, ['mailboxIds/' + sentId]: true, 'keywords/$draft': null } } }, 'f']])
         .then(x => api.checkSet(x.get('f'), 'file the message in Sent'))
-        .catch(() => toast('Sent, but it could not be filed in the Sent folder', false));
+        .catch(() => toast(t('Sent, but it could not be filed in the Sent folder'), false));
     }
     const after = [];
     if (mine.draftId && mine.draftId !== newId) after.push(['Email/set', { accountId: acc, destroy: [mine.draftId] }, 'd']);
@@ -369,25 +376,25 @@ async function send() {
     mine.dirty = false;
     if (mine === c) hide();
     c = mine === c ? null : c;
-    toast('Message sent');
+    toast(t('Message sent'));
     onSent();
   } catch (e) {
     if (!(e instanceof api.SessionEndedError)) setAlert(e.message);
-    else setAlert('Your session ended. Sign in again, then press Send. Your message is still here.');
+    else setAlert(t('Your session ended. Sign in again, then press Send. Your message is still here.'));
   } finally {
     btn.disabled = false;
-    btn.querySelector('span').textContent = 'Send';
+    btn.querySelector('span').textContent = t('Send');
   }
 }
 
 function sendErrorText(err) {
-  const t = err.type || '';
-  if (t === 'forbiddenFrom') return 'You are not allowed to send from this address.';
-  if (t === 'forbiddenToSend') return 'Sending is not allowed for this mailbox right now.';
-  if (t === 'invalidRecipients') return 'Some recipients were refused: ' + ((err.invalidRecipients || []).join(', ') || 'check the addresses');
-  if (t === 'tooLarge') return 'The message is too large to send.';
-  if (t === 'tooManyRecipients') return 'Too many recipients.';
-  return 'Could not send: ' + (err.description || t || 'unknown error') + '. Your message was kept as a draft.';
+  const type = err.type || '';
+  if (type === 'forbiddenFrom') return t('You are not allowed to send from this address.');
+  if (type === 'forbiddenToSend') return t('Sending is not allowed for this mailbox right now.');
+  if (type === 'invalidRecipients') return t('Some recipients were refused: {list}', { list: (err.invalidRecipients || []).join(', ') || t('check the addresses') });
+  if (type === 'tooLarge') return t('The message is too large to send.');
+  if (type === 'tooManyRecipients') return t('Too many recipients.');
+  return t('Could not send: {reason}. Your message was kept as a draft.', { reason: err.description || type || t('unknown error') });
 }
 
 function hide() {
@@ -401,15 +408,15 @@ export async function close() {
   autosave.cancel();
   const mine = c;
   if (mine.dirty) {
-    setStatus('Saving…');
+    setStatus(t('Saving…'));
     await saveDraft();
     if (mine.dirty) {
       // Keep the window open: closing now would lose what was written.
-      if (mine === c) setStatus('Not saved');
-      toast('Could not save the draft. Check your connection, then try again.', false);
+      if (mine === c) setStatus(t('Not saved'));
+      toast(t('Could not save the draft. Check your connection, then try again.'), false);
       return;
     }
-    if (mine.draftId) toast('Draft saved');
+    if (mine.draftId) toast(t('Draft saved'));
   }
   hide();
   if (c === mine) c = null;
@@ -426,7 +433,7 @@ async function discard() {
     try { await api.call([['Email/set', { accountId: api.accountId(), destroy: [mine.draftId] }, 'x']]); } catch (e) { /* already gone */ }
     mail.refreshCountsSoon();
   }
-  toast('Draft discarded');
+  toast(t('Draft discarded'));
   onSent();
 }
 

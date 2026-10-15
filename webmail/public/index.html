@@ -118,9 +118,9 @@
           <button id="searchHelpBtn" type="button" class="search-help-btn" title="Search tips" aria-label="Search tips">?</button>
         </form>
         <div id="searchHelp" class="search-help hidden">
-          <div><b>from:</b>anis &nbsp; <b>to:</b>contact@iron-id.io &nbsp; <b>subject:</b>invoice</div>
-          <div><b>has:attachment</b> &nbsp; <b>is:unread</b> &nbsp; <b>is:starred</b></div>
-          <div><b>after:</b>2026-01-31 &nbsp; <b>before:</b>2026-12-31 &nbsp; <b>in:all</b> (every folder)</div>
+          <div><span data-no-i18n><b>from:</b>anis &nbsp; <b>to:</b>contact@iron-id.io &nbsp; <b>subject:</b></span>invoice</div>
+          <div data-no-i18n><b>has:attachment</b> &nbsp; <b>is:unread</b> &nbsp; <b>is:starred</b></div>
+          <div><span data-no-i18n><b>after:</b>2026-01-31 &nbsp; <b>before:</b>2026-12-31 &nbsp; <b>in:all</b></span> (every folder)</div>
           <div>Use quotes for exact phrases: <b>"board meeting"</b>. Accents don't matter.</div>
         </div>
         <div class="lh-filters" role="tablist">
@@ -379,6 +379,14 @@
 
         <div id="tab-preferences" class="tab-content">
           <form id="prefsForm" class="stack">
+            <div>
+              <label class="fl-label" for="prefLang">Language</label>
+              <select id="prefLang" class="fl-input" data-no-i18n>
+                <option value="en" lang="en">English</option>
+                <option value="fr" lang="fr">Français</option>
+              </select>
+              <div class="muted small" style="margin-top:4px">Saved to your account: used on every device, in the admin console and for messages from IRON ID.</div>
+            </div>
             <label class="check-row"><input id="prefAutoSeen" type="checkbox"> <span>Mark messages as read when I open them</span></label>
             <label class="check-row"><input id="prefConfirmDelete" type="checkbox"> <span>Ask before deleting permanently</span></label>
             <div>
@@ -444,7 +452,7 @@
       <form id="loginForm" class="stack">
         <div>
           <label class="fl-label" for="loginEmail">Email address</label>
-          <input id="loginEmail" type="email" required placeholder="you@iron-id.io" class="login-input" autocomplete="username">
+          <input id="loginEmail" type="email" required placeholder="you@iron-id.io" data-no-i18n class="login-input" autocomplete="username">
         </div>
         <div>
           <label class="fl-label" for="loginPassword">Password</label>
@@ -456,6 +464,10 @@
         </div>
         <button id="loginSubmitBtn" type="submit" class="login-submit-btn"><span>Sign in</span></button>
       </form>
+      <div class="login-presets login-lang" role="group" aria-label="Language">
+        <button type="button" class="preset-btn" data-lang="en" lang="en" data-no-i18n>English</button>
+        <button type="button" class="preset-btn" data-lang="fr" lang="fr" data-no-i18n>Français</button>
+      </div>
     </div>
   </div>
 

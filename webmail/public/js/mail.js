@@ -4,10 +4,14 @@
 
 import * as api from './api.js';
 import { loadPrefs } from './util.js';
+import { t, tx } from './i18n.js';
 
 export const PAGE_SIZE = 40;
 const ROLE_ORDER = ['inbox', 'drafts', 'sent', 'archive', 'junk', 'trash'];
 const ROLE_NAMES = { inbox: 'Inbox', drafts: 'Drafts', sent: 'Sent', archive: 'Archive', junk: 'Junk', trash: 'Trash' };
+// What people see for the standard folders (ROLE_NAMES stays English: it is also the name given to folders created on the server).
+// 'Archive' alone is the verb ("Archiver"), so the folder name carries an empty {folder} marker to get its own French entry.
+const ROLE_LABELS = { inbox: t('Inbox'), drafts: t('Drafts'), sent: t('Sent'), archive: tx('folder', 'Archive'), junk: t('Junk'), trash: t('Trash') };
 
 export const LIST_PROPS = ['id', 'threadId', 'mailboxIds', 'keywords', 'from', 'to', 'cc', 'subject', 'receivedAt', 'preview', 'hasAttachment', 'size'];
 const MEMBER_PROPS = ['id', 'threadId', 'mailboxIds', 'keywords', 'from', 'to', 'receivedAt', 'hasAttachment'];
@@ -63,7 +67,7 @@ export function emit(ev, data) { for (const fn of handlers[ev] || []) { try { fn
 export function mailboxName(mb) {
   if (!mb) return '';
   return mb.role && ROLE_NAMES[mb.role] && /^(inbox|sent( items| mail)?|drafts?|archives?|junk( mail| e-mail)?|spam|trash|deleted( items| messages)?)$/i.test(mb.name)
-    ? ROLE_NAMES[mb.role] : mb.name;
+    ? ROLE_LABELS[mb.role] : mb.name;
 }
 
 /** Loads the folders of every mail account (own and team mailboxes) in one request. */
@@ -126,9 +130,9 @@ export async function deleteMailbox(id, accountId = viewAccount()) {
   const res = r.get('s');
   const e = res.notDestroyed && res.notDestroyed[id];
   if (e) {
-    if (e.type === 'mailboxHasEmail') throw new Error('This folder still has messages. Move or delete them first.');
-    if (e.type === 'mailboxHasChild') throw new Error('This folder has sub-folders. Delete those first.');
-    throw new Error(e.description || 'Could not delete the folder (' + e.type + ')');
+    if (e.type === 'mailboxHasEmail') throw new Error(t('This folder still has messages. Move or delete them first.'));
+    if (e.type === 'mailboxHasChild') throw new Error(t('This folder has sub-folders. Delete those first.'));
+    throw new Error(e.description || t('Could not delete the folder ({type})', { type: e.type }));
   }
   if (state.view.mailboxId === id && viewAccount() === accountId) state.view.mailboxId = state.roles.inbox || null;
   await loadMailboxes();
@@ -301,7 +305,7 @@ export function threadSummary(rep) {
     for (const p of people) {
       const n = p.name ? p.name.split(/\s+/)[0] : (p.email || '').split('@')[0];
       const self = state.user.email && p.email && p.email.toLowerCase() === state.user.email.toLowerCase();
-      const label = self && !inSent ? 'me' : n;
+      const label = self && !inSent ? t('me') : n;
       if (label && !names.includes(label)) names.push(label);
     }
   }

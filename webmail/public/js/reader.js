@@ -5,6 +5,7 @@ import * as mail from './mail.js';
 import * as labels from './labels.js';
 import { renderHtmlEmail, renderPlainText, htmlToText, normCid } from './safeHtml.js';
 import { h, $, icon, avatar, longDate, shortDate, formatSize, displayName, formatAddressList, toast, dialog, openMenu, savePrefs } from './util.js';
+import { t, tn } from './i18n.js';
 
 let hooks = {};
 let current = null;        // { threadId, emails, shown }
@@ -16,7 +17,7 @@ export const currentThread = () => current;
 
 function releaseUrls() { for (const u of objectUrls) URL.revokeObjectURL(u); objectUrls = []; }
 
-export function clear(text = 'Select a message to read it') {
+export function clear(text = t('Select a message to read it')) {
   releaseUrls();
   current = null;
   $('#readerPane').replaceChildren(h('div', { class: 'reader-empty' }, h('div', {},
@@ -38,18 +39,18 @@ export async function open(threadId) {
     // Nothing acts on the previous conversation while the next one loads.
     current = null;
     releaseUrls();
-    pane.replaceChildren(h('div', { class: 'loading-text' }, 'Opening…'));
+    pane.replaceChildren(h('div', { class: 'loading-text' }, t('Opening…')));
   }
   let emails;
   try { emails = await mail.loadThread(threadId); }
   catch (e) {
     if (seq !== openSeq) return;
     if (e instanceof api.SessionEndedError) return;
-    pane.replaceChildren(h('div', { class: 'loading-text list-error' }, 'Could not open this conversation: ' + e.message));
+    pane.replaceChildren(h('div', { class: 'loading-text list-error' }, t('Could not open this conversation: {error}', { error: e.message })));
     return;
   }
   if (seq !== openSeq) return;
-  if (!emails.length) { clear('This conversation no longer exists.'); return; }
+  if (!emails.length) { clear(t('This conversation no longer exists.')); return; }
   releaseUrls();
   const shown = visible(emails);
   current = { threadId, emails, shown };
@@ -73,7 +74,7 @@ export async function refresh() {
   try {
     const emails = await mail.loadThread(threadId);
     if (!current || current.threadId !== threadId) return;
-    if (!emails.length) { clear('This conversation was moved or deleted.'); return; }
+    if (!emails.length) { clear(t('This conversation was moved or deleted.')); return; }
     const sig = es => es.map(e => e.id + JSON.stringify(e.keywords) + JSON.stringify(e.mailboxIds)).join('|');
     if (sig(emails) === sig(current.emails)) return;
     const expanded = new Set(Array.from(pane.querySelectorAll('.msg-card.expanded')).map(c => c.dataset.id));
@@ -92,7 +93,7 @@ function latest(list, { skipDrafts = true } = {}) {
 function threadSubject(list) {
   const first = list.find(e => e.subject) || list[0];
   const subj = (first && first.subject) || '';
-  return subj.replace(/^\s*((re|fwd?|tr|aw|wg)\s*(\[\d+\])?\s*:\s*)+/i, '') || '(no subject)';
+  return subj.replace(/^\s*((re|fwd?|tr|aw|wg)\s*(\[\d+\])?\s*:\s*)+/i, '') || t('(no subject)');
 }
 
 function toolbarButton(label, iconName, title, onClick, extra = {}) {
@@ -112,26 +113,26 @@ function render(expandedIds = null) {
   const last = latest(shown);
 
   const tb = h('div', { class: 'ev-toolbar' },
-    toolbarButton('Back', 'back', 'Back to the list (Esc)', () => hooks.back(), { cls: 'back-btn' }),
+    toolbarButton(t('Back'), 'back', t('Back to the list (Esc)'), () => hooks.back(), { cls: 'back-btn' }),
     h('div', { class: 'tb-group' },
-      toolbarButton('Reply', 'reply', 'Reply', () => hooks.reply('reply', last)),
-      toolbarButton('Reply all', 'replyAll', 'Reply all', () => hooks.reply('replyAll', last)),
-      toolbarButton('Forward', 'forward', 'Forward', () => hooks.reply('forward', last))),
+      toolbarButton(t('Reply'), 'reply', t('Reply'), () => hooks.reply('reply', last)),
+      toolbarButton(t('Reply all'), 'replyAll', t('Reply all'), () => hooks.reply('replyAll', last)),
+      toolbarButton(t('Forward'), 'forward', t('Forward'), () => hooks.reply('forward', last))),
     h('div', { class: 'tb-divider' }),
     h('div', { class: 'tb-group icon-only' },
-      inTrash ? toolbarButton('Restore', 'restore', 'Move back to the Inbox', () => hooks.action('restore'))
-        : (inArchive ? null : toolbarButton('Archive', 'archive', 'Archive (e)', () => hooks.action('archive'))),
-      toolbarButton('Move', 'move', 'Move to folder (v)', e => hooks.action('move', e.currentTarget)),
-      inJunk ? toolbarButton('Not spam', 'notSpam', 'Not spam: move to the Inbox', () => hooks.action('notSpam'))
-        : (inTrash ? null : toolbarButton('Spam', 'junk', 'Report spam', () => hooks.action('spam'))),
-      toolbarButton(inTrash ? 'Delete forever' : 'Delete', 'trash', inTrash ? 'Delete permanently' : 'Delete (#)', () => hooks.action('delete'), { cls: 'danger' })),
+      inTrash ? toolbarButton(t('Restore'), 'restore', t('Move back to the Inbox'), () => hooks.action('restore'))
+        : (inArchive ? null : toolbarButton(t('Archive'), 'archive', t('Archive (e)'), () => hooks.action('archive'))),
+      toolbarButton(t('Move'), 'move', t('Move to folder (v)'), e => hooks.action('move', e.currentTarget)),
+      inJunk ? toolbarButton(t('Not spam'), 'notSpam', t('Not spam: move to the Inbox'), () => hooks.action('notSpam'))
+        : (inTrash ? null : toolbarButton(t('Spam'), 'junk', t('Report spam'), () => hooks.action('spam'))),
+      toolbarButton(inTrash ? t('Delete forever') : t('Delete'), 'trash', inTrash ? t('Delete permanently') : t('Delete (#)'), () => hooks.action('delete'), { cls: 'danger' })),
     h('div', { class: 'tb-divider' }),
     h('div', { class: 'tb-group icon-only' },
-      toolbarButton(anyUnread ? 'Mark read' : 'Mark unread', 'mailOpen', anyUnread ? 'Mark read (Shift+I)' : 'Mark unread (Shift+U)', () => hooks.action(anyUnread ? 'read' : 'unread')),
-      toolbarButton(flagged ? 'Starred' : 'Star', 'star', flagged ? 'Remove star (s)' : 'Star (s)', () => hooks.action('star'), { pressed: String(flagged) }),
-      mail.isTeamView() ? null : toolbarButton('Label', 'tag', 'Label (l)', e => openLabelMenu(e.currentTarget)),
-      mail.isTeamView() ? toolbarButton('Assign', 'user', 'Assign to a team member', e => openAssignMenu(e.currentTarget)) : null,
-      toolbarButton('Print', 'print', 'Print', () => window.print())));
+      toolbarButton(anyUnread ? t('Mark read') : t('Mark unread'), 'mailOpen', anyUnread ? t('Mark read (Shift+I)') : t('Mark unread (Shift+U)'), () => hooks.action(anyUnread ? 'read' : 'unread')),
+      toolbarButton(flagged ? t('Starred') : t('Star'), 'star', flagged ? t('Remove star (s)') : t('Star (s)'), () => hooks.action('star'), { pressed: String(flagged) }),
+      mail.isTeamView() ? null : toolbarButton(t('Label'), 'tag', t('Label (l)'), e => openLabelMenu(e.currentTarget)),
+      mail.isTeamView() ? toolbarButton(t('Assign'), 'user', t('Assign to a team member'), e => openAssignMenu(e.currentTarget)) : null,
+      toolbarButton(t('Print'), 'print', t('Print'), () => window.print())));
 
   const folders = new Set();
   for (const e of shown) for (const id of Object.keys(e.mailboxIds)) folders.add(id);
@@ -141,11 +142,11 @@ function render(expandedIds = null) {
   const head = h('div', {},
     h('div', { class: 'thread-subject', dir: 'auto' }, threadSubject(shown)),
     h('div', { class: 'thread-sub' },
-      h('span', {}, shown.length + (shown.length === 1 ? ' message' : ' messages')),
+      h('span', {}, tn('{n} message', '{n} messages', shown.length)),
       mail.isTeamView() ? h('span', { class: 'folder-chip team-chip' }, mail.teamFor(mail.viewAccount()).email) : null,
       ...Array.from(folders).map(id => mail.state.byId.get(id)).filter(Boolean).map(mb => h('span', { class: 'folder-chip' }, mail.mailboxName(mb))),
       ...lbls.map(mail.labelOf).filter(Boolean).map(l => h('span', { class: 'label-chip c-' + l.color }, l.name)),
-      assignee ? h('span', { class: 'assign-chip', title: 'Assigned to ' + assignee }, icon('user', 12), memberName(assignee)) : null));
+      assignee ? h('span', { class: 'assign-chip', title: t('Assigned to {name}', { name: assignee }) }, icon('user', 12), memberName(assignee)) : null));
 
   const cards = shown.map((e, i) => {
     const expand = expandedIds ? expandedIds.has(e.id) : (i === shown.length - 1 || !e.keywords || !e.keywords.$seen || shown.length <= 2);
@@ -158,9 +159,9 @@ function render(expandedIds = null) {
 
 /** Display name of a team member (from the team list), or the address. */
 function memberName(email) {
-  if (email === mail.state.user.email.toLowerCase()) return 'me';
-  const t = mail.teamFor(mail.viewAccount());
-  const m = t && t.members.find(x => x.email === email);
+  if (email === mail.state.user.email.toLowerCase()) return t('me');
+  const team = mail.teamFor(mail.viewAccount());
+  const m = team && team.members.find(x => x.email === email);
   return (m && m.name) || email;
 }
 
@@ -177,17 +178,17 @@ function openAssignMenu(anchor) {
   const set = async email => {
     try {
       await mail.assign(shown, email);
-      toast(email ? 'Assigned to ' + memberName(email) : 'Unassigned');
+      toast(email ? t('Assigned to {name}', { name: memberName(email) }) : t('Unassigned'));
       render(currentExpanded());
     } catch (e) { toast(e.message, false); }
   };
   const me = mail.state.user.email.toLowerCase();
   const members = (team.members || []).slice().sort((a, b) => (a.email === me ? -1 : b.email === me ? 1 : 0));
   openMenu(anchor, [
-    { title: 'Assign to' },
-    ...members.map(m => ({ label: m.email === me ? 'Me' : (m.name ? `${m.name} (${m.email})` : m.email), icon: 'user', checked: now === m.email, run: () => set(m.email) })),
-    ...(members.length ? [] : [{ title: 'No members found' }]),
-    ...(now ? [{ label: 'Unassign', icon: 'restore', run: () => set(null) }] : [])
+    { title: t('Assign to') },
+    ...members.map(m => ({ label: m.email === me ? t('Me') : (m.name ? `${m.name} (${m.email})` : m.email), icon: 'user', checked: now === m.email, run: () => set(m.email) })),
+    ...(members.length ? [] : [{ title: t('No members found') }]),
+    ...(now ? [{ label: t('Unassign'), icon: 'restore', run: () => set(null) }] : [])
   ]);
 }
 
@@ -198,15 +199,15 @@ function currentExpanded() {
 function card(e, expanded) {
   const from = (e.from && e.from[0]) || { name: '', email: '' };
   const isDraft = e.keywords && e.keywords.$draft;
-  const to = [e.to && e.to.length ? 'to ' + formatAddressList(e.to) : '', e.cc && e.cc.length ? 'cc ' + formatAddressList(e.cc) : '', e.bcc && e.bcc.length ? 'bcc ' + formatAddressList(e.bcc) : ''].filter(Boolean).join(' · ');
+  const to = [e.to && e.to.length ? t('to {list}', { list: formatAddressList(e.to) }) : '', e.cc && e.cc.length ? t('cc {list}', { list: formatAddressList(e.cc) }) : '', e.bcc && e.bcc.length ? t('bcc {list}', { list: formatAddressList(e.bcc) }) : ''].filter(Boolean).join(' · ');
   const body = h('div', { class: 'msg-body' });
   const actions = h('div', { class: 'msg-actions' });
   const el = h('article', { class: 'msg-card' + (expanded ? ' expanded' : ''), dataset: { id: e.id } },
     h('div', { class: 'msg-head', role: 'button', tabindex: '0', 'aria-expanded': String(expanded) },
       avatar(from.name, from.email, 'ev-avatar'),
       h('div', { class: 'msg-head-info' },
-        h('div', { class: 'msg-from' }, h('span', { dir: 'auto' }, displayName(from) || '(unknown sender)'), from.name ? h('span', { class: 'addr' }, '<' + from.email + '>') : null,
-          isDraft ? h('span', { class: 'ei-draft' }, 'Draft') : null),
+        h('div', { class: 'msg-from' }, h('span', { dir: 'auto' }, displayName(from) || t('(unknown sender)')), from.name ? h('span', { class: 'addr' }, '<' + from.email + '>') : null,
+          isDraft ? h('span', { class: 'ei-draft' }, t('Draft')) : null),
         h('div', { class: 'msg-to', title: to }, to),
         h('div', { class: 'msg-snippet', dir: 'auto' }, e.preview || '')),
       h('div', { class: 'msg-date', title: longDate(e.receivedAt) }, expanded ? longDate(e.receivedAt) : shortDate(e.receivedAt))),
@@ -230,18 +231,18 @@ function fillActions(e, actions) {
   const isDraft = e.keywords && e.keywords.$draft;
   const mk = (label, ic, fn) => { const b = h('button', { type: 'button', class: 'act-btn' }, icon(ic), label); b.addEventListener('click', fn); return b; };
   if (isDraft) {
-    actions.append(mk('Edit draft', 'drafts', () => hooks.editDraft(e)));
+    actions.append(mk(t('Edit draft'), 'drafts', () => hooks.editDraft(e)));
     return;
   }
   actions.append(
-    mk('Reply', 'reply', () => hooks.reply('reply', e)),
-    mk('Reply all', 'replyAll', () => hooks.reply('replyAll', e)),
-    mk('Forward', 'forward', () => hooks.reply('forward', e)));
-  const more = h('button', { type: 'button', class: 'act-btn', title: 'More', 'aria-label': 'More actions' }, icon('dots'));
+    mk(t('Reply'), 'reply', () => hooks.reply('reply', e)),
+    mk(t('Reply all'), 'replyAll', () => hooks.reply('replyAll', e)),
+    mk(t('Forward'), 'forward', () => hooks.reply('forward', e)));
+  const more = h('button', { type: 'button', class: 'act-btn', title: t('More'), 'aria-label': t('More actions') }, icon('dots'));
   more.addEventListener('click', () => openMenu(more, [
     // nosemgrep: javascript-url-or-unvalidated-href -- always a same-site /proxy/jmap/download/... path with encoded parts
-    { label: 'Download original (.eml)', icon: 'download', run: () => { window.location.href = api.downloadUrl(e.blobId || e.id, safeFileName(e.subject) + '.eml', 'message/rfc822'); } },
-    { label: (e.keywords && e.keywords.$seen) ? 'Mark this message unread' : 'Mark this message read', icon: 'mailOpen',
+    { label: t('Download original (.eml)'), icon: 'download', run: () => { window.location.href = api.downloadUrl(e.blobId || e.id, safeFileName(e.subject) + '.eml', 'message/rfc822'); } },
+    { label: (e.keywords && e.keywords.$seen) ? t('Mark this message unread') : t('Mark this message read'), icon: 'mailOpen',
       run: () => mail.setKeyword([e.id], '$seen', !(e.keywords && e.keywords.$seen)).then(() => refresh()).catch(err => toast(err.message, false)) }
   ]));
   actions.append(more);
@@ -287,9 +288,9 @@ async function fillBody(e, body) {
   body.append(notices, content);
   const atts = attachmentList(e);
 
-  if (b.truncated) notices.append(h('div', { class: 'notice info' }, 'This message is very long; only the beginning is shown. Use “Download original” to see all of it.'));
+  if (b.truncated) notices.append(h('div', { class: 'notice info' }, t('This message is very long; only the beginning is shown. Use “Download original” to see all of it.')));
   const inJunk = Object.keys(e.mailboxIds || {}).some(id => mail.isRole(id, 'junk'));
-  if (inJunk) notices.append(h('div', { class: 'notice danger' }, 'This message is in Junk. Be careful with its links and attachments, and never send passwords.'));
+  if (inJunk) notices.append(h('div', { class: 'notice danger' }, t('This message is in Junk. Be careful with its links and attachments, and never send passwords.')));
 
   if (b.kind === 'html') {
     // Pictures attached to the message (cid:) are loaded as local copies.
@@ -303,9 +304,9 @@ async function fillBody(e, body) {
     const allow = !inJunk && (prefs.remoteImages === 'always' || allowRemoteFor.has(e.id) || (senderEmail && prefs.trustedSenders.includes(senderEmail)));
     const { remote } = renderHtmlEmail(content, b.value, { cidMap, allowRemote: allow });
     if (remote > 0 && !allow) {
-      const show = h('button', { type: 'button', class: 'lh-link' }, 'Show pictures');
-      const always = senderEmail && !inJunk ? h('button', { type: 'button', class: 'lh-link' }, 'Always from ' + senderEmail) : null;
-      const n = h('div', { class: 'notice' }, 'Pictures from the internet are hidden to protect your privacy.', show, always);
+      const show = h('button', { type: 'button', class: 'lh-link' }, t('Show pictures'));
+      const always = senderEmail && !inJunk ? h('button', { type: 'button', class: 'lh-link' }, t('Always from {email}', { email: senderEmail })) : null;
+      const n = h('div', { class: 'notice' }, t('Pictures from the internet are hidden to protect your privacy.'), show, always);
       show.addEventListener('click', () => { allowRemoteFor.add(e.id); n.remove(); renderHtmlEmail(content, b.value, { cidMap, allowRemote: true }); });
       if (always) always.addEventListener('click', () => {
         if (!prefs.trustedSenders.includes(senderEmail)) prefs.trustedSenders.push(senderEmail);
@@ -322,15 +323,15 @@ async function fillBody(e, body) {
   if (atts.length) {
     const thumbs = h('div', { class: 'att-thumbs' });
     const list = h('div', { class: 'att-list' }, ...atts.map(a => {
-      const name = a.name || (a.type === 'message/rfc822' ? 'message.eml' : 'attachment');
-      return h('a', { class: 'att', href: api.downloadUrl(a.blobId, name, a.type), download: name, title: `${name} (${a.type || 'file'})`, rel: 'noopener' },
+      const name = a.name || (a.type === 'message/rfc822' ? 'message.eml' : t('attachment'));
+      return h('a', { class: 'att', href: api.downloadUrl(a.blobId, name, a.type), download: name, title: `${name} (${a.type || t('file')})`, rel: 'noopener' },
         icon('clip', 14), h('span', { class: 'att-name', dir: 'auto' }, name), h('span', { class: 'att-size' }, formatSize(a.size)));
     }));
     for (const a of atts.filter(x => /^image\/(png|jpe?g|gif|webp)$/i.test(x.type || '') && x.size < 15e6).slice(0, 8)) {
-      thumbs.append(h('a', { href: api.downloadUrl(a.blobId, a.name || 'image', a.type, { inline: true }), target: '_blank', rel: 'noopener noreferrer', title: a.name || 'image' },
-        h('img', { src: api.downloadUrl(a.blobId, a.name || 'image', a.type, { inline: true }), alt: a.name || 'image', loading: 'lazy' })));
+      thumbs.append(h('a', { href: api.downloadUrl(a.blobId, a.name || t('image'), a.type, { inline: true }), target: '_blank', rel: 'noopener noreferrer', title: a.name || t('image') },
+        h('img', { src: api.downloadUrl(a.blobId, a.name || t('image'), a.type, { inline: true }), alt: a.name || t('image'), loading: 'lazy' })));
     }
-    body.append(h('div', { class: 'muted small', style: { marginTop: '14px' } }, `${atts.length} attachment${atts.length > 1 ? 's' : ''}`));
+    body.append(h('div', { class: 'muted small', style: { marginTop: '14px' } }, tn('{n} attachment', '{n} attachments', atts.length)));
     if (thumbs.childNodes.length) body.append(thumbs);
     body.append(list);
   }

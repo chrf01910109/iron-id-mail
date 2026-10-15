@@ -1,3 +1,58 @@
 // French for settings — keys are the exact English text.
 export default {
+  'Copied': 'Copié',
+  // Profile
+  'No sending identity exists for this mailbox. Ask your administrator.': 'Aucune identité d’envoi n’existe pour cette boîte mail. Contactez votre administrateur.',
+  'Saved.': 'Enregistré.',
+  // Password
+  'The new password must be at least 12 characters.': 'Le nouveau mot de passe doit contenir au moins 12 caractères.',
+  'The two new passwords do not match.': 'Les deux nouveaux mots de passe ne correspondent pas.',
+  'The new password must be different from the current one.': 'Le nouveau mot de passe doit être différent de l’actuel.',
+  'Enter the 6-digit code from your authenticator app.': 'Saisissez le code à 6 chiffres de votre application d’authentification.',
+  'Changing…': 'Modification…',
+  'Password changed. Other devices have been signed out.': 'Mot de passe modifié. Les autres appareils ont été déconnectés.',
+  'Password changed': 'Mot de passe modifié',
+  'Change password': 'Changer le mot de passe',
+  // Security
+  'Could not load security settings: {error}': 'Impossible de charger les paramètres de sécurité : {error}',
+  'On': 'Activée',
+  'Off': 'Désactivée',
+  'Two-step sign-in is on. Next time you sign in, you will be asked for a code.': 'La validation en deux étapes est activée. Lors de votre prochaine connexion, un code vous sera demandé.',
+  'Two-step sign-in turned on': 'Validation en deux étapes activée',
+  'Two-step sign-in is off.': 'La validation en deux étapes est désactivée.',
+  'Two-step sign-in turned off': 'Validation en deux étapes désactivée',
+  'Unknown browser': 'Navigateur inconnu',
+  'Browser': 'Navigateur',
+  '{browser} on {os}': '{browser} sur {os}',
+  'This browser': 'Ce navigateur',
+  'last active {time}': 'dernière activité le {time}',
+  'signed in {time}': 'connecté le {time}',
+  'Sign out': 'Se déconnecter',
+  'Signed out': 'Déconnecté',
+  'No other browsers.': 'Aucun autre navigateur.',
+  'signin|Signed in': 'Connexion réussie',
+  'Failed attempt': 'Tentative échouée',
+  'wrong code': 'code incorrect',
+  'wrong password': 'mot de passe incorrect',
+  'Nothing recorded yet.': 'Rien n’a encore été enregistré.',
+  'Sign out other browsers': 'Déconnecter les autres navigateurs',
+  'Every other browser signed in to this mailbox will be signed out. Mail apps using app passwords are not affected.': 'Tous les autres navigateurs connectés à cette boîte mail seront déconnectés. Les applications de messagerie qui utilisent des mots de passe d’application ne sont pas concernées.',
+  'Sign out others': 'Déconnecter les autres',
+  'Other browsers signed out': 'Autres navigateurs déconnectés',
+  // App passwords
+  'Revoke': 'Révoquer',
+  'Revoke app password': 'Révoquer le mot de passe d’application',
+  'Apps using "{name}" will stop working until you give them a new app password.': 'Les applications qui utilisent « {name} » cesseront de fonctionner jusqu’à ce que vous leur donniez un nouveau mot de passe d’application.',
+  'App password revoked': 'Mot de passe d’application révoqué',
+  'Created {time}': 'Créé le {time}',
+  'Give it a name, for example "Outlook on my laptop".': 'Donnez-lui un nom, par exemple « Outlook sur mon ordinateur portable ».',
+  'Enter your password to confirm.': 'Saisissez votre mot de passe pour confirmer.',
+  // Out of office
+  'Could not load: {error}': 'Chargement impossible : {error}',
+  'The end date is before the start date.': 'La date de fin est antérieure à la date de début.',
+  'Write the message people should receive.': 'Rédigez le message que vos correspondants recevront.',
+  'Automatic reply is on.': 'La réponse automatique est activée.',
+  'Automatic reply is off.': 'La réponse automatique est désactivée.',
+  // Preferences
+  'Preferences saved': 'Préférences enregistrées'
 };
