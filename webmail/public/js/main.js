@@ -43,7 +43,7 @@ function pickedLang() {
 // "Create one" on the sign-in card, only when sign-up is open.
 // Its `domain` also tells which mailboxes can add their own domains ("Your domains").
 fetch('/signup-api/config', { credentials: 'same-origin' }).then(r => r.json())
-  .then(c => { if (c && c.enabled) $('#loginSignup').classList.remove('hidden'); domains.setPlatformDomain(c && c.domain); })
+  .then(c => { if (c && c.enabled) $('#loginSignup').classList.remove('hidden'); domains.setPlatformDomain(c && c.ownDomains ? c.domain : null); })
   .catch(() => domains.setPlatformDomain(null));
 
 for (const b of document.querySelectorAll('.login-lang [data-lang]')) {

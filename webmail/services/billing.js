@@ -102,7 +102,8 @@ function stripeRequest(path, form) {
 // The fake checkout link is signed so nobody can mark someone else's order as paid by guessing ids.
 let fakeKey = null;
 const fakeSig = id => {
-  if (!fakeKey) fakeKey = Buffer.from(crypto.hkdfSync('sha256', Buffer.from(process.env.ADMIN_TOKEN || 'x'), Buffer.from('iron-id-cp'), Buffer.from('fake-pay-v1'), 32));
+  if (!process.env.ADMIN_TOKEN) throw new Error('ADMIN_TOKEN is needed for test payments');
+  if (!fakeKey) fakeKey = Buffer.from(crypto.hkdfSync('sha256', Buffer.from(process.env.ADMIN_TOKEN), Buffer.from('iron-id-cp'), Buffer.from('fake-pay-v1'), 32));
   return crypto.createHmac('sha256', fakeKey).update(String(id)).digest('hex');
 };
 
@@ -171,7 +172,7 @@ async function markPaid(orderId, { paymentRef = null } = {}) {
                                    WHERE id = $1 AND status IN ('pending', 'cancelled') RETURNING *`, [orderId, paymentRef]);
     order = r.rows[0];
     if (order) {
-      const year = new Date().getFullYear();
+      const year = Number((await client.query(`SELECT EXTRACT(YEAR FROM NOW() AT TIME ZONE 'Europe/Paris')::int AS y`)).rows[0].y);
       const seq = await client.query(`INSERT INTO cp.invoice_seq (year, last) VALUES ($1, 1)
                                       ON CONFLICT (year) DO UPDATE SET last = cp.invoice_seq.last + 1 RETURNING last`, [year]);
       const number = `F${year}-${String(seq.rows[0].last).padStart(6, '0')}`;
@@ -207,9 +208,30 @@ async function retry(orderId) {
   const o = (await db.query(`SELECT * FROM cp.orders WHERE id = $1`, [orderId])).rows[0];
   if (!o) fail('That order was not found.', 404);
   if (o.status !== 'failed') fail('Only a paid order whose delivery failed can be retried.');
-  await db.query(`UPDATE cp.orders SET status = 'paid' WHERE id = $1 AND status = 'failed'`, [orderId]);
+  // Only the request that flips the status delivers (two clicks at once can't deliver twice).
+  const r = await db.query(`UPDATE cp.orders SET status = 'paid' WHERE id = $1 AND status = 'failed' RETURNING id`, [orderId]);
+  if (!r.rowCount) fail('Only a paid order whose delivery failed can be retried.');
   await fulfil({ ...o, status: 'paid' });
   return orderView((await db.query('SELECT * FROM cp.orders WHERE id = $1', [orderId])).rows[0]);
+}
+
+/** Orders paid but not delivered after 15 minutes (the server stopped mid-way) become "failed" for staff to retry. */
+async function sweepStuck() {
+  try {
+    await db.query(`UPDATE cp.orders SET status = 'failed', error = 'Delivery was interrupted (server restart). Use Try again.'
+                     WHERE status = 'paid' AND paid_at < NOW() - INTERVAL '15 minutes'`);
+  } catch (e) { console.error('[billing] sweep:', e.message); }
+}
+
+/** Closes a customer's open payment pages for a domain before a new one is made (Stripe sessions are expired too). */
+async function cancelOpen(customerId, domain, kinds) {
+  const r = await db.query(`UPDATE cp.orders SET status = 'cancelled' WHERE customer_id = $1 AND domain = $2 AND kind = ANY($3::text[]) AND status = 'pending'
+                            RETURNING provider, provider_ref`, [customerId, domain, kinds]);
+  for (const o of r.rows) {
+    if (o.provider && o.provider.startsWith('stripe') && o.provider_ref && process.env.STRIPE_SECRET_KEY) {
+      await stripeRequest(`checkout/sessions/${encodeURIComponent(o.provider_ref)}/expire`, {}).catch(() => {});
+    }
+  }
 }
 
 /* ——— Stripe webhook ——— */
@@ -238,15 +260,17 @@ async function stripeWebhook(raw, signature) {
   } else if (ev.type === 'checkout.session.expired' && orderId) {
     await db.query(`UPDATE cp.orders SET status = 'cancelled' WHERE id = $1 AND status = 'pending' AND provider_ref = $2`, [orderId, obj.id]);
   } else if (ev.type === 'charge.refunded') {
+    // Only a full refund closes the order; a partial one is noted for staff (credit notes are issued by hand).
     const pi = obj.payment_intent;
-    if (pi) await db.query(`UPDATE cp.orders SET status = 'refunded' WHERE payment_ref = $1`, [pi]);
+    if (pi && obj.refunded === true) await db.query(`UPDATE cp.orders SET status = 'refunded' WHERE payment_ref = $1`, [pi]);
+    else if (pi) await db.query(`UPDATE cp.orders SET error = $2 WHERE payment_ref = $1`, [pi, `Partly refunded: ${(Number(obj.amount_refunded) / 100).toFixed(2)} €`]);
   }
   return { status: 200, body: { received: true } };
 }
 
 /* ——— Fake provider (tests only) ——— */
 function fakeCheckoutValid(orderId, sig) {
-  if (provider().kind !== 'fake') return false;
+  if (provider().kind !== 'fake' || !process.env.ADMIN_TOKEN) return false;
   const want = fakeSig(orderId);
   return typeof sig === 'string' && sig.length === want.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(want));
 }
@@ -302,5 +326,5 @@ ${vatLine}<p class="muted">${fr ? 'Payée par carte le' : 'Paid by card on'} ${e
 
 module.exports = {
   settings, amounts, priceList, provider, createOrder, markPaid, retry, onPaid, orderView, ordersFor, order, totalsByCustomer,
-  stripeWebhook, verifyStripeSignature, fakeCheckoutValid, invoiceHtml, labelFor, KINDS, BillingError
+  stripeWebhook, verifyStripeSignature, sweepStuck, cancelOpen, fakeCheckoutValid, invoiceHtml, labelFor, KINDS, BillingError
 };

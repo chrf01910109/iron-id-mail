@@ -373,7 +373,7 @@ async function handle(req, res, url, { readJson, sendJson, sendBodyError, isCros
   const route = req.method + ' ' + url.pathname;
   try {
     if (route === 'GET /signup-api/config') {
-      return sendJson(res, 200, { enabled: enabled(), domain: DOMAIN, minPassword: 12, terms: TERMS_VERSION });
+      return sendJson(res, 200, { enabled: enabled(), domain: DOMAIN, minPassword: 12, terms: TERMS_VERSION, ownDomains: process.env.OWN_DOMAINS_ENABLED === 'true' });
     }
     if (!enabled()) return sendJson(res, 403, { error: 'Sign-up is not open yet.' });
     if (route === 'GET /signup-api/challenge') {

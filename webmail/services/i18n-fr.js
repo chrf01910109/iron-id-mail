@@ -68,6 +68,7 @@ const FR = {
   'Don’t use your name or your address in your password.': 'N’utilisez pas votre nom ni votre adresse dans votre mot de passe.',
 
   /* ——— Own domains (domains.js, registrar.js) ——— */
+  'Own domains are not available yet.': 'Les domaines personnalisés ne sont pas encore disponibles.',
   'Own domains are available for {domain} mailboxes.': 'Les domaines personnalisés sont disponibles pour les boîtes mail {domain}.',
   '{domain} belongs to IRON ID.': '{domain} appartient à IRON ID.',
   'This domain does not seem to exist yet (no name servers found). Check the spelling, or buy it below.': 'Ce domaine ne semble pas encore exister (aucun serveur de noms trouvé). Vérifiez l’orthographe, ou achetez-le ci-dessous.',
@@ -116,6 +117,8 @@ const FR = {
   'You have reached the number of copies included. Contact IRON ID support.': 'Vous avez atteint le nombre de copies incluses. Contactez le support IRON ID.',
   'The old provider refused this address or password. Some providers (Gmail, Outlook) need an app password.': 'L’ancien fournisseur a refusé cette adresse ou ce mot de passe. Certains fournisseurs (Gmail, Outlook) demandent un mot de passe d’application.',
   'Could not reach the old server. Check its name and port.': 'Impossible de joindre l’ancien serveur. Vérifiez son nom et son port.',
+  'Too many attempts. Please wait an hour and try again.': 'Trop de tentatives. Veuillez patienter une heure, puis réessayer.',
+  'A domain bought through IRON ID can’t be removed here. Contact IRON ID support.': 'Un domaine acheté via IRON ID ne peut pas être retiré ici. Contactez le support IRON ID.',
   'That copy was not found or has already finished.': 'Cette copie est introuvable ou déjà terminée.',
   'Your IRON ID session for this copy has ended. Start the copy again.': 'Votre session IRON ID pour cette copie a expiré. Relancez la copie.',
   'Your IRON ID mailbox is full. Free some space, then start the copy again.': 'Votre boîte mail IRON ID est pleine. Libérez de l’espace, puis relancez la copie.',

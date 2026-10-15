@@ -74,10 +74,16 @@ function engineRequest(path, { method = 'POST', auth, body } = {}) {
 
 /** Runs JMAP method calls with the given auth header. Throws on transport/HTTP errors. */
 async function jmap(auth, methodCalls) {
-  const r = await engineRequest('/jmap/', { auth, body: { using: USING, methodCalls } });
-  if (r.status === 401) throw Object.assign(new Error('Engine rejected the credentials'), { code: 'unauthorized' });
-  if (r.status !== 200 || !r.json) throw new Error(`Engine returned HTTP ${r.status}`);
-  return r.json.methodResponses;
+  for (let attempt = 0; ; attempt++) {
+    const r = await engineRequest('/jmap/', { auth, body: { using: USING, methodCalls } });
+    if (r.status === 401) throw Object.assign(new Error('Engine rejected the credentials'), { code: 'unauthorized' });
+    if (r.status === 200 && r.json) return r.json.methodResponses;
+    // A busy engine (too many requests at once: JMAP "limit", 429, 503) is asked again, a little later.
+    const kind = String((r.json && (r.json.type || r.json.title)) || '');
+    const busy = r.status === 429 || r.status === 503 || (r.status === 400 && /limit/i.test(kind));
+    if (busy && attempt < 3) { await new Promise(ok => setTimeout(ok, 150 * (attempt + 1))); continue; }
+    throw new Error(`Engine returned HTTP ${r.status}${kind ? ' (' + kind.slice(0, 80) + ')' : ''}`);
+  }
 }
 
 /** Calls the engine with the gateway's API key. */

@@ -124,11 +124,19 @@ const DOMAIN_PROPS = ['name', 'isEnabled', 'dkimManagement', 'catchAllAddress', 
 const ACCOUNT_PROPS = ['@type', 'name', 'domainId', 'emailAddress', 'description', 'roles', 'permissions', 'quotas', 'usedDiskQuota', 'aliases', 'memberGroupIds', 'createdAt'];
 
 /** The engine's domains and accounts, read together (credentials only to tell whether two-step is on; the engine masks them). */
+// Requests made at the same moment share one engine call (a domain search asks five times at once).
+const directoryLoads = new Map();
 async function engineDirectory({ withCredentials = false } = {}) {
-  const r = await eng([
-    ['x:Domain/get', { ids: null, properties: DOMAIN_PROPS }, 'd'],
-    ['x:Account/get', { ids: null, properties: withCredentials ? ACCOUNT_PROPS.concat('credentials') : ACCOUNT_PROPS }, 'a']
-  ]);
+  const key = withCredentials ? 'cred' : 'plain';
+  let load = directoryLoads.get(key);
+  if (!load) {
+    load = eng([
+      ['x:Domain/get', { ids: null, properties: DOMAIN_PROPS }, 'd'],
+      ['x:Account/get', { ids: null, properties: withCredentials ? ACCOUNT_PROPS.concat('credentials') : ACCOUNT_PROPS }, 'a']
+    ]).finally(() => directoryLoads.delete(key));
+    directoryLoads.set(key, load);
+  }
+  const r = structuredClone(await load);
   const domains = resultOf(r, 'd').list || [];
   const accounts = resultOf(r, 'a').list || [];
   const domainById = new Map(domains.map(d => [d.id, d]));

@@ -583,9 +583,7 @@ async function detailView(v) {
     const again = h('button', { type: 'button', class: 'compose-btn' }, d.bought ? t('Start again') : t('Pay {price} and continue', { price: money(price('domain_connect').ttc, { short: true }) }));
     again.addEventListener('click', async () => {
       if (d.bought) return go({ name: 'buy', q: d.domain });
-      setBusy(again, true);
-      try { window.location.assign((await api.account('domains/connect', { domain: d.domain })).checkoutUrl); }
-      catch (e) { if (!isSessionEnd(e)) toast(errText(e), false); setBusy(again, false); }
+      return go({ name: 'connect', domain: d.domain });
     });
     out.push(card(null, help(t('The payment for this domain was not completed.')), h('div', { class: 'row-actions' }, again)));
     return out;
@@ -611,7 +609,7 @@ async function detailView(v) {
     if (!d.bought && data.orders.some(o => o.kind === 'domain_connect' && ['paid', 'fulfilled'].includes(o.status))) out.push(copyCard());
     out.push(dnsCard(d));
   }
-  out.push(removeCard(d));
+  if (!d.bought) out.push(removeCard(d));
   return out;
 }
 

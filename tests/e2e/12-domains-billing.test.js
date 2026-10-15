@@ -51,7 +51,9 @@ before(async () => {
 });
 
 after(async () => {
-  for (const d of [BUY, OWN]) await post('domains/remove', { domain: d, confirm: d }).catch(() => {});
+  await post('domains/remove', { domain: OWN, confirm: OWN }).catch(() => {});
+  await post('addresses/remove', { email: `contact@${BUY}` }).catch(() => {});
+  await h.gw('/admin-api/domains/remove', { method: 'POST', cookie: P, body: { domain: BUY, confirm: BUY } }).catch(() => {});
   for (const u of [owner, friend, oldbox, platform]) await h.deleteTestUser(u);
 });
 
@@ -251,6 +253,30 @@ test('admin console: payments, totals per client, invoices, prices', async () =>
   assert.equal((await h.gw('/admin-api/billing/settings', { method: 'POST', cookie: P, body: { 'billing.vat_rate': 99 } })).status, 400);
   // An ordinary user has no access.
   assert.equal((await h.gw('/admin-api/billing', { cookie: O })).status, 403);
+});
+
+test('a second payment for the same thing is not delivered twice, and staff see it', async () => {
+  const OWN2 = `second${tag}.test`;
+  setDns(OWN2, 'NS', ['ns1.some-host.test']);
+  const a = await post('domains/connect', { domain: OWN2, acceptTerms: true });
+  const b = await post('domains/connect', { domain: OWN2, acceptTerms: true }); // the first payment page is closed (cancelled)
+  assert.equal(a.status, 200); assert.equal(b.status, 200);
+  await pay(b.json.checkoutUrl);
+  await pay(a.json.checkoutUrl); // …but that old tab is paid anyway
+  const orders = (await acct('domains')).json.orders.filter(o => o.domain === OWN2);
+  assert.deepEqual(orders.map(o => o.status).sort(), ['failed', 'fulfilled']);
+  const bill = await h.gw('/admin-api/billing?status=failed', { cookie: P });
+  const failed = bill.json.orders.find(o => o.domain === OWN2);
+  assert.match(failed.error, /already paid by order \d+: refund this payment/);
+  const retry = await h.gw('/admin-api/billing/retry', { method: 'POST', cookie: P, body: { id: failed.id } });
+  assert.equal(retry.json.status, 'failed', 'retrying does not deliver it either');
+  await post('domains/remove', { domain: OWN2, confirm: OWN2 });
+});
+
+test('a domain bought through IRON ID is not removed from the webmail', async () => {
+  const r = await post('domains/remove', { domain: BUY, confirm: BUY });
+  assert.equal(r.status, 400);
+  assert.match(r.json.error, /bought through IRON ID/);
 });
 
 test('a webhook without Stripe’s signature is refused', async () => {

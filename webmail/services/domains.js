@@ -45,11 +45,16 @@ function ownMailboxOnly(email) {
 }
 
 /* ——— Checks ——— */
+// Engine domains, cached a minute (a search checks five names at once).
+let engineDomains = { at: 0, set: null };
 async function domainInUse(domain) {
   const claim = (await db.query('SELECT customer_id, status, created_at FROM cp.customer_domains WHERE domain = $1', [domain])).rows[0];
   if (claim && !(claim.status === 'pending' && Date.now() - new Date(claim.created_at).getTime() > 7 * 86400000)) return true;
-  const dir = await adminConsole.engineDirectory();
-  return !!dir.domainByName.get(domain);
+  if (!engineDomains.set || Date.now() - engineDomains.at > 60000) {
+    const dir = await adminConsole.engineDirectory();
+    engineDomains = { at: Date.now(), set: new Set(dir.domains.map(d => d.name.toLowerCase())) };
+  }
+  return engineDomains.set.has(domain);
 }
 
 async function checkConnect(email, b) {
@@ -87,6 +92,7 @@ async function search(email, q) {
 
 /* ——— Orders ——— */
 function baseUrl(req) {
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/$/, '');
   const proto = (req.headers['x-forwarded-proto'] || '').split(',')[0].trim() || 'http';
   return `${proto}://${req.headers.host}`;
 }
@@ -98,6 +104,7 @@ async function connect(email, b, { req, lang, name }) {
   const open = (await db.query(`SELECT id FROM cp.orders WHERE customer_id = $1 AND domain = $2 AND kind IN ('domain_connect','domain_register')
                                 AND status IN ('paid','fulfilled') LIMIT 1`, [cust.id, info.domain])).rows[0];
   if (open) fail('You have already paid for this domain.', 409);
+  await billing.cancelOpen(cust.id, info.domain, ['domain_connect', 'domain_register']);
   return billing.createOrder({ customerId: cust.id, email, kind: 'domain_connect', domain: info.domain, details: { name }, lang, baseUrl: baseUrl(req) });
 }
 
@@ -130,6 +137,7 @@ async function buy(email, b, { req, lang, name }) {
   if (b.acceptTerms !== true) fail('Please accept the Terms of Sale to continue.');
   if (await domainInUse(domain) || !(await registrar.available(domain))) fail('This domain is no longer available.', 409, { code: 'taken' });
   const cust = await personalCustomer(email, { create: true, name: name || `${contact.firstName} ${contact.lastName}` });
+  await billing.cancelOpen(cust.id, domain, ['domain_connect', 'domain_register']);
   return billing.createOrder({
     customerId: cust.id, email, kind: 'domain_register', domain, lang, baseUrl: baseUrl(req),
     details: { contact, name: `${contact.firstName} ${contact.lastName}`, address: contact.address, postalCode: contact.postalCode, city: contact.city, country: contact.country }
@@ -145,34 +153,57 @@ async function renew(email, b, { req, lang }) {
   const daysLeft = (new Date(reg.expires_at).getTime() - Date.now()) / 86400000;
   if (daysLeft > RENEW_DAYS) fail(`You can renew from ${RENEW_DAYS} days before the end of the year already paid.`);
   if (daysLeft < -30) fail('This domain has expired for too long to be renewed here. Contact IRON ID support.');
+  await billing.cancelOpen(cust.id, domain, ['domain_renew']);
   return billing.createOrder({ customerId: cust.id, email, kind: 'domain_renew', domain, lang, baseUrl: baseUrl(req), details: { name: cust.name } });
 }
 
 /* ——— Delivering paid orders ——— */
+/** A second payment for the same thing (an old payment tab paid too) is not delivered again: staff refund it. */
+async function refuseDuplicate(order, withinDays) {
+  const r = await db.query(`SELECT id FROM cp.orders WHERE customer_id = $1 AND domain = $2 AND kind = $3 AND id <> $4
+                              AND status IN ('paid','fulfilled') AND paid_at > NOW() - make_interval(days => $5)`, [order.customer_id, order.domain, order.kind, order.id, withinDays]);
+  if (r.rows.length) throw new Error(`already paid by order ${r.rows[0].id}: refund this payment`);
+}
+
 billing.onPaid('domain_connect', async order => {
+  await refuseDuplicate(order, 365);
   // Claim the domain for the person's customer: they then publish the DNS records and verify.
   await adminConsole.runRoute(ctxFor(order.email, order.customer_id, null), 'POST', '/admin-api/domains', { domain: order.domain, customerId: order.customer_id });
 });
 
 billing.onPaid('domain_register', async order => {
+  await refuseDuplicate(order, 300);
   const c = order.details.contact;
-  const already = (await db.query('SELECT 1 FROM cp.registered_domains WHERE domain = $1', [order.domain])).rows[0];
-  if (!already) {
-    const reg = await registrar.register(order.domain, c);
-    await db.query(`INSERT INTO cp.registered_domains (domain, customer_id, registrar, registrar_ref, expires_at)
-                    VALUES ($1, $2, $3, $4, NOW() + INTERVAL '1 year')`, [order.domain, order.customer_id, registrar.kind(), reg.ref]);
+  const reg = (await db.query('SELECT * FROM cp.registered_domains WHERE domain = $1', [order.domain])).rows[0];
+  if (reg && reg.customer_id !== order.customer_id) {
+    // Someone else's: only a record left from a domain that expired long ago may be replaced.
+    if (!(reg.status === 'expired' && new Date(reg.expires_at) < new Date(Date.now() - 60 * 86400000))) throw new Error('domain already registered for another client');
+    await db.query('DELETE FROM cp.registered_domains WHERE domain = $1', [order.domain]);
   }
-  // We hold the domain, so no ownership check is needed: claim, create it in the engine with signing keys,
+  if (!reg || reg.customer_id !== order.customer_id) {
+    const r = await registrar.register(order.domain, c);
+    await db.query(`INSERT INTO cp.registered_domains (domain, customer_id, registrar, registrar_ref, expires_at)
+                    VALUES ($1, $2, $3, $4, NOW() + INTERVAL '1 year')`, [order.domain, order.customer_id, registrar.kind(), r.ref]);
+  }
+  // The domain is now registered for this person. A claim by anyone else can only be an unverified one
+  // (it was free at the registry): it is dropped. Then claim, create it in the engine with signing keys,
   // and publish its records on the registrar's DNS.
-  const row = (await db.query('SELECT status FROM cp.customer_domains WHERE domain = $1', [order.domain])).rows[0];
+  let row = (await db.query('SELECT customer_id, status FROM cp.customer_domains WHERE domain = $1', [order.domain])).rows[0];
+  if (row && row.customer_id !== order.customer_id) {
+    if (row.status !== 'pending') throw new Error('domain is active for another client');
+    await db.query(`DELETE FROM cp.customer_domains WHERE domain = $1 AND status = 'pending'`, [order.domain]);
+    db.audit({ actor: 'system', customerId: row.customer_id, action: 'domain.claim_lapsed', target: order.domain, details: { boughtBy: order.customer_id } }).catch(() => {});
+    row = null;
+  }
   if (!row) await adminConsole.runRoute(ctxFor(order.email, order.customer_id, null), 'POST', '/admin-api/domains', { domain: order.domain, customerId: order.customer_id });
   if (!row || row.status === 'pending') await adminConsole.runRoute(SYSTEM, 'POST', '/admin-api/domains/verify', { domain: order.domain, skipCheck: true });
   await publishDns(order.domain);
 });
 
 billing.onPaid('domain_renew', async order => {
+  await refuseDuplicate(order, 300);
   const reg = (await db.query('SELECT * FROM cp.registered_domains WHERE domain = $1', [order.domain])).rows[0];
-  if (!reg) throw new Error('not a domain registered through IRON ID');
+  if (!reg || reg.customer_id !== order.customer_id) throw new Error('not a domain registered through IRON ID for this client');
   await registrar.renew(order.domain, new Date(reg.expires_at).getUTCFullYear());
   await db.query(`UPDATE cp.registered_domains SET expires_at = expires_at + INTERVAL '1 year', status = 'active', reminded_at = NULL WHERE domain = $1`, [order.domain]);
 });
@@ -252,6 +283,9 @@ async function removeDomain(current, b) {
   const cust = await personalCustomer(current.email);
   if (!cust) fail('That domain was not found.', 404);
   const domain = adminConsole.cleanDomain(b.domain);
+  // A domain bought through IRON ID stays with its records at the registrar: it is not removed from here.
+  const reg = (await db.query('SELECT 1 FROM cp.registered_domains WHERE domain = $1 AND customer_id = $2', [domain, cust.id])).rows[0];
+  if (reg) fail('A domain bought through IRON ID can’t be removed here. Contact IRON ID support.', 400);
   // Its addresses go first (they are aliases of this mailbox).
   const { a, dir } = await myAccount(current.email);
   for (const e of adminConsole.aliasEmails(a, dir.domainById).filter(x => x.endsWith('@' + domain))) await removeAddress(current, { email: e });

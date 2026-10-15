@@ -201,6 +201,37 @@ Limits: 3 accounts a day per network (IPv4 address, or IPv6 /64) — `SIGNUP_PER
 (messages a day to outside addresses for new accounts — recorded per sign-up now, enforced when outgoing mail
 moves to the VPS). The sign-in card shows "No IRON ID mailbox yet? Create one" only while sign-up is on.
 
+### 4.6 Own domains and payments ("Pro" mail) — built, switched off in production
+The offer (France): the free mailbox name@iron-id.io has **5 GB**. Addresses on the person's own domain
+(contact@company.fr) arrive in the **same mailbox** and share those 5 GB. On, only with `OWN_DOMAINS_ENABLED=true`.
+
+| Offer | Price (TTC, settings) | What happens |
+|---|---|---|
+| Connect a domain you own | **€2** once | Pay (Stripe) → domain claimed → DNS records page with live checks (verification TXT, MX, SPF, 2×DKIM, DMARC) → Verify → active → addresses. Includes **copying old emails** (IMAP: Gmail, Outlook, OVH, Orange…; up to 5 copies; resumes where it stopped) |
+| Buy a domain | **€14 / year** (.fr .com .net .org .eu) | Search (registrar availability) → owner details (registrant; .fr/.eu need an EU owner) → pay → registered through the registrar in the person's name, engine domain + DKIM created, records published on the registrar's DNS → active. Renewal is paid by the person each year (Renew button 30 days before the end; notice in the webmail); unpaid → expired |
+
+Payment: **Stripe Checkout** (card page hosted by Stripe; card data never reaches IRON ID). Both purchases ask
+for the express request to start at once (French withdrawal right, art. L221-28). Orders → `paid` (invoice number
+`F<year>-NNNNNN`, gap-free) → `fulfilled`; a delivery problem → `failed` (shown to staff with the reason, "Try again");
+a second payment for the same thing is never delivered twice (marked failed: refund it in Stripe). Invoices (HTML,
+French mentions, VAT or "TVA non applicable, art. 293 B du CGI" when the rate is 0) in the webmail and the console.
+
+Admin console → **Payments**: month totals (TTC/HT/VAT), orders with filters, invoices, retry, the registrar's
+prepaid balance, the payment provider; **Customers** shows what each client paid; **Platform settings → Prices and
+invoices**: prices, VAT rate (changeable as the law changes), prices incl. VAT or not, domain endings, free storage,
+seller details printed on invoices. Each person who buys gets a "personal" client.
+
+**Registrar (OpenSRS)**: IRON ID keeps a prepaid balance at OpenSRS; each registration/renewal is taken from it.
+OpenSRS only accepts API calls from allow-listed IPs (the VPS, or Railway static outbound IPs on the Pro plan).
+The client (`registrar.js`) was written from the XCP documentation and must be tried in OpenSRS's test environment
+(`OPENSRS_ENV=test`) before going live.
+
+**Before switching it on**: French company + Stripe account (live keys); Stripe webhook to
+`https://<domain>/billing/stripe/webhook` with events `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+`checkout.session.expired`, `charge.refunded`; OpenSRS reseller account funded, IP allow-listed, tested in its test
+environment; seller details and VAT in Platform settings; legal texts reviewed (`/legal/sale`, `/legal/notice`,
+`/legal/privacy`, `/legal/terms`); the VPS receiving mail for customer domains (MX `mail.iron-id.io`).
+
 ---
 
 ## 5. Roles and permissions
@@ -241,6 +272,11 @@ the account's credentials (new password, two-step and all app passwords removed)
 | `user_prefs` | Per person: language (`en`/`fr`) |
 | `signup_log` | Each sign-up: address, time, IP and network, terms version, language, sending limit at the time |
 | `signup_puzzles` | Sign-up security puzzles already used (kept 1 hour) |
+| `orders` | Everything sold: client, kind, domain, amounts TTC/HT/VAT and rate, status, Stripe references, invoice number |
+| `invoice_seq` | Last invoice number per year |
+| `registered_domains` | Domains bought through IRON ID: client, registrar reference, end of the paid year, status |
+| `migrations` | Copies of old mailboxes: server, user, progress, state per folder; the passwords are encrypted and erased at the end |
+| `customers` (new columns) | `kind` (business / personal), `owner_email` for personal clients |
 | `recovery` | Recovery e-mail address given at sign-up (not verified yet); removed when the mailbox is deleted |
 
 Migrations (`controlPlane.sql`) run on every start and are idempotent. Mail data, accounts, domains and keys
@@ -264,6 +300,11 @@ are in the engine's own tables in the same database. `ironid_meta` (public schem
 | `TRUST_PROXY` | no | Default `true` (Railway). Set `false` if the gateway is reached directly, so clients can't choose their address for the sign-in brake |
 | `TOTP_ISSUER` | no | Name shown in authenticator apps (default IRON ID) |
 | `SIGNUP_ENABLED` | no | `true` opens `/signup` (name@iron-id.io). **Leave unset in production until the VPS and the iron-id.io MX move** |
+| `OWN_DOMAINS_ENABLED` | no | `true` shows "Your domains" in the webmail (connect €2 / buy €14). Leave unset until payments and the registrar are ready |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | for payments | Stripe keys (`sk_live_…`, `whsec_…`). Test keys (`sk_test_…`) only while trying it |
+| `PUBLIC_URL` | recommended | `https://<domain>` — return links from the payment page |
+| `REGISTRAR`, `OPENSRS_USER`, `OPENSRS_KEY`, `OPENSRS_ENV` | for buying domains | `REGISTRAR=opensrs`, the reseller username and API key, `test` or `live` |
+| `PAYMENTS_FAKE`, `REGISTRAR=fake`, `IRONID_MIGRATION_TEST` | **never in production** | Test-only switches (listed in /healthz as `testFeatures`; the security probe fails on them) |
 | `SIGNUP_PER_IP_DAY` / `SIGNUP_PER_DAY` | no | Sign-up limits per network per day (default 3) and in total per day (default 200) |
 | `PORT` | set by Railway | Gateway port |
 | `IRONID_DNS_FAKE` | **never in production** | Test-only file of fake DNS answers |
@@ -382,10 +423,9 @@ sign-in brake; every admin action audited; admin scope enforced on the server; e
 
 ## 12. Roadmap
 1. Deploy Phases 2, 3a, 3b + audit fixes + English/French; do the actions in §10.2.
-   Built: sign-up for name@iron-id.io (§4.5), switched off in production until the VPS and the iron-id.io MX
-   move. Next: connecting your own domain from the webmail (design: project doc
-   `signup-and-languages-plan-2026-10-15`). Before opening sign-up: final Terms/Privacy texts, pricing,
-   the sending limit, and recovery-email verification.
+   Built and switched off in production: sign-up for name@iron-id.io (§4.5) and own domains with payments
+   (§4.6). Before opening them: the VPS and the iron-id.io MX move, a French company with Stripe, the OpenSRS
+   account, reviewed legal texts, the sending limit, and recovery-email verification.
 2. VPS (OVH, port 25 open): move the engine and its database, clean IP + reverse DNS, TLS on mail ports,
    listeners bound correctly, fresh keys; pilot on `mail.iron-id.io`.
 3. Mail apps (IMAP/SMTP submission), spam/virus filtering, deliverability monitoring, verified-sender badge.

@@ -416,7 +416,11 @@ const server = http.createServer(async (req, res) => {
       }
 
       // Own domains (connect €2 / buy €14 a year), addresses on them, payments, and copies of old mail.
+      // Off unless OWN_DOMAINS_ENABLED=true (needs Stripe keys, the registrar account and the VPS for mail).
       const domainCtx = { req, lang: res.ironLang, name: null };
+      if (/^(GET|POST) \/account\/(domains|addresses|migrations|invoice|orders)(\/|$)/.test(route) && process.env.OWN_DOMAINS_ENABLED !== 'true') {
+        return sendJson(res, 403, { error: 'Own domains are not available yet.' });
+      }
       if (route === 'GET /account/domains') return sendJson(res, 200, { ...(await domains.overview(current)), migrations: (await migration.list(current)).migrations });
       if (route === 'GET /account/domains/dns') {
         const cust = await domains.personalCustomer(current.email);
@@ -427,7 +431,10 @@ const server = http.createServer(async (req, res) => {
         if (domainSearchBrake(current.email)) return sendJson(res, 429, { error: 'Too many requests. Please wait a few minutes and try again.' });
         return sendJson(res, 200, await domains.search(current.email, reqUrl.searchParams.get('q')));
       }
-      if (route === 'POST /account/domains/check') return sendJson(res, 200, await domains.checkConnect(current.email, body));
+      if (route === 'POST /account/domains/check') {
+        if (domainSearchBrake(current.email)) return sendJson(res, 429, { error: 'Too many requests. Please wait a few minutes and try again.' });
+        return sendJson(res, 200, await domains.checkConnect(current.email, body));
+      }
       if (route === 'POST /account/domains/connect') return sendJson(res, 200, await domains.connect(current.email, body, domainCtx));
       if (route === 'POST /account/domains/buy') return sendJson(res, 200, await domains.buy(current.email, body, domainCtx));
       if (route === 'POST /account/domains/renew') return sendJson(res, 200, await domains.renew(current.email, body, domainCtx));
@@ -791,6 +798,8 @@ server.listen(PORT, () => {
       migration.startWorker();
       domains.expireDomains();
       setInterval(() => domains.expireDomains(), 6 * 3600 * 1000).unref();
+      billing.sweepStuck();
+      setInterval(() => billing.sweepStuck(), 10 * 60 * 1000).unref();
     } catch (e) {
       console.error(`[db] Control-plane migration failed (attempt ${attempt}), retrying:`, e.message);
       await wait(attempt);
