@@ -1,5 +1,31 @@
 # IRON ID Mail — Test and Security Audit Report
 
+## Update 2026-10-15 (night) — Own domains and payments (branch `i18n-en-fr`)
+
+Same local stack, gateway started with `OWN_DOMAINS_ENABLED=true` and the test-only fakes for payments
+(`PAYMENTS_FAKE`), the registrar (`REGISTRAR=fake`) and DNS; the old-mailbox copy runs against the local engine's IMAP.
+
+| Check | Result |
+|---|---|
+| End-to-end tests, all files (13) | **102 / 102 passed**: 101 in the full run (incl. 11 new tests in `12-domains-billing.test.js`) + the restart test with a real restart |
+| Translation coverage | **OK** — 1,341 texts, 967 French entries; gateway 289 |
+| Security audit | 0 dependency problems (incl. the new `imapflow` 2.1.2); semgrep 0 new real problems (3 SQL "template" hits use fixed text with numbered parameters; TLS checks are off only in the test switch; MD5 is the signature OpenSRS requires); HTTP probe 42/45 with 4 new checks (Stripe webhook refuses unsigned calls, no fake payment page, payments live or off, no test switches) — the 3 "failures" are the test switches and recovery login left on in the test copy |
+| Independent review (separate agent) | Findings fixed and covered by tests: a second payment for the same domain could deliver twice → second one marked failed for a refund; a bought domain could be removed while still paid for → refused; another client's pending claim on a bought domain → dropped, active claim → delivery fails safely; cancelled payment pages left orders "pending" → cancelled on return and after a day; prices/VAT saved half-way on a bad value → all checked first; the connect order had no terms checkbox → required |
+| Engine under load | Two flaky tests (one also failed in GitHub CI after the sign-up deploy) traced to the engine refusing directory reads made at the same moment → the gateway shares one read between simultaneous requests, asks the engine again (3 times, short pause) after a request-level refusal, and sign-up uses the last address list if the engine cannot answer. Full run repeated after the fix: 101/101 + restart |
+
+Domain/payment tests: prices with VAT; search (registrar availability, endings from settings, bad names); buying
+(owner details checked, EU owner for .fr/.eu, paid once, a second payment never delivered twice, registered, DNS
+published, invoice numbered and gap-free, not removable); addresses on the domain arriving in the same mailbox and
+usable as sender; connecting an owned domain (€2, DNS records with live checks, verification, addresses); copying an
+old mailbox over IMAP (only with the €2 service, wrong password and non-IMAP ports refused, one at a time, folders,
+dates and read state kept); the admin console (payments, totals per client, invoices, prices and VAT changed and put
+back); a webhook without Stripe's signature refused; removing a domain removes its addresses.
+Checked by screenshots only (not automated yet): the webmail "Your domains" pages and the console's Payments and
+settings pages in EN/FR at desktop and phone width, including the renewal notice. Not covered: renewal payment and
+expiry end to end, the real Stripe and OpenSRS services (no accounts yet).
+
+---
+
 ## Update 2026-10-15 (evening) — Sign-up for name@iron-id.io (branch `i18n-en-fr`, on top of the clean history `1e52414`)
 
 Same local stack, gateway started with `SIGNUP_ENABLED=true`.

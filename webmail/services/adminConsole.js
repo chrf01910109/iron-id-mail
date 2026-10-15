@@ -124,11 +124,19 @@ const DOMAIN_PROPS = ['name', 'isEnabled', 'dkimManagement', 'catchAllAddress', 
 const ACCOUNT_PROPS = ['@type', 'name', 'domainId', 'emailAddress', 'description', 'roles', 'permissions', 'quotas', 'usedDiskQuota', 'aliases', 'memberGroupIds', 'createdAt'];
 
 /** The engine's domains and accounts, read together (credentials only to tell whether two-step is on; the engine masks them). */
+// Requests made at the same moment share one engine call (a domain search asks five times at once).
+const directoryLoads = new Map();
 async function engineDirectory({ withCredentials = false } = {}) {
-  const r = await eng([
-    ['x:Domain/get', { ids: null, properties: DOMAIN_PROPS }, 'd'],
-    ['x:Account/get', { ids: null, properties: withCredentials ? ACCOUNT_PROPS.concat('credentials') : ACCOUNT_PROPS }, 'a']
-  ]);
+  const key = withCredentials ? 'cred' : 'plain';
+  let load = directoryLoads.get(key);
+  if (!load) {
+    load = eng([
+      ['x:Domain/get', { ids: null, properties: DOMAIN_PROPS }, 'd'],
+      ['x:Account/get', { ids: null, properties: withCredentials ? ACCOUNT_PROPS.concat('credentials') : ACCOUNT_PROPS }, 'a']
+    ]).finally(() => directoryLoads.delete(key));
+    directoryLoads.set(key, load);
+  }
+  const r = structuredClone(await load);
   const domains = resultOf(r, 'd').list || [];
   const accounts = resultOf(r, 'a').list || [];
   const domainById = new Map(domains.map(d => [d.id, d]));
@@ -328,6 +336,12 @@ async function customersWithPlans(ctx) {
   return r.rows;
 }
 
+/** What a customer has paid (cents), for the Customers page. */
+function billingView(t) {
+  return t ? { paidCents: t.paid_cents, paidHtCents: t.paid_ht_cents, vatCents: t.vat_cents, refundedCents: t.refunded_cents, pendingCents: t.pending_cents, failed: t.failed, lastPaidAt: t.last_paid_at }
+    : { paidCents: 0, paidHtCents: 0, vatCents: 0, refundedCents: 0, pendingCents: 0, failed: 0, lastPaidAt: null };
+}
+
 /* ——— DNS records ——— */
 function dkimRecordValue(k) {
   const alg = k['@type'] === 'Dkim1RsaSha256' ? 'rsa' : 'ed25519';
@@ -459,10 +473,11 @@ route('GET', '/admin-api/overview', async ctx => {
 
 /* Customers (platform manages; customer admins see their own). */
 route('GET', '/admin-api/customers', async ctx => {
-  const [customers, dir, admins] = await Promise.all([customersWithPlans(ctx), scopedDirectory(ctx), adminEmails()]);
+  const [customers, dir, admins, paid] = await Promise.all([customersWithPlans(ctx), scopedDirectory(ctx), adminEmails(), require('./billing').totalsByCustomer()]);
   return {
     customers: customers.map(c => ({
       id: c.id, name: c.name, status: c.status, internal: c.internal, contactEmail: c.contact_email, planId: c.plan_id, createdAt: c.created_at,
+      kind: c.kind, ownerEmail: c.owner_email, billing: billingView(paid.get(c.id)),
       admins: admins.filter(a => a.customer_id === c.id).map(a => a.email).sort(),
       usage: usageFor(c, dir)
     }))
@@ -1136,7 +1151,12 @@ async function handle(req, res, url, { readJson, sendJson, sendBodyError, isCros
     if (!body || typeof body !== 'object' || Array.isArray(body)) return sendJson(res, 400, { error: 'Invalid request' });
   }
   try {
-    return sendJson(res, 200, await fn(ctx, body, url));
+    const out = await fn(ctx, body, url);
+    if (out && typeof out.__html === 'string') { // a printable page (invoice)
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'" });
+      return res.end(out.__html);
+    }
+    return sendJson(res, 200, out);
   } catch (e) {
     if (e.userError) return sendJson(res, e.status || 400, { error: e.message });
     console.error('[admin] ' + key + ':', e.message);
@@ -1161,4 +1181,15 @@ async function teamsFor(email) {
   }));
 }
 
-module.exports = { handle, auditSignIn, pruneAudit, isAdmin, teamsFor, customerForEmail, PLATFORM_DOMAIN, tempPassword, engineDirectory, aliasEmails };
+/**
+ * Runs a console route for someone who is not a console admin (the webmail's own-domain pages act
+ * for a person's personal customer). The route's own checks apply to `ctx` as usual.
+ */
+async function runRoute(ctx, method, path, body = {}, url = new URL('http://x' + path)) {
+  const fn = routes[method + ' ' + path];
+  if (!fn) throw new Error('no route ' + method + ' ' + path);
+  return fn(ctx, body, url);
+}
+
+module.exports = { handle, auditSignIn, pruneAudit, isAdmin, teamsFor, customerForEmail, PLATFORM_DOMAIN, tempPassword, engineDirectory, aliasEmails,
+  runRoute, engineSet, cleanDomain, splitAddress, SERVICE_ACCOUNT, forgetOwners, addRoute: route, requirePlatform, canCustomer, UserError, customersWithPlans };

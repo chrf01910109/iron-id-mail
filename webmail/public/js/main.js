@@ -8,6 +8,7 @@ import * as list from './list.js';
 import * as reader from './reader.js';
 import * as compose from './compose.js';
 import * as settings from './settings.js';
+import * as domains from './domains.js';
 import { $, toast, dialog, openMenu, isDialogOpen, isMenuOpen, closeMenu, initials, debounce } from './util.js';
 
 const body = document.body;
@@ -40,8 +41,10 @@ function pickedLang() {
   } catch (e) { return ''; }
 }
 // "Create one" on the sign-in card, only when sign-up is open.
+// Its `domain` also tells which mailboxes can add their own domains ("Your domains").
 fetch('/signup-api/config', { credentials: 'same-origin' }).then(r => r.json())
-  .then(c => { if (c && c.enabled) $('#loginSignup').classList.remove('hidden'); }).catch(() => {});
+  .then(c => { if (c && c.enabled) $('#loginSignup').classList.remove('hidden'); domains.setPlatformDomain(c && c.ownDomains ? c.domain : null); })
+  .catch(() => domains.setPlatformDomain(null));
 
 for (const b of document.querySelectorAll('.login-lang [data-lang]')) {
   b.setAttribute('aria-pressed', String(b.dataset.lang === pageLang));
@@ -113,7 +116,8 @@ async function boot() {
   catch (e) { setConn(false, t('Offline')); $('#emailList').textContent = e.message; return; }
   if (!session) { showLogin(); return; }
   mail.state.user.email = session.username;
-  // Admin access, team mailboxes (with members, for assigning) and labels.
+  // Admin access, team mailboxes (with members, for assigning), labels and domain renewal notices.
+  let domainNotices = [];
   try {
     const me = await api.account('me');
     // The language saved to the account (changed on another device): switch to it once.
@@ -121,6 +125,7 @@ async function boot() {
     mail.state.teams = me.teams || [];
     mail.state.labels = me.labels || [];
     $('#btnAdmin').classList.toggle('hidden', !me.admin);
+    domainNotices = me.domainNotices || [];
   } catch (e) {
     if (e instanceof api.SessionEndedError) return;
     mail.state.teams = []; mail.state.labels = [];
@@ -134,6 +139,7 @@ async function boot() {
   }
   profileChanged();
   started = true;
+  domains.setup({ email: session.username, notices: domainNotices });
   list.renderHeader();
   await mail.loadList();
   mail.loadQuota().then(sidebar.renderQuota);
@@ -163,6 +169,7 @@ function openLabel(slug) {
 }
 
 function openView() {
+  domains.close();
   list.syncFilterTabs();
   mail.state.view.search = '';
   $('#searchInput').value = '';
@@ -383,6 +390,7 @@ document.addEventListener('keydown', e => {
   const k = e.key;
   const run = fn => { e.preventDefault(); fn(); };
   if (k === 'c') return run(() => compose.open());
+  if (domains.isOpen()) return; // the domains page has no message shortcuts
   if (k === '/') return run(() => $('#searchInput').focus());
   if (k === 'j' || k === 'ArrowDown' && t === $('#emailList')) return run(() => { const id = list.step(1); if (id) openThread(id); });
   if (k === 'k' || k === 'ArrowUp' && t === $('#emailList')) return run(() => { const id = list.step(-1); if (id) openThread(id); });
@@ -411,6 +419,7 @@ reader.init({
 });
 compose.init({ sent: () => { mail.loadList(); mail.refreshCountsSoon(); reader.refresh(); } });
 settings.init({ profileChanged });
+domains.init({ showMail: () => openView() });
 
 $('#btnCompose').addEventListener('click', () => compose.open());
 $('#btnSignOut').addEventListener('click', signOut);

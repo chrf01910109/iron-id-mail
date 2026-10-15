@@ -12,7 +12,7 @@
  *   - reserved names (postmaster, abuse, admin, support…) and names already in use, aliases included;
  *   - passwords: 12+ characters, not in a list of ~47,000 common long passwords, not the person's name
  *     or address.
- * Settings for later (cp.settings, empty = none): signup.quota_mb (storage per new mailbox) and
+ * Settings (cp.settings): signup.quota_mb (storage per new mailbox, default 5120 = 5 GB) and
  * signup.external_daily_limit (messages a day to outside addresses for new accounts; recorded now,
  * enforced when outgoing mail moves to the VPS).
  */
@@ -28,6 +28,7 @@ const adminConsole = require('./adminConsole');
 const DOMAIN = adminConsole.PLATFORM_DOMAIN;
 const TERMS_VERSION = '2026-10-draft';
 const MB = 1024 * 1024;
+const FREE_QUOTA_MB = 5120; // the free personal mailbox: 5 GB, shared with addresses on own domains
 
 class SignupError extends Error {
   constructor(message, status = 400, extra = {}) { super(message); this.status = status; this.userError = true; Object.assign(this, extra); }
@@ -286,7 +287,10 @@ async function create(b, { ip, lang }) {
   const email = `${local}@${DOMAIN}`;
   if ((await adminAddresses()).has(email)) fail('That address is reserved. Choose another one.', 400, { code: 'address' });
   await usePuzzle(b.pow);
-  if ((await takenAddresses({ fresh: true })).has(email)) fail('That address was just taken. Choose another one.', 409, { code: 'taken' });
+  // A fresh look at the directory; if the engine can't answer now, the last list is used (the engine
+  // itself still refuses an address that exists when the account is created).
+  const used = await takenAddresses({ fresh: true }).catch(e => { console.error('[signup] directory:', e.message); return taken.set || new Set(); });
+  if (used.has(email)) fail('That address was just taken. Choose another one.', 409, { code: 'taken' });
 
   // Limits per network and per day, counted and reserved in one step (a lock makes parallel
   // requests wait their turn), so they hold even if many requests arrive at once.
@@ -326,7 +330,7 @@ async function createAccount({ email, local, first, last, password, recovery, la
     .find(x => x[2] === 'd');
   const domainRec = dom && dom[0] !== 'error' && (dom[1].list || []).find(d => d.name.toLowerCase() === DOMAIN);
   if (!domainRec) throw new Error('platform domain not found in the engine');
-  const quotaMb = await setting('signup.quota_mb');
+  const quotaMb = (await setting('signup.quota_mb')) || FREE_QUOTA_MB;
   const r = (await engineAdmin.call([['x:Account/set', { create: { u: {
     '@type': 'User', name: local, domainId: domainRec.id, description: [first, last].filter(Boolean).join(' '),
     roles: { '@type': 'User' }, permissions: { '@type': 'Inherit' }, encryptionAtRest: { '@type': 'Disabled' },
@@ -372,7 +376,7 @@ async function handle(req, res, url, { readJson, sendJson, sendBodyError, isCros
   const route = req.method + ' ' + url.pathname;
   try {
     if (route === 'GET /signup-api/config') {
-      return sendJson(res, 200, { enabled: enabled(), domain: DOMAIN, minPassword: 12, terms: TERMS_VERSION });
+      return sendJson(res, 200, { enabled: enabled(), domain: DOMAIN, minPassword: 12, terms: TERMS_VERSION, ownDomains: process.env.OWN_DOMAINS_ENABLED === 'true' });
     }
     if (!enabled()) return sendJson(res, 403, { error: 'Sign-up is not open yet.' });
     if (route === 'GET /signup-api/challenge') {

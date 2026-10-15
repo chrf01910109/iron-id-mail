@@ -2,7 +2,7 @@
 // the webmail); everything goes through /admin-api, which checks the role and scope.
 // Untrusted text is only inserted with textContent (h()).
 
-import { t, tn, tx, locale } from '../i18n.js'; // first: translates the page before anything else runs
+import { t, tn, tx, locale, lang } from '../i18n.js'; // first: translates the page before anything else runs
 import { h, $, $$, toast, dialog, openMenu, formatSize, initials, icon } from '../util.js';
 
 /* ——— API ——— */
@@ -29,6 +29,7 @@ const NAV_ICONS = {
   teams: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   audit: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
   usage: '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+  payments: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
   plans: '<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'
 };
@@ -37,6 +38,11 @@ const navIcon = name => h('span', { class: 'ic', style: { display: 'inline-flex'
 
 const fmtDate = iso => iso ? new Date(iso).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 const fmtDateTime = iso => iso ? new Date(iso).toLocaleString(locale, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+const fmtCents = (cents, cur = 'EUR') => {
+  if (cents == null) return '—';
+  try { return new Intl.NumberFormat(locale, { style: 'currency', currency: cur || 'EUR' }).format(cents / 100); }
+  catch (e) { return fmtMoney(cents / 100, cur); }
+};
 const fmtMoney = (n, cur) => n == null ? '—' : new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(n) + ' ' + (cur || '');
 const badge = (text, kind = '') => h('span', { class: 'badge ' + kind }, text);
 const btn = (label, onClick, cls = '') => h('button', { type: 'button', class: 'btn ' + cls, on: { click: onClick } }, label);
@@ -155,6 +161,7 @@ const NAV = [
   { id: 'teams', label: t('Teams') },
   { id: 'audit', label: t('Activity log') },
   { id: 'usage', label: t('Usage & billing') },
+  { id: 'payments', label: t('Payments') },
   { id: 'plans', label: t('Plans'), platform: true },
   { id: 'settings', label: t('Platform settings'), platform: true }
 ];
@@ -209,7 +216,10 @@ const ACTION_LABELS = {
   'customer.deleted': t('Customer deleted'), 'admin.added': t('Admin added'), 'admin.removed': t('Admin removed'), 'plan.created': t('Plan created'), 'plan.updated': t('Plan changed'),
   'plan.deleted': t('Plan deleted'), 'retention.updated': t('Retention changed'), 'account.password_changed': t('Password changed'), 'account.two_step_on': t('Two-step turned on'),
   'account.two_step_off': t('Two-step turned off'), 'account.signed_out_others': t('Signed out other browsers'), 'account.app_password_created': t('App password created'),
-  'account.app_password_revoked': t('App password removed'), 'engine_api_key.provisioned': t('Engine access set up')
+  'account.app_password_revoked': t('App password removed'), 'engine_api_key.provisioned': t('Engine access set up'),
+  'billing.paid': t('Payment received'), 'billing.retried': t('Delivery retried'), 'billing.settings': t('Prices or invoice details changed'),
+  'address.added': t('Address added'), 'address.removed': t('Address removed'), 'migration.started': t('Copy of old mailbox started'),
+  'migration.done': t('Copy of old mailbox finished'), 'domain.expired': t('Domain expired')
 };
 const actionLabel = a => ACTION_LABELS[a] || a;
 
@@ -295,17 +305,22 @@ pages.customers = async () => {
       return items;
     };
     const u = c.usage;
+    const b = c.billing || {};
+    const paidExtra = [b.refundedCents ? t('{amount} refunded', { amount: fmtCents(b.refundedCents) }) : '', b.pendingCents ? t('{amount} waiting', { amount: fmtCents(b.pendingCents) }) : ''].filter(Boolean).join(' · ');
+    const paid = h('a', { class: 'paid-link', href: '#/payments/' + encodeURIComponent('customer=' + c.id), title: t('See this client’s payments') },
+      h('div', {}, fmtCents(b.paidCents || 0)), paidExtra ? h('div', { class: 'secondary' }, paidExtra) : null);
     return h('tr', {},
-      h('td', {}, h('div', { class: 'primary' }, c.name, ' ', c.internal ? badge('IRON ID', 'info') : null, c.status === 'suspended' ? badge(t('Suspended'), 'bad') : null),
-        h('div', { class: 'secondary' }, c.contactEmail || '')),
+      h('td', {}, h('div', { class: 'primary' }, c.name, ' ', c.internal ? badge('IRON ID', 'info') : null, c.kind === 'personal' ? badge(t('Personal'), '') : null, c.status === 'suspended' ? badge(t('Suspended'), 'bad') : null),
+        h('div', { class: 'secondary' }, (c.kind === 'personal' ? c.ownerEmail : c.contactEmail) || c.contactEmail || '')),
       h('td', { class: 'hide-sm' }, u.plan ? u.plan.name : h('span', { class: 'muted' }, t('No plan'))),
       h('td', { class: 'num' }, String(u.domains)), h('td', { class: 'num' }, String(u.mailboxes) + (u.plan && u.plan.maxMailboxes ? ' / ' + u.plan.maxMailboxes : '')),
       h('td', { class: 'hide-sm' }, meter(u.usedBytes, u.allocatedBytes)),
+      h('td', { class: 'num' }, paid),
       h('td', { class: 'hide-sm' }, adminChips.childNodes.length ? adminChips : h('span', { class: 'muted small' }, t('No admins'))),
       h('td', { class: 'actions' }, moreButton(actions)));
   });
   return [head(me.role === 'platform' ? t('Customers') : t('Your organisation'), null, newBtn),
-    table([t('Customer'), { label: t('Plan'), attrs: { class: 'hide-sm' } }, { label: t('Domains'), attrs: { style: 'text-align:right' } }, { label: t('Mailboxes'), attrs: { style: 'text-align:right' } }, { label: t('Storage'), attrs: { class: 'hide-sm' } }, { label: t('Admins'), attrs: { class: 'hide-sm' } }, ''], rows, t('No customers yet.'))];
+    table([t('Customer'), { label: t('Plan'), attrs: { class: 'hide-sm' } }, { label: t('Domains'), attrs: { style: 'text-align:right' } }, { label: t('Mailboxes'), attrs: { style: 'text-align:right' } }, { label: t('Storage'), attrs: { class: 'hide-sm' } }, { label: t('Paid'), attrs: { style: 'text-align:right' } }, { label: t('Admins'), attrs: { class: 'hide-sm' } }, ''], rows, t('No customers yet.'))];
 };
 
 /* Domains */
@@ -563,8 +578,112 @@ pages.usage = async () => {
     h('td', { class: 'num hide-sm' }, String(u.teams)),
     h('td', {}, meter(u.usedBytes, u.allocatedBytes)),
     h('td', { class: 'num' }, u.internal ? h('span', { class: 'muted' }, t('Not billed')) : u.monthlyEstimate == null ? h('span', { class: 'muted' }, t('No price set')) : fmtMoney(u.monthlyEstimate, u.plan.currency))));
-  return [head(t('Usage & billing'), t('Estimated monthly amount = mailboxes × the plan’s price per mailbox. Teams are included. Payments are not collected here yet.')),
+  return [head(t('Usage & billing'), t('Estimated monthly amount = mailboxes × the plan’s price per mailbox. Teams are included. Card payments for domains are on the Payments page.')),
     table([t('Customer'), { label: t('Mailboxes'), attrs: { style: 'text-align:right' } }, { label: t('Teams'), attrs: { class: 'hide-sm', style: 'text-align:right' } }, t('Storage'), { label: t('Per month'), attrs: { style: 'text-align:right' } }], rows, t('No customers yet.'))];
+};
+
+/* Payments */
+const ORDER_KIND = { domain_connect: t('Domain set-up'), domain_register: t('Domain purchase'), domain_renew: t('Domain renewal') };
+const ORDER_STATUS = {
+  pending: [t('Waiting for payment'), ''], paid: [t('Paid'), 'info'], fulfilled: [t('Done'), 'ok'],
+  failed: [t('Delivery failed'), 'bad'], cancelled: [t('Cancelled'), ''], refunded: [t('Refunded'), 'warn']
+};
+const PROVIDERS = { 'stripe-live': t('Stripe live'), 'stripe-test': t('Stripe test'), fake: t('Test payments (fake)'), off: t('Not set up') };
+const paymentsArg = (customer, status) => new URLSearchParams(Object.entries({ customer, status }).filter(([, v]) => v)).toString();
+const invoiceUrl = id => '/admin-api/invoice?id=' + encodeURIComponent(id) + (lang === 'en' ? '&lang=en' : '');
+
+pages.payments = async arg => {
+  const params = new URLSearchParams(arg || '');
+  const customer = /^[0-9a-f-]{36}$/i.test(params.get('customer') || '') ? params.get('customer') : '';
+  const status = ORDER_STATUS[params.get('status')] ? params.get('status') : '';
+  const base = 'billing' + (customer ? '?customer=' + encodeURIComponent(customer) : '');
+  const [all, filtered] = await Promise.all([api(base), status ? api(base + (customer ? '&' : '?') + 'status=' + status) : null]);
+  const staff = me.role === 'platform';
+  const orders = (filtered || all).orders;
+
+  // Stats: this month (paid orders), orders to fix, and for staff the registrar and payment provider.
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const m = all.months.find(x => x.month === thisMonth) || { ttc: 0, ht: 0, vat: 0, n: 0 };
+  const failed = all.orders.filter(o => o.status === 'failed').length;
+  const stat = (n, l, extra = {}) => h(extra.href ? 'a' : 'div', { class: 'stat', href: extra.href, style: extra.href ? { textDecoration: 'none', color: 'inherit' } : null },
+    h('div', { class: 'n' + (extra.small ? ' small' : ''), style: extra.danger ? { color: 'var(--color-danger)' } : null }, n), h('div', { class: 'l' }, l, extra.badge ? [' ', extra.badge] : null), extra.more || null);
+  const stats = [
+    stat(fmtCents(m.ttc), t('This month, incl. VAT')),
+    stat(fmtCents(m.ht), t('This month, excl. VAT')),
+    stat(fmtCents(m.vat), t('This month, VAT')),
+    stat(String(failed), t('Orders to fix'), { href: '#/payments/' + encodeURIComponent(paymentsArg(customer, 'failed')), danger: failed > 0 })
+  ];
+  if (staff) {
+    let regN, regL = t('Registrar balance'), regMore = null;
+    if (all.registrar === 'off' || !all.registrar) { regN = '—'; regL = t('Registrar not set up'); }
+    else if (all.registrarError || !all.registrarBalance) {
+      regN = '—';
+      regMore = h('div', { class: 'l', style: { color: 'var(--color-danger)' } }, all.registrarError === 'The registrar could not be reached.' ? t('The registrar could not be reached.') : (all.registrarError || t('Unknown')));
+    } else {
+      const rb = all.registrarBalance;
+      let v;
+      try { v = new Intl.NumberFormat(locale, { style: 'currency', currency: rb.currency || 'USD' }).format(rb.balance); } catch (e) { v = fmtMoney(rb.balance, rb.currency); }
+      regN = v;
+      if (rb.holdBalance) regMore = h('div', { class: 'l' }, t('{amount} on hold', { amount: fmtMoney(rb.holdBalance, rb.currency) }));
+    }
+    stats.push(stat(regN, regL, { more: regMore }));
+    const live = all.provider === 'stripe-live';
+    stats.push(stat(PROVIDERS[all.provider] || all.provider, t('Card payments'), { small: true, badge: live ? badge(t('Real payments'), 'ok') : badge(all.provider === 'off' ? t('Cannot take payments') : t('Test only'), 'warn') }));
+  }
+
+  // Filters
+  const statusSel = h('select', { class: 'fl-input', 'aria-label': t('Status') }, h('option', { value: '' }, t('All statuses')),
+    ...Object.entries(ORDER_STATUS).map(([k, [label]]) => h('option', { value: k, selected: k === status }, label)));
+  statusSel.addEventListener('change', () => go('payments', paymentsArg(customer, statusSel.value)));
+  let customerName = '';
+  if (customer) {
+    const o = all.orders.find(x => x.customerId === customer);
+    if (o) customerName = o.customer || '';
+    else { const c = await api('customers').catch(() => ({ customers: [] })); const x = c.customers.find(y => y.id === customer); customerName = x ? x.name : ''; }
+  }
+  const chip = customer ? h('span', { class: 'chip' }, t('Client: {name}', { name: customerName || t('Unknown') }),
+    h('button', { type: 'button', title: t('Show every client'), 'aria-label': t('Show every client'), on: { click: () => go('payments', paymentsArg('', status)) } }, '×')) : null;
+
+  // Orders
+  const rows = orders.map(o => {
+    const [label, kind] = ORDER_STATUS[o.status] || [o.status, ''];
+    const retry = staff && o.status === 'failed' ? btn(t('Try again'), async e => {
+      const b = e.currentTarget; b.disabled = true;
+      const r = await run(() => api('billing/retry', { id: o.id }));
+      b.disabled = false;
+      if (!r) return;
+      if (r.status === 'failed') toast(t('Delivery failed again: {error}', { error: r.error || '' }), false);
+      else toast(t('Delivered'));
+      refresh();
+    }, 'small') : null;
+    const inv = o.invoiceNumber ? h('a', { href: invoiceUrl(o.id), target: '_blank', rel: 'noopener', class: 'inv-link mono', title: t('Open the invoice') }, o.invoiceNumber) : h('span', { class: 'muted' }, '—');
+    return h('tr', {},
+      h('td', { class: 'secondary nowrap' }, fmtDateTime(o.paidAt || o.createdAt)),
+      staff ? h('td', {}, h('div', { class: 'primary' }, h('a', { href: '#/payments/' + encodeURIComponent(paymentsArg(o.customerId, status)), class: 'plain-link', title: t('Only this client') }, o.customer || t('Unknown')),
+        o.customerKind === 'personal' ? [' ', badge(t('Personal'), '')] : null), o.email ? h('div', { class: 'secondary' }, o.email) : null) : null,
+      h('td', { class: 'order-what' }, h('div', { class: 'primary' }, o.domain), h('div', { class: 'secondary' }, ORDER_KIND[o.kind] || o.kind)),
+      h('td', { class: 'num' }, fmtCents(o.amountCents, o.currency), h('div', { class: 'secondary' }, t('excl. VAT {amount}', { amount: fmtCents(o.amountHtCents, o.currency) }))),
+      h('td', {}, badge(label, kind), o.status === 'failed' && o.error ? h('div', { class: 'secondary order-error' }, o.error) : null),
+      h('td', { class: 'hide-sm' }, inv),
+      h('td', { class: 'actions' }, retry));
+  });
+  const heads = [t('Date'), staff ? t('Client') : null, t('What'), { label: t('Amount incl. VAT'), attrs: { style: 'text-align:right' } }, t('Status'), { label: t('Invoice'), attrs: { class: 'hide-sm' } }, ''].filter(x => x !== null);
+
+  // By month
+  const monthName = ym => { const [y, mo] = ym.split('-').map(Number); const s = new Date(y, mo - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); };
+  const monthRows = all.months.map(x => h('tr', {},
+    h('td', {}, monthName(x.month)), h('td', { class: 'num' }, String(x.n)),
+    h('td', { class: 'num' }, fmtCents(x.ht)), h('td', { class: 'num' }, fmtCents(x.vat)), h('td', { class: 'num' }, h('b', {}, fmtCents(x.ttc)))));
+
+  return [head(t('Payments'), staff ? t('Card payments for domains: every order, what was paid and the invoices.') : t('What your organisation paid for domains, with the invoices.')),
+    h('div', { class: 'stats' }, ...stats),
+    h('div', { class: 'card' }, h('h2', {}, t('By month')),
+      h('p', { class: 'help' }, t('Paid orders, by the month they were paid.')),
+      table([t('Month'), { label: t('Orders'), attrs: { style: 'text-align:right' } }, { label: t('Excl. VAT'), attrs: { style: 'text-align:right' } }, { label: t('VAT'), attrs: { style: 'text-align:right' } }, { label: t('Incl. VAT'), attrs: { style: 'text-align:right' } }], monthRows, t('No payments yet.'))),
+    h('h2', { class: 'section-title' }, t('Orders')),
+    h('div', { class: 'toolbar' }, statusSel, chip),
+    table(heads, rows, customer || status ? t('No order matches.') : t('No orders yet.'))];
 };
 
 /* Plans (platform) */
@@ -595,7 +714,7 @@ pages.plans = async () => {
 
 /* Platform settings */
 pages.settings = async () => {
-  const [ret, { admins }] = await Promise.all([api('retention').catch(e => ({ error: e.message })), api('admins')]);
+  const [ret, { admins }, bs] = await Promise.all([api('retention').catch(e => ({ error: e.message })), api('admins'), api('billing/settings').catch(e => ({ error: e.message }))]);
   const days = h('input', { class: 'fl-input', type: 'number', min: 1, max: 3650, value: ret.trashDays ?? '', style: { width: '120px' }, 'aria-label': t('Days') });
   const retention = h('div', { class: 'card' }, h('h2', {}, t('Trash and Junk')),
     h('p', { class: 'help' }, t('Messages in Trash and Junk are deleted for good after this many days, for every mailbox.')),
@@ -612,8 +731,71 @@ pages.settings = async () => {
       if (!(await dialog({ title: t('Remove platform admin'), text: t('Remove {email}?', { email: a.email }), okLabel: t('Remove'), danger: true }))) return;
       if (await run(() => api('admins/remove', { email: a.email, role: 'platform' }), t('Removed'))) refresh();
     } } }, '×') : null))));
-  return [head(t('Platform settings')), retention, staff];
+  return [head(t('Platform settings')), pricesCard(bs), retention, staff];
 };
+
+/** Prices, VAT and the seller details printed on invoices (POST /admin-api/billing/settings). */
+function pricesCard(bs) {
+  const card = h('div', { class: 'card' }, h('h2', {}, t('Prices and invoices')));
+  if (bs.error) { card.append(h('div', { class: 'alert warn' }, bs.error)); return card; }
+  const unset = v => (!v || /^\[.*\]$/.test(v) ? '' : v); // "[SIRET]" etc. = not filled in yet
+  const euros = c => (c == null ? '' : (Math.round(c) / 100).toFixed(2));
+  const fields = [];
+  const field = (label, input, help, wide) => {
+    const id = 'bs_' + fields.length;
+    input.id = id;
+    fields.push(h('div', { class: 'field' + (wide ? ' wide' : '') }, h('label', { class: 'fl-label', for: id }, label), input, help ? h('div', { class: 'help' }, help) : null));
+    return input;
+  };
+  const num = (value, attrs = {}) => h('input', { class: 'fl-input', type: 'number', min: 0, step: '0.01', value, ...attrs });
+  const txt = (value, attrs = {}) => h('input', { class: 'fl-input', type: 'text', value, autocomplete: 'off', ...attrs });
+  const connect = field(t('Price to connect a domain (€)'), num(euros(bs.prices.domain_connect)), t('Paid once: DNS set-up and copy of the old mailbox.'));
+  const register = field(t('Price of a domain per year (€)'), num(euros(bs.prices.domain_register)), t('For a domain bought through IRON ID, and for each renewal.'));
+  const vat = field(t('VAT rate (%)'), num(String(bs.vatRate), { max: 50, step: '0.1' }), t('0 = “TVA non applicable, art. 293 B du CGI” is printed on invoices.'));
+  const quota = field(t('Free mailbox storage (GB)'), num(bs.quotaMb ? String(Math.round(bs.quotaMb / 1024 * 100) / 100) : '', { min: 0.05, step: '0.5' }), t('For new personal mailboxes created by sign-up.'));
+  const incl = h('input', { type: 'checkbox', checked: bs.pricesIncludeVat });
+  fields.push(h('div', { class: 'field wide' }, h('label', { class: 'check-row' }, incl, t('Prices include VAT')),
+    h('div', { class: 'help' }, t('Ticked: the prices above are what people pay (incl. VAT). Not ticked: VAT is added on top.'))));
+  const tlds = field(t('Domain endings sold'), txt(bs.tlds.join(', '), { class: 'fl-input mono', placeholder: 'fr, com, net, org, eu' }), t('Separated by commas, without the dot.'), true);
+  fields.push(h('h3', { class: 'field-group wide' }, t('Seller details printed on invoices')));
+  const sName = field(t('Company name'), txt(unset(bs.seller.name)));
+  const sEmail = field(t('Contact email'), txt(unset(bs.seller.email), { type: 'email' }));
+  const sAddr = field(t('Address'), txt(unset(bs.seller.address), { placeholder: t('Street, postcode, town') }), null, true);
+  const sSiret = field(t('SIRET'), txt(unset(bs.seller.siret), { class: 'fl-input mono' }));
+  const sVat = field(t('VAT number'), txt(unset(bs.seller.vatNumber), { class: 'fl-input mono', placeholder: 'FR…' }), t('Leave empty if you have none.'));
+  const cents = (input, label) => {
+    const n = Number(String(input.value).replace(',', '.'));
+    if (input.value === '' || !Number.isFinite(n) || n < 0) throw new ApiError(t('Enter a price for “{field}”, for example 14 or 14.50.', { field: label }), 400);
+    return Math.round(n * 100);
+  };
+  const gbToMb = v => {
+    const n = Number(String(v).replace(',', '.'));
+    if (!Number.isFinite(n) || n <= 0) throw new ApiError(t('Enter the storage in GB, for example 5.'), 400);
+    return Math.round(n * 1024);
+  };
+  const save = btn(t('Save'), async () => {
+    let body;
+    try {
+      body = {
+        'price.domain_connect_cents': cents(connect, t('Price to connect a domain (€)')),
+        'price.domain_register_cents': cents(register, t('Price of a domain per year (€)')),
+        'billing.vat_rate': vat.value === '' ? 'x' : String(vat.value).replace(',', '.'),
+        'billing.prices_include_vat': incl.checked,
+        'billing.tlds': tlds.value,
+        'signup.quota_mb': quota.value === '' ? '' : gbToMb(quota.value),
+        'seller.name': sName.value.trim(), 'seller.address': sAddr.value.trim(), 'seller.siret': sSiret.value.trim(),
+        'seller.vat_number': sVat.value.trim(), 'seller.email': sEmail.value.trim()
+      };
+    } catch (e) { toast(e.message, false); return; }
+    save.disabled = true;
+    const r = await run(() => api('billing/settings', body), t('Prices and invoice details saved'));
+    save.disabled = false;
+    if (r) refresh();
+  }, 'primary');
+  card.append(h('p', { class: 'help' }, t('What people pay for their own domain, and what is printed on their invoices. Changes apply to new orders only.')),
+    h('div', { class: 'billing-form' }, ...fields), h('div', { class: 'toolbar', style: { marginTop: '14px', marginBottom: '0' } }, save));
+  return card;
+}
 
 /* ——— Start ——— */
 function signedOut(message) {

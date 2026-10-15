@@ -96,6 +96,10 @@ async function get(path, opts = {}) {
   let health = {}; try { health = JSON.parse(hz.text); } catch (e) { /* not JSON */ }
   if (health.recoveryAdminSet !== undefined) check('recovery admin login is not left set', health.recoveryAdminSet === false, 'recoveryAdminSet=' + health.recoveryAdminSet);
   if (health.adminAccess !== undefined) check('gateway engine access is ok', health.adminAccess === 'ok', 'adminAccess=' + health.adminAccess);
+  check('no test-only switches (fake DNS, fake payments, fake registrar, migration test mode)', !health.testFeatures, 'testFeatures=' + JSON.stringify(health.testFeatures || []));
+  if (health.payments !== undefined) check('card payments are live or switched off (not test keys)', ['stripe-live', 'off'].includes(health.payments), 'payments=' + health.payments);
+  check('the Stripe notification address refuses unsigned calls', (await fetch(base + '/billing/stripe/webhook', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status === 400);
+  check('the test payment page does not exist', (await get('/billing/fake-checkout?order=1&sig=x')).status === 404);
 
   // Report
   let failed = 0;
