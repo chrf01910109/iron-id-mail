@@ -306,7 +306,9 @@ function ordersCard() {
       h('td', {}, badge(label, kind)),
       h('td', { class: 'actions' }, o.invoiceNumber
         ? h('a', { class: 'lh-link', href: '/account/invoice?id=' + encodeURIComponent(o.id), target: '_blank', rel: 'noopener', 'aria-label': t('Invoice {number}', { number: o.invoiceNumber }) }, t('Invoice'))
-        : null));
+        : null,
+      ...(o.creditNotes || []).map(c => h('a', { class: 'lh-link', style: 'margin-left:8px', href: '/account/credit-note?id=' + encodeURIComponent(c.id), target: '_blank', rel: 'noopener',
+        'aria-label': t('Credit note {number}', { number: c.number }) }, t('Credit note')))));
   });
   return card(t('Orders and invoices'),
     help(t('Amounts include VAT. Invoices open in a new tab, ready to print or save as PDF.')),

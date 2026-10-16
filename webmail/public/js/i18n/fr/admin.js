@@ -419,5 +419,10 @@ export default {
   'Leave empty if you have none.': 'Laissez vide si vous n’en avez pas.',
   'Enter a price for “{field}”, for example 14 or 14.50.': 'Indiquez un prix pour « {field} », par exemple 14 ou 14,50.',
   'Enter the storage in GB, for example 5.': 'Indiquez le stockage en Go, par exemple 5.',
-  'Prices and invoice details saved': 'Prix et informations de facturation enregistrés'
+  'Prices and invoice details saved': 'Prix et informations de facturation enregistrés',
+  // Credit notes
+  'Open the credit note (refund of {amount})': 'Ouvrir l’avoir (remboursement de {amount})',
+  'Paid orders, by the month they were paid. Refunds (credit notes) count in the month they were made.': 'Commandes payées, selon le mois du paiement. Les remboursements (avoirs) comptent dans le mois où ils ont été faits.',
+  'Refunds': 'Remboursements',
+  'Net incl. VAT': 'Net TTC'
 };

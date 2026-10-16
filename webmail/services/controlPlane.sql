@@ -244,6 +244,21 @@ CREATE TABLE IF NOT EXISTS cp.migrations (
 );
 CREATE INDEX IF NOT EXISTS migrations_email ON cp.migrations (email, created_at DESC);
 
+-- Credit notes (avoirs) for refunds: numbered AV<year>-NNNNNN, gap-free, one per refund received from Stripe.
+CREATE TABLE IF NOT EXISTS cp.credit_seq (year INTEGER PRIMARY KEY, last INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS cp.credit_notes (
+  id              BIGSERIAL PRIMARY KEY,
+  number          TEXT NOT NULL UNIQUE,
+  order_id        BIGINT NOT NULL REFERENCES cp.orders(id),
+  amount_cents    INTEGER NOT NULL CHECK (amount_cents > 0),
+  amount_ht_cents INTEGER NOT NULL,
+  vat_cents       INTEGER NOT NULL,
+  vat_rate        NUMERIC(5,2) NOT NULL,
+  provider_ref    TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS credit_notes_order ON cp.credit_notes (order_id);
+
 -- Closing an account (people who signed up themselves): deleted after delete_after unless cancelled.
 CREATE TABLE IF NOT EXISTS cp.account_closures (
   email         TEXT PRIMARY KEY,

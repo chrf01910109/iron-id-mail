@@ -149,12 +149,65 @@ async function createOrder({ customerId, email, kind, domain, details = {}, lang
   return { order: orderView(order), checkoutUrl };
 }
 
-function orderView(o) {
+function orderView(o, credits = null) {
   return {
     id: Number(o.id), kind: o.kind, domain: o.domain, status: o.status, amountCents: o.amount_cents, amountHtCents: o.amount_ht_cents,
     vatCents: o.vat_cents, vatRate: Number(o.vat_rate), currency: o.currency, createdAt: o.created_at, paidAt: o.paid_at,
-    fulfilledAt: o.fulfilled_at, invoiceNumber: o.invoice_number, error: o.status === 'failed' ? o.error : undefined
+    fulfilledAt: o.fulfilled_at, invoiceNumber: o.invoice_number, error: o.status === 'failed' ? o.error : undefined,
+    creditNotes: credits ? (credits.get(Number(o.id)) || []).map(creditView) : undefined
   };
+}
+const creditView = c => ({ id: Number(c.id), number: c.number, amountCents: c.amount_cents, createdAt: c.created_at });
+
+/** Credit notes of these orders: Map(orderId -> [rows]). */
+async function creditsFor(orderIds) {
+  const ids = [...new Set(orderIds.map(Number))].filter(Boolean);
+  if (!ids.length) return new Map();
+  const r = await db.query('SELECT * FROM cp.credit_notes WHERE order_id = ANY($1::bigint[]) ORDER BY id', [ids]);
+  const m = new Map();
+  for (const c of r.rows) { const k = Number(c.order_id); if (!m.has(k)) m.set(k, []); m.get(k).push(c); }
+  return m;
+}
+
+/**
+ * A refund was made in Stripe (charge.refunded carries the TOTAL refunded so far): the part not yet
+ * covered by a credit note gets one, numbered AV<year>-NNNNNN with the order's VAT share. Repeated or
+ * late notifications never create a second one for the same money. A full refund closes the order.
+ */
+async function recordRefund({ paymentRef, refundedTotalCents, providerRef = null }) {
+  const total = Math.floor(Number(refundedTotalCents) || 0);
+  if (!paymentRef || total <= 0) return null;
+  const client = await db.getPool().connect();
+  let note = null, order = null;
+  try {
+    await client.query('BEGIN');
+    order = (await client.query('SELECT * FROM cp.orders WHERE payment_ref = $1 FOR UPDATE', [paymentRef])).rows[0];
+    if (!order || !order.invoice_number) { await client.query('ROLLBACK'); return null; }
+    const done = Number((await client.query('SELECT COALESCE(SUM(amount_cents), 0) AS s FROM cp.credit_notes WHERE order_id = $1', [order.id])).rows[0].s);
+    const delta = Math.min(total, order.amount_cents) - done;
+    if (delta > 0) {
+      const vat = order.amount_cents ? Math.round(order.vat_cents * delta / order.amount_cents) : 0;
+      const year = Number((await client.query(`SELECT EXTRACT(YEAR FROM NOW() AT TIME ZONE 'Europe/Paris')::int AS y`)).rows[0].y);
+      const seq = await client.query(`INSERT INTO cp.credit_seq (year, last) VALUES ($1, 1)
+                                      ON CONFLICT (year) DO UPDATE SET last = cp.credit_seq.last + 1 RETURNING last`, [year]);
+      const number = `AV${year}-${String(seq.rows[0].last).padStart(6, '0')}`;
+      note = (await client.query(`INSERT INTO cp.credit_notes (number, order_id, amount_cents, amount_ht_cents, vat_cents, vat_rate, provider_ref)
+                                  VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`, [number, order.id, delta, delta - vat, vat, order.vat_rate, providerRef])).rows[0];
+    }
+    const refunded = done + Math.max(delta, 0);
+    if (refunded >= order.amount_cents) await client.query(`UPDATE cp.orders SET status = 'refunded' WHERE id = $1`, [order.id]);
+    else await client.query('UPDATE cp.orders SET error = $2 WHERE id = $1', [order.id, `Partly refunded: ${(refunded / 100).toFixed(2)} €`]);
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally { client.release(); }
+  if (note) db.audit({ actor: 'stripe', customerId: order.customer_id, action: 'billing.refunded', target: order.domain, details: { order: Number(order.id), creditNote: note.number, amountCents: note.amount_cents } }).catch(() => {});
+  return note;
+}
+async function creditNote(id) {
+  const r = await db.query('SELECT * FROM cp.credit_notes WHERE id = $1', [id]);
+  return r.rows[0] || null;
 }
 
 /* What to do when an order is paid, registered by the features that sell something. */
@@ -260,10 +313,8 @@ async function stripeWebhook(raw, signature) {
   } else if (ev.type === 'checkout.session.expired' && orderId) {
     await db.query(`UPDATE cp.orders SET status = 'cancelled' WHERE id = $1 AND status = 'pending' AND provider_ref = $2`, [orderId, obj.id]);
   } else if (ev.type === 'charge.refunded') {
-    // Only a full refund closes the order; a partial one is noted for staff (credit notes are issued by hand).
-    const pi = obj.payment_intent;
-    if (pi && obj.refunded === true) await db.query(`UPDATE cp.orders SET status = 'refunded' WHERE payment_ref = $1`, [pi]);
-    else if (pi) await db.query(`UPDATE cp.orders SET error = $2 WHERE payment_ref = $1`, [pi, `Partly refunded: ${(Number(obj.amount_refunded) / 100).toFixed(2)} €`]);
+    // Each refund gets its credit note (avoir); a full refund closes the order.
+    await recordRefund({ paymentRef: obj.payment_intent, refundedTotalCents: obj.amount_refunded, providerRef: obj.id });
   }
   return { status: 200, body: { received: true } };
 }
@@ -278,7 +329,8 @@ function fakeCheckoutValid(orderId, sig) {
 /* ——— Reading ——— */
 async function ordersFor(customerId) {
   const r = await db.query('SELECT * FROM cp.orders WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 200', [customerId]);
-  return r.rows.map(orderView);
+  const credits = await creditsFor(r.rows.map(o => o.id));
+  return r.rows.map(o => orderView(o, credits));
 }
 async function order(id) {
   const r = await db.query('SELECT * FROM cp.orders WHERE id = $1', [id]);
@@ -289,10 +341,10 @@ async function order(id) {
 async function totalsByCustomer() {
   const r = await db.query(`
     SELECT customer_id,
-           COALESCE(SUM(amount_cents) FILTER (WHERE status IN ('paid','fulfilled','failed')), 0)::int AS paid_cents,
-           COALESCE(SUM(amount_ht_cents) FILTER (WHERE status IN ('paid','fulfilled','failed')), 0)::int AS paid_ht_cents,
-           COALESCE(SUM(vat_cents) FILTER (WHERE status IN ('paid','fulfilled','failed')), 0)::int AS vat_cents,
-           COALESCE(SUM(amount_cents) FILTER (WHERE status = 'refunded'), 0)::int AS refunded_cents,
+           COALESCE(SUM(amount_cents) FILTER (WHERE status IN ('paid','fulfilled','failed','refunded')), 0)::int AS paid_cents,
+           COALESCE(SUM(amount_ht_cents) FILTER (WHERE status IN ('paid','fulfilled','failed','refunded')), 0)::int AS paid_ht_cents,
+           COALESCE(SUM(vat_cents) FILTER (WHERE status IN ('paid','fulfilled','failed','refunded')), 0)::int AS vat_cents,
+           COALESCE((SELECT SUM(c.amount_cents) FROM cp.credit_notes c JOIN cp.orders o2 ON o2.id = c.order_id WHERE o2.customer_id = cp.orders.customer_id), 0)::int AS refunded_cents,
            COALESCE(SUM(amount_cents) FILTER (WHERE status = 'pending'), 0)::int AS pending_cents,
            COUNT(*) FILTER (WHERE status = 'failed')::int AS failed,
            MAX(paid_at) AS last_paid_at
@@ -324,7 +376,33 @@ ${vatLine}<p class="muted">${fr ? 'Payée par carte le' : 'Paid by card on'} ${e
 </body></html>`;
 }
 
+/** Credit note (avoir) as a printable HTML page, with the invoice it corrects. Text is escaped. */
+async function creditNoteHtml(c, o, lang = 'fr') {
+  const s = await settings();
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const eur = cents => (-cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+  const d = o.details || {};
+  const buyer = [d.name || o.email, d.address, [d.postalCode, d.city].filter(Boolean).join(' '), d.country].filter(Boolean);
+  const fr = lang === 'fr';
+  const day = v => esc(new Date(v).toLocaleDateString(fr ? 'fr-FR' : 'en-GB'));
+  const vatLine = Number(c.vat_rate) === 0
+    ? `<p>${fr ? 'TVA non applicable, art. 293 B du CGI.' : 'VAT not applicable, art. 293 B of the French tax code (CGI).'}</p>` : '';
+  return `<!DOCTYPE html><html lang="${fr ? 'fr' : 'en'}"><head><meta charset="utf-8"><title>${fr ? 'Avoir' : 'Credit note'} ${esc(c.number)}</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;color:#111827;max-width:760px;margin:32px auto;padding:0 20px}h1{font-size:22px}table{width:100%;border-collapse:collapse;margin:18px 0}td,th{border-bottom:1px solid #E5E7EB;padding:8px;text-align:left}th:last-child,td:last-child{text-align:right}.muted{color:#667085}.cols{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}</style></head><body>
+<h1>${fr ? 'Avoir' : 'Credit note'} ${esc(c.number)}</h1>
+<p class="muted">${fr ? 'Date :' : 'Date:'} ${day(c.created_at)} — ${fr ? 'se rapporte à la facture' : 'relates to invoice'} <b>${esc(o.invoice_number)}</b> ${fr ? 'du' : 'of'} ${day(o.paid_at)}</p>
+<div class="cols"><div><b>${esc(s.seller.name)}</b><br>${esc(s.seller.address)}<br>SIRET ${esc(s.seller.siret)}${s.seller.vatNumber ? '<br>' + (fr ? 'N° TVA ' : 'VAT no. ') + esc(s.seller.vatNumber) : ''}<br>${esc(s.seller.email)}</div>
+<div><b>${fr ? 'Client' : 'Customer'}</b><br>${buyer.map(esc).join('<br>')}<br>${esc(o.email)}</div></div>
+<table><tr><th>${fr ? 'Désignation' : 'Description'}</th><th>${fr ? 'Montant HT' : 'Amount excl. VAT'}</th></tr>
+<tr><td>${fr ? 'Remboursement' : 'Refund'} — ${esc(labelFor(o.kind, o.domain, fr ? 'fr' : 'en'))}</td><td>${eur(c.amount_ht_cents)}</td></tr>
+<tr><td>${fr ? 'TVA' : 'VAT'} ${esc(Number(c.vat_rate))} %</td><td>${eur(c.vat_cents)}</td></tr>
+<tr><td><b>${fr ? 'Total TTC' : 'Total incl. VAT'}</b></td><td><b>${eur(c.amount_cents)}</b></td></tr></table>
+${vatLine}<p class="muted">${fr ? 'Remboursé sur la carte utilisée pour le paiement.' : 'Refunded to the card used for the payment.'}</p>
+</body></html>`;
+}
+
 module.exports = {
   settings, amounts, priceList, provider, createOrder, markPaid, retry, onPaid, orderView, ordersFor, order, totalsByCustomer,
-  stripeWebhook, verifyStripeSignature, sweepStuck, cancelOpen, fakeCheckoutValid, invoiceHtml, labelFor, KINDS, BillingError
+  stripeWebhook, verifyStripeSignature, sweepStuck, cancelOpen, fakeCheckoutValid, invoiceHtml, labelFor, KINDS, BillingError,
+  recordRefund, creditsFor, creditNote, creditNoteHtml
 };

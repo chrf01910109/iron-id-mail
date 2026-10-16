@@ -203,5 +203,7 @@ export default {
   'Its addresses stop working and mail sent to them is no longer delivered. Messages already received stay in your mailbox. The domain stays registered in your name until the end of the year paid for.':
     'Ses adresses cessent de fonctionner et les e-mails qui leur sont envoyés ne sont plus distribués. Les messages déjà reçus restent dans votre boîte mail. Le domaine reste enregistré à votre nom jusqu’à la fin de l’année payée.',
   'Its addresses stop working and mail sent to them is no longer delivered. Messages already received stay in your mailbox.':
-    'Ses adresses cessent de fonctionner et les e-mails qui leur sont envoyés ne sont plus distribués. Les messages déjà reçus restent dans votre boîte mail.'
+    'Ses adresses cessent de fonctionner et les e-mails qui leur sont envoyés ne sont plus distribués. Les messages déjà reçus restent dans votre boîte mail.',
+  'Credit note {number}': 'Avoir {number}',
+  'Credit note': 'Avoir'
 };

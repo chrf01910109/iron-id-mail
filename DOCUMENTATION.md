@@ -268,6 +268,12 @@ for the express request to start at once (French withdrawal right, art. L221-28)
 `F<year>-NNNNNN`, gap-free) → `fulfilled`; a delivery problem → `failed` (shown to staff with the reason, "Try again");
 a second payment for the same thing is never delivered twice (marked failed: refund it in Stripe). Invoices (HTML,
 French mentions, VAT or "TVA non applicable, art. 293 B du CGI" when the rate is 0) in the webmail and the console.
+**Refunds** are made in the Stripe dashboard; Stripe's `charge.refunded` notification creates a **credit note (avoir)**
+for the amount not yet covered — `AV<year>-NNNNNN`, gap-free (`cp.credit_notes`, `cp.credit_seq`), the order's VAT share,
+naming the invoice it corrects; repeated notifications never create a second one. A full refund sets the order to
+`refunded` (the service itself is not stopped automatically: staff decide). Credit notes show next to the invoice in the
+webmail and the console; month totals keep the sale in its month and count refunds in the month of the credit note;
+each client's refunded total comes from the credit notes.
 
 Admin console → **Payments**: month totals (TTC/HT/VAT), orders with filters, invoices, retry, the registrar's
 prepaid balance, the payment provider; **Customers** shows what each client paid; **Platform settings → Prices and
@@ -327,6 +333,8 @@ the account's credentials (new password, two-step and all app passwords removed)
 | `signup_puzzles` | Sign-up security puzzles already used (kept 1 hour) |
 | `orders` | Everything sold: client, kind, domain, amounts TTC/HT/VAT and rate, status, Stripe references, invoice number |
 | `invoice_seq` | Last invoice number per year |
+| `credit_notes`, `credit_seq` | Credit notes (avoirs) for refunds, numbered per year |
+| `account_closures` | Accounts their owner asked to close, with the deletion date |
 | `registered_domains` | Domains bought through IRON ID: client, registrar reference, end of the paid year, status |
 | `migrations` | Copies of old mailboxes: server, user, progress, state per folder; the passwords are encrypted and erased at the end |
 | `customers` (new columns) | `kind` (business / personal), `owner_email` for personal clients |

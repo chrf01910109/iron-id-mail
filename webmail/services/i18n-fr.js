@@ -62,6 +62,7 @@ const FR = {
   'The confirmation code could not be sent. Try again in a few minutes.': 'Le code de confirmation n’a pas pu être envoyé. Réessayez dans quelques minutes.',
   'Enter a new password.': 'Saisissez un nouveau mot de passe.',
   'Type your address to confirm.': 'Saisissez votre adresse pour confirmer.',
+  'That credit note was not found.': 'Cet avoir est introuvable.',
   'A download of your data is already running. Wait for it to finish.': 'Un téléchargement de vos données est déjà en cours. Attendez qu’il se termine.',
   'You can download your data 3 times a day. Please try again tomorrow.': 'Vous pouvez télécharger vos données 3 fois par jour. Veuillez réessayer demain.',
   'Your mailbox could not be read. Please sign in again.': 'Votre boîte mail n’a pas pu être lue. Veuillez vous reconnecter.',

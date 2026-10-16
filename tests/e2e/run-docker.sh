@@ -52,6 +52,9 @@ RECOVERY_ADMIN="e2e-recovery:$(openssl rand -hex 16)"
 ADMIN_TOKEN="$(openssl rand -hex 24)"
 export RECOVERY_ADMIN
 # DNS answers for the admin console tests (domain verification) come from this file.
+# Signed Stripe notifications in the refund tests use this throw-away secret.
+STRIPE_WEBHOOK_SECRET="whsec_e2e_$(openssl rand -hex 16)"
+export STRIPE_WEBHOOK_SECRET
 DNS_FAKE_FILE="$(mktemp)"; echo '{}' > "$DNS_FAKE_FILE"; chmod 644 "$DNS_FAKE_FILE"
 export DNS_FAKE_FILE
 
@@ -65,7 +68,7 @@ docker run -d --name "$APP" --network host \
   -e OPENSEARCH_PASSWORD="$OPENSEARCH_PASSWORD" \
   -e PLATFORM_ADMINS=e2e-platform-admin@iron-id.io \
   -e SIGNUP_ENABLED=true -e OWN_DOMAINS_ENABLED=true -e PAYMENTS_FAKE=true -e REGISTRAR=fake -e IRONID_MIGRATION_TEST=true \
-  -e PASSWORD_RESET_ENABLED=true -e PUBLIC_URL=http://127.0.0.1:3001 -e IRONID_RECOVERY_TEST_DOMAIN=recovery-e2e.test -e IRONID_CLOSE_CHECK_SECONDS=5 \
+  -e PASSWORD_RESET_ENABLED=true -e PUBLIC_URL=http://127.0.0.1:3001 -e IRONID_RECOVERY_TEST_DOMAIN=recovery-e2e.test -e IRONID_CLOSE_CHECK_SECONDS=5 -e STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" \
   -e IRONID_DNS_FAKE=/run/ironid-dns-fake.json -v "$DNS_FAKE_FILE:/run/ironid-dns-fake.json:ro" \
   ironid:e2e >/dev/null
 

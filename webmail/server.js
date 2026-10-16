@@ -529,7 +529,7 @@ const server = http.createServer(async (req, res) => {
       // Own domains (connect €2 / buy €14 a year), addresses on them, payments, and copies of old mail.
       // Off unless OWN_DOMAINS_ENABLED=true (needs Stripe keys, the registrar account and the VPS for mail).
       const domainCtx = { req, lang: res.ironLang, name: null };
-      if (/^(GET|POST) \/account\/(domains|addresses|migrations|invoice|orders)(\/|$)/.test(route) && process.env.OWN_DOMAINS_ENABLED !== 'true') {
+      if (/^(GET|POST) \/account\/(domains|addresses|migrations|invoice|credit-note|orders)(\/|$)/.test(route) && process.env.OWN_DOMAINS_ENABLED !== 'true') {
         return sendJson(res, 403, { error: 'Own domains are not available yet.' });
       }
       if (route === 'GET /account/domains') return sendJson(res, 200, { ...(await domains.overview(current)), migrations: (await migration.list(current)).migrations });
@@ -567,6 +567,14 @@ const server = http.createServer(async (req, res) => {
         if (!o || !cust || o.customer_id !== cust.id || !o.invoice_number) return sendJson(res, 404, { error: 'Not found' });
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': ADMIN_CSP, 'Cache-Control': 'no-store' });
         return res.end(await billing.invoiceHtml(o, res.ironLang));
+      }
+      if (route === 'GET /account/credit-note') {
+        const c = await billing.creditNote(Number(reqUrl.searchParams.get('id')));
+        const o = c && await billing.order(Number(c.order_id));
+        const cust = await domains.personalCustomer(current.email);
+        if (!o || !cust || o.customer_id !== cust.id) return sendJson(res, 404, { error: 'Not found' });
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': ADMIN_CSP, 'Cache-Control': 'no-store' });
+        return res.end(await billing.creditNoteHtml(c, o, res.ironLang));
       }
       if (route === 'POST /account/labels') return sendJson(res, 200, await labels.create(String(current.email).toLowerCase(), body));
       if (route === 'POST /account/labels/update') return sendJson(res, 200, await labels.update(String(current.email).toLowerCase(), body));

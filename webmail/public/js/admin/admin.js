@@ -658,6 +658,8 @@ pages.payments = async arg => {
       refresh();
     }, 'small') : null;
     const inv = o.invoiceNumber ? h('a', { href: invoiceUrl(o.id), target: '_blank', rel: 'noopener', class: 'inv-link mono', title: t('Open the invoice') }, o.invoiceNumber) : h('span', { class: 'muted' }, '—');
+    // Credit notes (avoirs) made when the payment was refunded in Stripe.
+    const creditLinks = (o.creditNotes || []).map(c => h('div', {}, h('a', { href: '/admin-api/credit-note?id=' + c.id + '&lang=' + (lang === 'en' ? 'en' : 'fr'), target: '_blank', rel: 'noopener', class: 'inv-link mono', title: t('Open the credit note (refund of {amount})', { amount: fmtCents(c.amountCents, o.currency) }) }, c.number)));
     return h('tr', {},
       h('td', { class: 'secondary nowrap' }, fmtDateTime(o.paidAt || o.createdAt)),
       staff ? h('td', {}, h('div', { class: 'primary' }, h('a', { href: '#/payments/' + encodeURIComponent(paymentsArg(o.customerId, status)), class: 'plain-link', title: t('Only this client') }, o.customer || t('Unknown')),
@@ -665,7 +667,7 @@ pages.payments = async arg => {
       h('td', { class: 'order-what' }, h('div', { class: 'primary' }, o.domain), h('div', { class: 'secondary' }, ORDER_KIND[o.kind] || o.kind)),
       h('td', { class: 'num' }, fmtCents(o.amountCents, o.currency), h('div', { class: 'secondary' }, t('excl. VAT {amount}', { amount: fmtCents(o.amountHtCents, o.currency) }))),
       h('td', {}, badge(label, kind), o.status === 'failed' && o.error ? h('div', { class: 'secondary order-error' }, o.error) : null),
-      h('td', { class: 'hide-sm' }, inv),
+      h('td', { class: 'hide-sm' }, inv, ...creditLinks),
       h('td', { class: 'actions' }, retry));
   });
   const heads = [t('Date'), staff ? t('Client') : null, t('What'), { label: t('Amount incl. VAT'), attrs: { style: 'text-align:right' } }, t('Status'), { label: t('Invoice'), attrs: { class: 'hide-sm' } }, ''].filter(x => x !== null);
@@ -674,13 +676,16 @@ pages.payments = async arg => {
   const monthName = ym => { const [y, mo] = ym.split('-').map(Number); const s = new Date(y, mo - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); };
   const monthRows = all.months.map(x => h('tr', {},
     h('td', {}, monthName(x.month)), h('td', { class: 'num' }, String(x.n)),
-    h('td', { class: 'num' }, fmtCents(x.ht)), h('td', { class: 'num' }, fmtCents(x.vat)), h('td', { class: 'num' }, h('b', {}, fmtCents(x.ttc)))));
+    h('td', { class: 'num' }, fmtCents(x.ht)), h('td', { class: 'num' }, fmtCents(x.vat)), h('td', { class: 'num' }, h('b', {}, fmtCents(x.ttc))),
+    h('td', { class: 'num' }, x.refundTtc ? '−' + fmtCents(x.refundTtc) : '—'),
+    h('td', { class: 'num' }, h('b', {}, fmtCents(x.ttc - (x.refundTtc || 0))))));
 
   return [head(t('Payments'), staff ? t('Card payments for domains: every order, what was paid and the invoices.') : t('What your organisation paid for domains, with the invoices.')),
     h('div', { class: 'stats' }, ...stats),
     h('div', { class: 'card' }, h('h2', {}, t('By month')),
-      h('p', { class: 'help' }, t('Paid orders, by the month they were paid.')),
-      table([t('Month'), { label: t('Orders'), attrs: { style: 'text-align:right' } }, { label: t('Excl. VAT'), attrs: { style: 'text-align:right' } }, { label: t('VAT'), attrs: { style: 'text-align:right' } }, { label: t('Incl. VAT'), attrs: { style: 'text-align:right' } }], monthRows, t('No payments yet.'))),
+      h('p', { class: 'help' }, t('Paid orders, by the month they were paid. Refunds (credit notes) count in the month they were made.')),
+      table([t('Month'), { label: t('Orders'), attrs: { style: 'text-align:right' } }, { label: t('Excl. VAT'), attrs: { style: 'text-align:right' } }, { label: t('VAT'), attrs: { style: 'text-align:right' } }, { label: t('Incl. VAT'), attrs: { style: 'text-align:right' } },
+        { label: t('Refunds'), attrs: { style: 'text-align:right' } }, { label: t('Net incl. VAT'), attrs: { style: 'text-align:right' } }], monthRows, t('No payments yet.'))),
     h('h2', { class: 'section-title' }, t('Orders')),
     h('div', { class: 'toolbar' }, statusSel, chip),
     table(heads, rows, customer || status ? t('No order matches.') : t('No orders yet.'))];
