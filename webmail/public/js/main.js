@@ -130,6 +130,7 @@ async function boot() {
     mail.state.labels = me.labels || [];
     $('#btnAdmin').classList.toggle('hidden', !me.admin);
     domainNotices = me.domainNotices || [];
+    settings.showAccountNotice(me.closing || null);
   } catch (e) {
     if (e instanceof api.SessionEndedError) return;
     mail.state.teams = []; mail.state.labels = [];

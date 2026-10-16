@@ -1207,4 +1207,5 @@ async function runRoute(ctx, method, path, body = {}, url = new URL('http://x' +
 }
 
 module.exports = { handle, auditSignIn, pruneAudit, isAdmin, teamsFor, customerForEmail, PLATFORM_DOMAIN, tempPassword, engineDirectory, aliasEmails,
-  runRoute, engineSet, cleanDomain, splitAddress, SERVICE_ACCOUNT, forgetOwners, addRoute: route, requirePlatform, canCustomer, UserError, customersWithPlans };
+  runRoute, engineSet, cleanDomain, splitAddress, SERVICE_ACCOUNT, forgetOwners, addRoute: route, requirePlatform, canCustomer, UserError, customersWithPlans,
+  protectedReason, signOutEverywhere, forgetRecovery };

@@ -243,3 +243,15 @@ CREATE TABLE IF NOT EXISTS cp.migrations (
   finished_at   TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS migrations_email ON cp.migrations (email, created_at DESC);
+
+-- Closing an account (people who signed up themselves): deleted after delete_after unless cancelled.
+CREATE TABLE IF NOT EXISTS cp.account_closures (
+  email         TEXT PRIMARY KEY,
+  requested_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  delete_after  TIMESTAMPTZ NOT NULL,
+  ip            TEXT,
+  lang          TEXT
+);
+-- A bought domain whose IRON ID account was closed stays its owner's at the registrar: "released".
+ALTER TABLE cp.registered_domains DROP CONSTRAINT IF EXISTS registered_domains_status_check;
+ALTER TABLE cp.registered_domains ADD CONSTRAINT registered_domains_status_check CHECK (status IN ('active', 'expired', 'released'));

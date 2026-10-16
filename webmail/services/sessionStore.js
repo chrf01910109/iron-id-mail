@@ -92,9 +92,10 @@ async function destroySession(id) {
   if (id) await destroyHash(hashId(id));
 }
 
-async function destroySessionsFor(email) {
-  for (const [h, s] of cache) if (s.email === email) cache.delete(h);
-  if (persistent()) await db.query('DELETE FROM cp.sessions WHERE email = $1', [email]);
+async function destroySessionsFor(email, { except } = {}) {
+  const keep = except ? hashId(except) : null;
+  for (const [h, s] of cache) if (s.email === email && h !== keep) cache.delete(h);
+  if (persistent()) await db.query('DELETE FROM cp.sessions WHERE email = $1 AND id_hash IS DISTINCT FROM $2', [email, keep]);
 }
 
 /** Ends every session of this mailbox and starts a fresh one with the new credentials. */

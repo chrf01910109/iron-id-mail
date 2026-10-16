@@ -71,6 +71,15 @@ export default {
   'Recovery address confirmed.': 'Adresse de récupération confirmée.',
   'Code sent. It works for 15 minutes.': 'Code envoyé. Il est valable 15 minutes.',
   'Enter your password to send a code.': 'Saisissez votre mot de passe pour envoyer un code.',
+  // Closing the account
+  'Your mailbox, its mail and your own domains are deleted {days} days after you ask. Until then you can still sign in and cancel. Invoices are kept, as the law requires. Download your data first if you want to keep it.': 'Votre boîte mail, ses messages et vos propres domaines sont supprimés {days} jours après votre demande. D’ici là, vous pouvez encore vous connecter et annuler. Les factures sont conservées, comme l’exige la loi. Téléchargez d’abord vos données si vous souhaitez les garder.',
+  'Your account will be deleted on {date}.': 'Votre compte sera supprimé le {date}.',
+  'Type your address to confirm.': 'Saisissez votre adresse pour confirmer.',
+  'Close my account': 'Fermer mon compte',
+  'Your mailbox and everything in it will be deleted in {days} days. You can cancel until then.': 'Votre boîte mail et tout son contenu seront supprimés dans {days} jours. Vous pouvez annuler d’ici là.',
+  'Done. Other browsers were signed out.': 'C’est fait. Les autres navigateurs ont été déconnectés.',
+  'Your account will not be closed.': 'Votre compte ne sera pas fermé.',
+  'Cancel closing': 'Annuler la fermeture',
   'Recovery address saved. Confirm it with the code we send to it.': 'Adresse de récupération enregistrée. Confirmez-la avec le code que nous y envoyons.',
   'Password changed. Other devices have been signed out. Check your recovery address below and confirm it again.': 'Mot de passe changé. Les autres appareils ont été déconnectés. Vérifiez votre adresse de récupération ci-dessous et confirmez-la à nouveau.'
 };

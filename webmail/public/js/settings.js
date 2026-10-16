@@ -27,6 +27,8 @@ export function init({ profileChanged }) {
   $('#recForm').addEventListener('submit', saveRecovery);
   $('#recConfirmBtn').addEventListener('click', confirmRecovery);
   $('#recResendBtn').addEventListener('click', resendRecoveryCode);
+  $('#closeForm').addEventListener('submit', closeAccount);
+  $('#closeCancelBtn').addEventListener('click', cancelClosing);
   $('#vacationForm').addEventListener('submit', saveVacation);
   $('#prefsForm').addEventListener('submit', savePreferences);
   $('#twoStepStart').addEventListener('click', startTwoStep);
@@ -58,7 +60,7 @@ export function open(which = 'general') {
   $('#prefConfirmDelete').checked = !!p.confirmDelete;
   $('#prefRemoteImages').value = p.remoteImages === 'always' ? 'always' : 'ask';
   $('#prefLang').value = lang;
-  for (const id of ['profileStatus', 'pwStatus', 'vacStatus', 'twoStepStatus', 'sessionStatus', 'appPwStatus', 'recStatus', 'recConfirmStatus']) status(id, '');
+  for (const id of ['profileStatus', 'pwStatus', 'vacStatus', 'twoStepStatus', 'sessionStatus', 'appPwStatus', 'recStatus', 'recConfirmStatus', 'closeStatus']) status(id, '');
   $('#appPwNew').classList.add('hidden'); $('#appPwSecret').textContent = '';
   $('#stab-vacation').classList.toggle('hidden', !api.hasCapability(api.CAP.vacation));
   tab(which);
@@ -73,6 +75,7 @@ export function close() {
   modal().setAttribute('aria-hidden', 'true');
   for (const f of ['#pwForm', '#twoStepSetup', '#twoStepOn', '#appPwForm', '#recForm']) $(f).reset();
   $('#recSendPassword').value = ''; $('#recConfirmCode').value = '';
+  $('#closeForm').reset();
   $('#appPwNew').classList.add('hidden'); $('#appPwSecret').textContent = '';
   setup = null;
 }
@@ -136,6 +139,68 @@ async function loadSecurity() {
     return;
   }
   renderTwoStep(); renderSessions(); renderAppPasswords(); renderSignIns(); renderRecovery();
+  try { closing = await api.account('close'); } catch (e) { closing = null; }
+  renderClosing();
+}
+
+/* ——— Closing the account (people who signed up themselves) ——— */
+let closing = null;
+const longDate = d => new Date(d).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+function renderClosing() {
+  const c = closing;
+  $('#closeCard').classList.toggle('hidden', !c);
+  if (!c) return;
+  const scheduled = c.scheduled;
+  $('#closeIntro').textContent = scheduled ? '' : c.canClose
+    ? t('Your mailbox, its mail and your own domains are deleted {days} days after you ask. Until then you can still sign in and cancel. Invoices are kept, as the law requires. Download your data first if you want to keep it.', { days: c.closeDays })
+    : c.problem;
+  $('#closeIntro').classList.toggle('hidden', !!scheduled);
+  $('#closeScheduled').classList.toggle('hidden', !scheduled);
+  if (scheduled) $('#closeScheduledText').textContent = t('Your account will be deleted on {date}.', { date: longDate(scheduled.deleteAfter) });
+  $('#closeForm').classList.toggle('hidden', !c.canClose || !!scheduled);
+  $('#closeCodeRow').classList.toggle('hidden', !security || !security.twoStep);
+}
+
+async function closeAccount(e) {
+  e.preventDefault();
+  status('closeStatus', '');
+  const confirm = $('#closeConfirm').value.trim(), currentPassword = $('#closePassword').value;
+  const code = $('#closeCode').value.replace(/\s+/g, '');
+  if (confirm.toLowerCase() !== String(mail.state.user.email || '').toLowerCase()) return status('closeStatus', t('Type your address to confirm.'), false);
+  const ok = await dialog({ title: t('Close my account'), text: t('Your mailbox and everything in it will be deleted in {days} days. You can cancel until then.', { days: closing.closeDays }), okLabel: t('Close my account'), danger: true });
+  if (!ok) return;
+  const btn = $('#closeBtn');
+  btn.disabled = true;
+  try {
+    const r = await api.account('close', { confirm, currentPassword, code });
+    closing = r; $('#closeForm').reset();
+    renderClosing(); showAccountNotice(r.scheduled);
+    status('closeStatus', t('Done. Other browsers were signed out.'), true);
+  } catch (err) {
+    if (err.data && err.data.needCode) { security.twoStep = true; renderClosing(); }
+    status('closeStatus', err.message, false);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function cancelClosing() {
+  status('closeStatus', '');
+  try {
+    closing = await api.account('close/cancel', {});
+    renderClosing(); showAccountNotice(null);
+    status('closeStatus', t('Your account will not be closed.'), true);
+  } catch (err) { status('closeStatus', err.message, false); }
+}
+
+/** The notice above the message list while the account is being closed. */
+export function showAccountNotice(scheduled) {
+  const box = $('#accountNotice');
+  if (!box) return;
+  box.replaceChildren(...(scheduled ? [h('div', { class: 'notice danger', role: 'status' },
+    h('span', {}, t('Your account will be deleted on {date}.', { date: longDate(scheduled.deleteAfter) })),
+    h('button', { type: 'button', class: 'lh-link', on: { click: () => open('security') } }, t('Cancel closing')))] : []));
+  box.classList.toggle('hidden', !scheduled);
 }
 
 /* ——— Recovery address ("Forgot password?") ——— */
@@ -236,6 +301,7 @@ function renderTwoStep() {
   $('#twoStepOn').classList.toggle('hidden', !on);
   $('#pwCodeRow').classList.toggle('hidden', !on);
   $('#recCodeRow').classList.toggle('hidden', !on);
+  $('#closeCodeRow').classList.toggle('hidden', !on);
   if (!on && !setup) { $('#twoStepSetup').classList.add('hidden'); $('#twoStepStart').classList.remove('hidden'); }
 }
 

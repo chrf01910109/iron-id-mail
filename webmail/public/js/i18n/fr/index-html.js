@@ -149,5 +149,11 @@ export default {
   'Code from the message': 'Code reçu par e-mail',
   'Confirm the address': 'Confirmer l’adresse',
   'Send a new code': 'Envoyer un nouveau code',
-  'Your password (to send a code)': 'Votre mot de passe (pour envoyer un code)'
+  'Your password (to send a code)': 'Votre mot de passe (pour envoyer un code)',
+  'Your data': 'Vos données',
+  'Download everything in your mailbox: every message as an .eml file (Thunderbird, Apple Mail and Outlook open them), with your settings, sign-in history and invoices. Large mailboxes take a while.': 'Téléchargez tout le contenu de votre boîte mail : chaque message en fichier .eml (que Thunderbird, Apple Mail et Outlook savent ouvrir), avec vos réglages, votre historique de connexion et vos factures. Une grande boîte mail prend un peu de temps.',
+  'Download my data': 'Télécharger mes données',
+  'Close my account': 'Fermer mon compte',
+  'Cancel closing': 'Annuler la fermeture',
+  'Type your address to confirm': 'Saisissez votre adresse pour confirmer'
 };

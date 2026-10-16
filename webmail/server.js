@@ -19,6 +19,7 @@ const domains = require('./services/domains');
 const migration = require('./services/migration');
 const registrar = require('./services/registrar');
 const passwordReset = require('./services/passwordReset');
+const accountData = require('./services/accountData');
 require('./services/adminBilling'); // adds the Payments routes to the admin console
 
 let PORT = parseInt(process.env.PORT, 10) || 3001;
@@ -408,7 +409,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST') {
       try { body = await readJson(req); } catch (e) { return sendBodyError(res, e); }
     }
-    const needsBrake = ['POST /account/password', 'POST /account/two-step/enable', 'POST /account/two-step/disable', 'POST /account/recovery', 'POST /account/recovery/code'].includes(route);
+    const needsBrake = ['POST /account/password', 'POST /account/two-step/enable', 'POST /account/two-step/disable', 'POST /account/recovery', 'POST /account/recovery/code', 'POST /account/close'].includes(route);
     if (needsBrake && sessions.isLoginBlocked(ip, current.email)) {
       return sendJson(res, 429, { error: 'Too many failed attempts. Please wait 15 minutes and try again.' });
     }
@@ -424,12 +425,9 @@ const server = http.createServer(async (req, res) => {
           recovery, passwordReset: passwordReset.enabled() });
       }
 
-      // Recovery address for "Forgot password?": saving it, and sending its confirmation code, need the
-      // password (and the code when two-step is on), so a stolen session alone can't point it elsewhere.
-      if (route === 'POST /account/recovery' || route === 'POST /account/recovery/code') {
-        if (signup.brake('recovery-change:' + String(current.email).toLowerCase(), 10, 3600e3)) {
-          return sendJson(res, 429, { error: 'Too many requests. Please wait a few minutes and try again.' });
-        }
+      // The current password (and the code when two-step is on), for actions a stolen session must not do.
+      // Returns null when right, else the response already sent.
+      const checkCurrentPassword = async () => {
         const password = String(body.currentPassword || '');
         const code = String(body.code || '').replace(/\s+/g, '');
         const twoStep = await security.twoStepEnabled(current.auth);
@@ -440,6 +438,39 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 400, { error: twoStep ? 'Your current password or the code is not right.' : 'Your current password is incorrect.' });
         }
         sessions.clearFailedLogins(ip, current.email);
+        return null;
+      };
+
+      // "Your data": download everything, or close the account (people who signed up themselves).
+      if (route === 'GET /account/export') {
+        try { return await accountData.exportData(current, res, { lang: res.ironLang, billing }); } catch (e) {
+          if (res.headersSent) return;
+          if (e.userError) return sendJson(res, e.status || 400, { error: e.message });
+          throw e;
+        }
+      }
+      if (route === 'GET /account/close') return sendJson(res, 200, await accountData.closeStatus(current.email));
+      if (route === 'POST /account/close' || route === 'POST /account/close/cancel') {
+        try {
+          if (route === 'POST /account/close/cancel') return sendJson(res, 200, { ok: true, ...(await accountData.cancelClose(current, { ip })) });
+          if (String(body.confirm || '').trim().toLowerCase() !== String(current.email).toLowerCase()) return sendJson(res, 400, { error: 'Type your address to confirm.', code: 'confirm' });
+          const sent = await checkCurrentPassword();
+          if (sent) return sent;
+          return sendJson(res, 200, { ok: true, ...(await accountData.requestClose(current, { ip, lang: res.ironLang, keepSession: sid })) });
+        } catch (e) {
+          if (e.userError) return sendJson(res, e.status || 400, { error: e.message });
+          throw e;
+        }
+      }
+
+      // Recovery address for "Forgot password?": saving it, and sending its confirmation code, need the
+      // password (and the code when two-step is on), so a stolen session alone can't point it elsewhere.
+      if (route === 'POST /account/recovery' || route === 'POST /account/recovery/code') {
+        if (signup.brake('recovery-change:' + String(current.email).toLowerCase(), 10, 3600e3)) {
+          return sendJson(res, 429, { error: 'Too many requests. Please wait a few minutes and try again.' });
+        }
+        const sent = await checkCurrentPassword();
+        if (sent) return sent;
         if (route === 'POST /account/recovery/code') {
           try {
             return sendJson(res, 200, { ok: true, recovery: await passwordReset.sendCode(current.email, res.ironLang) });
@@ -491,7 +522,8 @@ const server = http.createServer(async (req, res) => {
           getLangPref(current.email)
         ]);
         const domainNotices = await domains.notices(current.email).catch(() => []);
-        return sendJson(res, 200, { email: current.email, admin, teams, labels: myLabels, lang, domainNotices });
+        const closing = await accountData.closeStatus(current.email).then(c => c.scheduled).catch(() => null);
+        return sendJson(res, 200, { email: current.email, admin, teams, labels: myLabels, lang, domainNotices, closing });
       }
 
       // Own domains (connect €2 / buy €14 a year), addresses on them, payments, and copies of old mail.
@@ -879,6 +911,9 @@ server.listen(PORT, () => {
       setInterval(() => adminConsole.pruneAudit(), 24 * 3600 * 1000).unref();
       passwordReset.prune();
       setInterval(() => passwordReset.prune(), 24 * 3600 * 1000).unref();
+      // Accounts whose closing date has passed are deleted (checked every hour).
+      accountData.runClosures();
+      setInterval(() => accountData.runClosures(), (parseInt(process.env.IRONID_CLOSE_CHECK_SECONDS, 10) || 3600) * 1000).unref();
       // Copies of old mailboxes run in the background; domains past their paid year are marked expired.
       migration.startWorker();
       domains.expireDomains();

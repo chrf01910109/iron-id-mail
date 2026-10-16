@@ -141,6 +141,7 @@
           <span id="searchBadge" class="search-badge hidden"></span>
         </div>
       </div>
+      <div id="accountNotice" class="dom-notices hidden"></div>
       <div id="domainNotice" class="dom-notices hidden"></div>
       <div id="emailList" class="list-scroll" role="listbox" aria-label="Messages" tabindex="0">
         <div class="loading-text">Loading messages…</div>
@@ -405,6 +406,36 @@
               <button id="appPwCopy" type="button" class="lh-link">Copy</button>
             </div>
             <div id="appPwStatus" class="form-status" role="status"></div>
+          </section>
+
+          <section class="sec-card">
+            <h4>Your data</h4>
+            <p class="muted small">Download everything in your mailbox: every message as an .eml file (Thunderbird, Apple Mail and Outlook open them), with your settings, sign-in history and invoices. Large mailboxes take a while.</p>
+            <div class="row-actions"><a id="dataDownload" class="act-btn" href="/account/export" download>Download my data</a></div>
+          </section>
+
+          <section class="sec-card" id="closeCard">
+            <h4>Close my account</h4>
+            <p id="closeIntro" class="muted small"></p>
+            <div id="closeScheduled" class="notice danger hidden" role="status"><span id="closeScheduledText"></span> <button id="closeCancelBtn" type="button" class="lh-link">Cancel closing</button></div>
+            <form id="closeForm" class="stack hidden">
+              <div class="two-col">
+                <div>
+                  <label class="fl-label" for="closeConfirm">Type your address to confirm</label>
+                  <input id="closeConfirm" class="fl-input" type="email" autocomplete="off" data-no-i18n>
+                </div>
+                <div>
+                  <label class="fl-label" for="closePassword">Your password</label>
+                  <input id="closePassword" class="fl-input" type="password" autocomplete="current-password">
+                </div>
+              </div>
+              <div id="closeCodeRow" class="hidden">
+                <label class="fl-label" for="closeCode">6-digit code from your authenticator app</label>
+                <input id="closeCode" class="fl-input code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
+              </div>
+              <div class="row-actions"><button id="closeBtn" type="submit" class="act-btn danger-text">Close my account</button></div>
+            </form>
+            <div id="closeStatus" class="form-status" role="status"></div>
           </section>
         </div>
 

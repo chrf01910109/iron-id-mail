@@ -237,6 +237,23 @@ arrive or would land in spam.
   are not logged), `recovery.password_reset`, `account.recovery_set` / `account.recovery_removed` / `account.recovery_confirmed`.
 - `/healthz` shows `recoveryLinks: on|off`; the security probe checks it is off, or on without revealing which addresses exist.
 
+### 4.5c "Your data": download everything, close the account
+Settings → Security, for every signed-in person:
+- **Download my data** (`GET /account/export`): a `.tar.gz` streamed straight from the mailbox — every message as
+  an `.eml` file (the exact bytes stored, so attachments and signatures stay intact) under `Mail/<folder>/`,
+  `account.json` (settings, labels, recovery address, sign-in history, orders, own domains), invoices as HTML and a
+  README (EN/FR) explaining how to import into Thunderbird, Apple Mail or Outlook. One at a time, 3 a day per
+  mailbox. A message under several labels appears once.
+- **Close my account** (`GET/POST /account/close`, `POST /account/close/cancel`): only for accounts people
+  created themselves (sign-up; `cp.signup_log`). Mailboxes from an organisation are closed by its administrator;
+  admins and engine-managed accounts can't close themselves. Needs the address typed, the password (and the
+  code with two-step). Other browsers are signed out; this one shows a notice with "Cancel". After **14 days**
+  (`cp.account_closures`, checked hourly; `IRONID_CLOSE_CHECK_SECONDS` shortens it in tests) the mailbox and its
+  mail are deleted from the engine, its own domains removed from the mail server (a bought domain stays the
+  person's at the registrar: `released`), its settings, recovery address, links and copies here deleted.
+  Orders/invoices (10 years) and the audit log stay. Audit: `account.exported`, `account.close_requested`,
+  `account.close_cancelled`, `account.closed`.
+
 ### 4.6 Own domains and payments ("Pro" mail) — built, switched off in production
 The offer (France): the free mailbox name@iron-id.io has **5 GB**. Addresses on the person's own domain
 (contact@company.fr) arrive in the **same mailbox** and share those 5 GB. On, only with `OWN_DOMAINS_ENABLED=true`.
