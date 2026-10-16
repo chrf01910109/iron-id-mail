@@ -65,7 +65,7 @@ docker run -d --name "$APP" --network host \
   -e OPENSEARCH_PASSWORD="$OPENSEARCH_PASSWORD" \
   -e PLATFORM_ADMINS=e2e-platform-admin@iron-id.io \
   -e SIGNUP_ENABLED=true -e OWN_DOMAINS_ENABLED=true -e PAYMENTS_FAKE=true -e REGISTRAR=fake -e IRONID_MIGRATION_TEST=true \
-  -e PASSWORD_RESET_ENABLED=true -e PUBLIC_URL=http://127.0.0.1:3001 \
+  -e PASSWORD_RESET_ENABLED=true -e PUBLIC_URL=http://127.0.0.1:3001 -e IRONID_RECOVERY_TEST_DOMAIN=recovery-e2e.test \
   -e IRONID_DNS_FAKE=/run/ironid-dns-fake.json -v "$DNS_FAKE_FILE:/run/ironid-dns-fake.json:ro" \
   ironid:e2e >/dev/null
 
@@ -80,7 +80,7 @@ echo "==> Running tests"
 set +e
 (cd "$ROOT/tests/e2e" && \
   BASE_URL=http://127.0.0.1:3001 ENGINE_URL=http://127.0.0.1:8080 \
-  RESTART_CMD="docker restart $APP" EXPECT_OPENSEARCH=1 \
+  RESTART_CMD="docker restart $APP" EXPECT_OPENSEARCH=1 PSQL_DOCKER="$PG" \
   OPENSEARCH_TEST_URL=https://localhost:9200 OPENSEARCH_TEST_PASSWORD="$OPENSEARCH_PASSWORD" \
   npm test -- ./*.test.js)
 STATUS=$?

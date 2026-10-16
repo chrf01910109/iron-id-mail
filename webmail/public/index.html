@@ -289,8 +289,26 @@
           <section class="sec-card">
             <h4>Recovery address</h4>
             <p class="muted small">An address outside IRON ID (Gmail, Outlook…) where a link to choose a new password can be sent if you forget yours.</p>
-            <ul class="sec-list"><li><span class="grow muted">Current</span><b id="recCurrent" data-no-i18n></b></li></ul>
+            <ul class="sec-list"><li><span class="grow muted">Current</span><b id="recCurrent" data-no-i18n></b> <span id="recBadge" class="sec-badge hidden"></span></li></ul>
             <p id="recNote" class="muted small hidden"></p>
+            <div id="recConfirm" class="stack hidden">
+              <p id="recConfirmText" class="muted small"></p>
+              <div class="two-col">
+                <div id="recConfirmCodeBox">
+                  <label class="fl-label" for="recConfirmCode">Code from the message</label>
+                  <input id="recConfirmCode" class="fl-input code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
+                </div>
+                <div>
+                  <label class="fl-label" for="recSendPassword">Your password (to send a code)</label>
+                  <input id="recSendPassword" class="fl-input" type="password" autocomplete="current-password">
+                </div>
+              </div>
+              <div id="recConfirmStatus" class="form-status" role="status"></div>
+              <div class="row-actions">
+                <button id="recConfirmBtn" type="button" class="act-btn">Confirm the address</button>
+                <button id="recResendBtn" type="button" class="act-btn">Send a new code</button>
+              </div>
+            </div>
             <form id="recForm" class="stack">
               <div class="two-col">
                 <div>

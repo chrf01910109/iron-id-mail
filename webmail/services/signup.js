@@ -287,6 +287,11 @@ async function create(b, { ip, lang }) {
   const email = `${local}@${DOMAIN}`;
   if ((await adminAddresses()).has(email)) fail('That address is reserved. Choose another one.', 400, { code: 'address' });
   await usePuzzle(b.pow);
+  if (recovery) { // after the puzzle: this asks the engine
+    // Same rule as Settings → Security: not an address that lands in a mailbox on IRON ID.
+    const problem = await require('./passwordReset').recoveryProblem(recovery, `${local}@${DOMAIN}`);
+    if (problem) fail(problem, 400, { code: 'recovery' });
+  }
   // A fresh look at the directory; if the engine can't answer now, the last list is used (the engine
   // itself still refuses an address that exists when the account is created).
   const used = await takenAddresses({ fresh: true }).catch(e => { console.error('[signup] directory:', e.message); return taken.set || new Set(); });
@@ -352,6 +357,7 @@ async function createAccount({ email, local, first, last, password, recovery, la
   await db.query("UPDATE cp.signup_log SET status = 'created' WHERE id = $1", [reservation]).catch(e => note('log', e));
   // A reused address must not keep an earlier owner's recovery address or choices.
   await db.query('DELETE FROM cp.recovery WHERE email = $1', [email]).catch(e => note('recovery', e));
+  await db.query('DELETE FROM cp.password_resets WHERE email = $1', [email]).catch(e => note('recovery links', e));
   await db.query('DELETE FROM cp.labels WHERE email = $1', [email]).catch(e => note('labels', e));
   if (recovery) {
     await db.query('INSERT INTO cp.recovery (email, recovery_email) VALUES ($1, $2)', [email, recovery]).catch(e => note('recovery', e));

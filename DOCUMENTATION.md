@@ -205,21 +205,36 @@ moves to the VPS). The sign-in card shows "No IRON ID mailbox yet? Create one" o
 On only with `PASSWORD_RESET_ENABLED=true` (and `PUBLIC_URL`, or Railway's public domain, for the link). It stays **off
 in production** until IRON ID's own server sends mail to outside addresses (the VPS): before that, the link would not
 arrive or would land in spam.
-- **Recovery address**: Settings → Security → Recovery address (confirmed with the password, and the code when two-step is
-  on); sign-up asks for it too. It must be outside IRON ID. Kept in `cp.recovery`; marked verified once a link sent there is used.
+- **Recovery address**: Settings → Security → Recovery address (saved with the password, and the code when two-step is
+  on); sign-up asks for it too. It must be **outside IRON ID**: not the platform domain, not any domain hosted or claimed
+  here (or a sub-domain of one), not any mailbox, team or alias here — otherwise a stolen session could read the link.
+  Kept in `cp.recovery`.
+- **Confirmation**: a new address gets a 6-digit code (15 minutes, 5 tries, 5 codes an hour per mailbox, kept only as a
+  keyed hash) that the person types in Settings while signed in. Sending a code needs the password, like saving the
+  address. **Links are only sent to a confirmed address.** A typo or someone else's address can't be confirmed without
+  the mailbox and its password.
+- **When links stop working**: a new link replaces older ones; changing or removing the recovery address; the owner
+  changing the password (the recovery address must then be confirmed again with a code asked for with the new password —
+  someone who knew the old password may have set it; if this step fails the address is removed); an administrator's Reset sign-in or deletion (the recovery address is removed too) or suspension; a link must
+  have gone to the address that is confirmed now.
+- **Notices**: the mailbox gets a message when its recovery address is changed or removed (and the previous confirmed
+  address is told), and after a password reset by link.
 - **Asking** (`/forgot`, link "Forgot your password?" on the sign-in card): the answer is always the same, whether or not the
   address exists; the work happens after answering. At most 3 links per mailbox an hour, plus limits per network.
 - **The link** `/forgot#token=…` (32 random bytes, only the SHA-256 kept in `cp.password_resets`) works once, for 30 minutes;
   a newer link replaces older ones. The token sits in the URL fragment (never sent to a server, removed from the address bar).
 - **After the reset**: the new password is checked like sign-up's (12+ characters, not common, not the name); every browser
-  and mail app of that mailbox is signed out (the credentials are replaced, which also removes app passwords).
+  and mail app of that mailbox is signed out (the credentials are replaced, which also removes app passwords). Requests
+  arriving together are counted under a database lock (never more than 3 links an hour, one working at a time); IPv6
+  requests are limited per /48. Link rows are deleted after 30 days.
 - **Left out**: admins (`cp.admins` / `PLATFORM_ADMINS`), engine-managed accounts (Admin role, special permissions),
   suspended mailboxes and mailboxes with two-step sign-in (an email alone must not get past the second step). They ask an
   administrator: admin console → Mailboxes → Reset sign-in.
 - **Sender**: the mailbox `no-reply@<platform domain>`, created by the gateway on first use (random password, encrypted in
-  `cp.settings`, 50 MB). The message is in the account's language.
-- Audit: `recovery.link_requested` (with the outcome, never shown to the requester), `recovery.password_reset`,
-  `account.recovery_set` / `account.recovery_removed`.
+  `cp.settings`, 50 MB). An existing `no-reply@` the gateway didn't make is never taken over. Mail sent *to* it (replies,
+  bounces) is deleted before each send so it can't fill up. The message is in the account's language.
+- Audit: `recovery.link_requested` (with the outcome, never shown to the requester; typed addresses that aren't mailboxes
+  are not logged), `recovery.password_reset`, `account.recovery_set` / `account.recovery_removed` / `account.recovery_confirmed`.
 - `/healthz` shows `recoveryLinks: on|off`; the security probe checks it is off, or on without revealing which addresses exist.
 
 ### 4.6 Own domains and payments ("Pro" mail) — built, switched off in production
@@ -326,7 +341,7 @@ are in the engine's own tables in the same database. `ironid_meta` (public schem
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | for payments | Stripe keys (`sk_live_…`, `whsec_…`). Test keys (`sk_test_…`) only while trying it |
 | `PUBLIC_URL` | recommended | `https://<domain>` — return links from the payment page |
 | `REGISTRAR`, `OPENSRS_USER`, `OPENSRS_KEY`, `OPENSRS_ENV` | for buying domains | `REGISTRAR=opensrs`, the reseller username and API key, `test` or `live` |
-| `PAYMENTS_FAKE`, `REGISTRAR=fake`, `IRONID_MIGRATION_TEST` | **never in production** | Test-only switches (listed in /healthz as `testFeatures`; the security probe fails on them) |
+| `PAYMENTS_FAKE`, `REGISTRAR=fake`, `IRONID_MIGRATION_TEST`, `IRONID_RECOVERY_TEST_DOMAIN` | **never in production** | Test-only switches (listed in /healthz as `testFeatures`; the security probe fails on them) |
 | `SIGNUP_PER_IP_DAY` / `SIGNUP_PER_DAY` | no | Sign-up limits per network per day (default 3) and in total per day (default 200) |
 | `PORT` | set by Railway | Gateway port |
 | `IRONID_DNS_FAKE` | **never in production** | Test-only file of fake DNS answers |

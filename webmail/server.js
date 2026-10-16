@@ -408,7 +408,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST') {
       try { body = await readJson(req); } catch (e) { return sendBodyError(res, e); }
     }
-    const needsBrake = ['POST /account/password', 'POST /account/two-step/enable', 'POST /account/two-step/disable', 'POST /account/recovery'].includes(route);
+    const needsBrake = ['POST /account/password', 'POST /account/two-step/enable', 'POST /account/two-step/disable', 'POST /account/recovery', 'POST /account/recovery/code'].includes(route);
     if (needsBrake && sessions.isLoginBlocked(ip, current.email)) {
       return sendJson(res, 429, { error: 'Too many failed attempts. Please wait 15 minutes and try again.' });
     }
@@ -424,8 +424,12 @@ const server = http.createServer(async (req, res) => {
           recovery, passwordReset: passwordReset.enabled() });
       }
 
-      // Recovery address for "Forgot password?" (confirmed with the password, and the code when two-step is on).
-      if (route === 'POST /account/recovery') {
+      // Recovery address for "Forgot password?": saving it, and sending its confirmation code, need the
+      // password (and the code when two-step is on), so a stolen session alone can't point it elsewhere.
+      if (route === 'POST /account/recovery' || route === 'POST /account/recovery/code') {
+        if (signup.brake('recovery-change:' + String(current.email).toLowerCase(), 10, 3600e3)) {
+          return sendJson(res, 429, { error: 'Too many requests. Please wait a few minutes and try again.' });
+        }
         const password = String(body.currentPassword || '');
         const code = String(body.code || '').replace(/\s+/g, '');
         const twoStep = await security.twoStepEnabled(current.auth);
@@ -435,12 +439,45 @@ const server = http.createServer(async (req, res) => {
           sessions.recordFailedLogin(ip, current.email);
           return sendJson(res, 400, { error: twoStep ? 'Your current password or the code is not right.' : 'Your current password is incorrect.' });
         }
+        sessions.clearFailedLogins(ip, current.email);
+        if (route === 'POST /account/recovery/code') {
+          try {
+            return sendJson(res, 200, { ok: true, recovery: await passwordReset.sendCode(current.email, res.ironLang) });
+          } catch (e) {
+            if (e.userError) return sendJson(res, e.status || 400, { error: e.message, ...(e.code ? { code: e.code } : {}) });
+            throw e;
+          }
+        }
         try {
-          const recovery = await passwordReset.setRecovery(current.email, body.recoveryEmail);
-          db.audit({ actor: current.email, action: recovery ? 'account.recovery_set' : 'account.recovery_removed', target: current.email, ip }).catch(() => {});
+          const change = await passwordReset.setRecovery(current.email, body.recoveryEmail);
+          let recovery = change.recovery;
+          db.audit({ actor: current.email, action: recovery ? 'account.recovery_set' : 'account.recovery_removed', target: current.email,
+            details: { previous: change.previous ? change.previous.email : null, now: recovery ? recovery.email : null }, ip }).catch(() => {});
+          await passwordReset.recoveryChanged(current.auth, current.email, change, res.ironLang);
+          // A new address gets its confirmation code at once (when IRON ID can send mail).
+          let codeError = null;
+          if (recovery && !recovery.verified && !recovery.codeSent && passwordReset.enabled()) {
+            try { recovery = await passwordReset.sendCode(current.email, res.ironLang); } catch (e) {
+              if (!e.userError) console.error('[account] recovery code:', e.message);
+              codeError = e.userError ? e.message : 'The confirmation code could not be sent. Try again in a few minutes.';
+            }
+          }
+          return sendJson(res, 200, { ok: true, recovery, ...(codeError ? { warnings: [codeError] } : {}) });
+        } catch (e) {
+          if (e.userError) return sendJson(res, e.status || 400, { error: e.message, ...(e.code ? { code: e.code } : {}) });
+          throw e;
+        }
+      }
+      // Confirming the recovery address with the code sent to it (the code was asked for with the password).
+      if (route === 'POST /account/recovery/confirm') {
+        try {
+          const recovery = await passwordReset.confirmCode(current.email, body.code);
+          if (recovery && recovery.verified) {
+            db.audit({ actor: current.email, action: 'account.recovery_confirmed', target: current.email, details: { address: recovery.email }, ip }).catch(() => {});
+          }
           return sendJson(res, 200, { ok: true, recovery });
         } catch (e) {
-          if (e.userError) return sendJson(res, e.status || 400, { error: e.message });
+          if (e.userError) return sendJson(res, e.status || 400, { error: e.message, ...(e.code ? { code: e.code } : {}) });
           throw e;
         }
       }
@@ -527,12 +564,15 @@ const server = http.createServer(async (req, res) => {
         const result = await engineJmap(current.auth, [['x:AccountPassword/set', { update: { singleton: update } }, 'pw']]);
         const [name, r] = result[0] || [];
         if (name === 'x:AccountPassword/set' && r.updated && 'singleton' in r.updated) {
+          // First: password links stop working and the recovery address must be confirmed again (someone who
+          // knew the old password may have set it). Fails closed (the address is removed on error).
+          const recoveryToConfirm = await passwordReset.afterPasswordChange(current.email);
           sessions.clearFailedLogins(ip, current.email);
           const working = (await security.engineSession(current.auth)) ? current.auth : security.basic(current.email, newPassword);
           const webAuth = await security.rotateWebmailCredential(current.email, working);
           const id = await sessions.replaceSessionsFor(current.email, webAuth, { ip, userAgent: req.headers['user-agent'] });
           db.audit({ actor: current.email, action: 'account.password_changed', target: current.email, ip }).catch(() => {});
-          return sendJson(res, 200, { ok: true }, { 'Set-Cookie': sessions.sessionCookie(req, id) });
+          return sendJson(res, 200, { ok: true, recoveryToConfirm }, { 'Set-Cookie': sessions.sessionCookie(req, id) });
         }
         const failure = (r && r.notUpdated && r.notUpdated.singleton) || r || {};
         const msg = security.friendly(failure.description || 'The password could not be changed.');
@@ -788,7 +828,8 @@ const server = http.createServer(async (req, res) => {
       payments: billing.provider().name, registrar: registrar.kind() || 'off', recoveryLinks: passwordReset.enabled() ? 'on' : 'off' };
     // Switches that must never be on in production show up here (the security probe fails on them).
     const testFeatures = [process.env.IRONID_DNS_FAKE && 'dns-fake', process.env.PAYMENTS_FAKE === 'true' && 'payments-fake',
-      registrar.kind() === 'fake' && 'registrar-fake', process.env.IRONID_MIGRATION_TEST === 'true' && 'migration-test'].filter(Boolean);
+      registrar.kind() === 'fake' && 'registrar-fake', process.env.IRONID_MIGRATION_TEST === 'true' && 'migration-test',
+      passwordReset.TEST_DOMAIN && 'recovery-test-domain'].filter(Boolean);
     if (testFeatures.length) result.testFeatures = testFeatures;
     try {
       const r = await new Promise((resolve, reject) => {
@@ -836,6 +877,8 @@ server.listen(PORT, () => {
       console.log('[db] Control-plane schema ready.');
       adminConsole.pruneAudit();
       setInterval(() => adminConsole.pruneAudit(), 24 * 3600 * 1000).unref();
+      passwordReset.prune();
+      setInterval(() => passwordReset.prune(), 24 * 3600 * 1000).unref();
       // Copies of old mailboxes run in the background; domains past their paid year are marked expired.
       migration.startWorker();
       domains.expireDomains();

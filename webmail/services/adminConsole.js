@@ -302,6 +302,18 @@ function teamView(g, dir) {
 async function signOutEverywhere(email) {
   await sessions.destroySessionsFor(email);
   await security.forgetWebmailCredential(email);
+  // "Forgot password?" links already sent stop working too.
+  await db.query('UPDATE cp.password_resets SET used_at = NOW() WHERE email = $1 AND used_at IS NULL', [String(email).toLowerCase()]).catch(() => {});
+}
+/**
+ * After an administrator resets the sign-in or deletes the mailbox, its recovery address goes too (it may be
+ * an intruder's). Links are marked used, not deleted: their rows (where mail went, from which network) are
+ * evidence while a compromise is being handled. Errors stop the action, so staff are never told it worked.
+ */
+async function forgetRecovery(email) {
+  const me = String(email).toLowerCase();
+  await db.query('UPDATE cp.password_resets SET used_at = NOW() WHERE email = $1 AND used_at IS NULL', [me]);
+  await db.query('DELETE FROM cp.recovery WHERE email = $1', [me]);
 }
 
 /* ——— Plans and usage ——— */
@@ -926,6 +938,8 @@ async function createMailbox(ctx, b) {
     quotas: quotaMb ? { maxDiskQuota: quotaMb * MB } : {},
     credentials: { 0: { '@type': 'Password', secret: password } }
   } } }, 'create the mailbox');
+  // A new mailbox never inherits an earlier one's recovery address or links (same address reused).
+  await forgetRecovery(email).catch(e => console.error('[admin] recovery clean-up:', e.message));
   audit(ctx, 'mailbox.created', email, { quotaMb }, row.customer_id);
   return { id: res.created.u.id, email, password };
 }
@@ -966,6 +980,7 @@ route('POST', '/admin-api/mailboxes/reset-signin', async (ctx, b) => {
   // Replacing the credentials sets a new password and removes two-step sign-in and every app password.
   await engineSet('Account', { update: { [a.id]: { credentials: { 0: { '@type': 'Password', secret: password } } } } }, 'reset the sign-in');
   await signOutEverywhere(a.email);
+  await forgetRecovery(a.email);
   audit(ctx, 'mailbox.signin_reset', a.email, { hadTwoStep: twoStepOn(a) }, row.customer_id);
   return { email: a.email, password };
 });
@@ -998,8 +1013,8 @@ route('POST', '/admin-api/mailboxes/delete', async (ctx, b) => {
   await engineSet('Account', { destroy: [a.id] }, 'delete the mailbox');
   await signOutEverywhere(a.email);
   await db.query('DELETE FROM cp.labels WHERE email = $1', [a.email]).catch(() => {});
-  // A later mailbox with the same address must not inherit the recovery address or choices.
-  await db.query('DELETE FROM cp.recovery WHERE email = $1', [a.email]).catch(() => {});
+  // A later mailbox with the same address must not inherit the recovery address, its links or choices.
+  await forgetRecovery(a.email);
   await db.query('DELETE FROM cp.user_prefs WHERE email = $1', [a.email]).catch(() => {});
   // Admin rights belong to the mailbox: a new mailbox with the same address doesn't inherit them.
   await db.query('DELETE FROM cp.admins WHERE lower(email) = $1', [a.email]);

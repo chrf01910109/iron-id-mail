@@ -60,5 +60,17 @@ export default {
   'With two-step sign-in on, a forgotten password is reset by an administrator, not by email.': 'Avec la validation en deux étapes, un mot de passe oublié est réinitialisé par un administrateur, pas par e-mail.',
   '"Forgot your password?" is not available yet; your recovery address is kept for when it is.': '« Mot de passe oublié ? » n’est pas encore disponible ; votre adresse de récupération est conservée pour le moment où il le sera.',
   'Recovery address saved.': 'Adresse de récupération enregistrée.',
-  'Recovery address removed.': 'Adresse de récupération supprimée.'
+  'Recovery address removed.': 'Adresse de récupération supprimée.',
+  'Confirmed': 'Confirmée',
+  'Not confirmed': 'Non confirmée',
+  'We sent a 6-digit code to {address}. Type it here to confirm the address. No password link is sent to an address that is not confirmed.': 'Nous avons envoyé un code à 6 chiffres à {address}. Saisissez-le ici pour confirmer l’adresse. Aucun lien de mot de passe n’est envoyé à une adresse non confirmée.',
+  'Send a code to {address} and type it here to confirm the address. No password link is sent to an address that is not confirmed.': 'Envoyez un code à {address} et saisissez-le ici pour confirmer l’adresse. Aucun lien de mot de passe n’est envoyé à une adresse non confirmée.',
+  'Send a new code': 'Envoyer un nouveau code',
+  'Send the code': 'Envoyer le code',
+  'Enter the 6-digit code from the message.': 'Saisissez le code à 6 chiffres reçu par e-mail.',
+  'Recovery address confirmed.': 'Adresse de récupération confirmée.',
+  'Code sent. It works for 15 minutes.': 'Code envoyé. Il est valable 15 minutes.',
+  'Enter your password to send a code.': 'Saisissez votre mot de passe pour envoyer un code.',
+  'Recovery address saved. Confirm it with the code we send to it.': 'Adresse de récupération enregistrée. Confirmez-la avec le code que nous y envoyons.',
+  'Password changed. Other devices have been signed out. Check your recovery address below and confirm it again.': 'Mot de passe changé. Les autres appareils ont été déconnectés. Vérifiez votre adresse de récupération ci-dessous et confirmez-la à nouveau.'
 };

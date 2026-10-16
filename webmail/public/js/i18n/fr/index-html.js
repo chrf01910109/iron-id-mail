@@ -145,5 +145,9 @@ export default {
   'Current': 'Actuelle',
   'Recovery address (empty to remove)': 'Adresse de récupération (vide pour la supprimer)',
   'Save recovery address': 'Enregistrer l’adresse de récupération',
-  'Forgot your password?': 'Mot de passe oublié ?'
+  'Forgot your password?': 'Mot de passe oublié ?',
+  'Code from the message': 'Code reçu par e-mail',
+  'Confirm the address': 'Confirmer l’adresse',
+  'Send a new code': 'Envoyer un nouveau code',
+  'Your password (to send a code)': 'Votre mot de passe (pour envoyer un code)'
 };

@@ -96,12 +96,13 @@ async function get(path, opts = {}) {
   if (fpCfg.enabled === true) {
     const [a, b] = [await fpAsk('nobody-' + Date.now() + '@iron-id.io'), await fpAsk('postmaster@iron-id.io')];
     check('forgot-password gives the same answer for any address', a.status === 200 && b.status === 200 && (await a.text()) === (await b.text()), `HTTP ${a.status}/${b.status}`);
+    // Only meaningful when on (when off every request gets 403 anyway).
+    const fpEvil = await fetch(base + '/recover-api/reset', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.example' }, body: '{}' });
+    check('forgot-password refuses other websites', fpEvil.status === 403, 'HTTP ' + fpEvil.status);
   } else {
     const fpReq = await fpAsk('nobody@iron-id.io');
     check('forgot-password is switched off: no link can be asked for', fpReq.status === 403, 'HTTP ' + fpReq.status);
   }
-  const fpEvil = await fetch(base + '/recover-api/reset', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.example' }, body: '{}' });
-  check('forgot-password refuses other websites', fpEvil.status === 403, 'HTTP ' + fpEvil.status);
 
   // 9. Health endpoint shows no secrets
   const hz = await get('/healthz');

@@ -36,7 +36,7 @@
 
       <!-- 1. Ask for a link -->
       <form id="fpAsk" class="stack hidden" novalidate>
-        <p class="small">Enter your IRON ID address. If it has a recovery address, we'll send a link there to choose a new password.</p>
+        <p class="small">Enter your IRON ID address. If it has a confirmed recovery address, we'll send a link there to choose a new password.</p>
         <div>
           <label class="fl-label" for="fpEmail">Your IRON ID address</label>
           <input id="fpEmail" class="login-input" type="email" maxlength="254" autocomplete="username" placeholder="you@iron-id.io" data-no-i18n required>
@@ -45,7 +45,7 @@
         <button id="fpAskBtn" type="submit" class="login-submit-btn"><span>Send me a link</span></button>
         <p class="muted small">Administrators and mailboxes with two-step sign-in can't reset this way: ask an administrator (Mailboxes → Reset sign-in).</p>
       </form>
-      <div id="fpSent" class="login-alert info hidden" role="status">If that address has a recovery address, a link is on its way. It works for 30 minutes. Check the spam folder too.</div>
+      <div id="fpSent" class="login-alert info hidden" role="status">If that address has a confirmed recovery address, a link is on its way. It works for 30 minutes. Check the spam folder too.</div>
 
       <!-- 2. Choose the new password (from the link) -->
       <form id="fpReset" class="stack hidden" novalidate autocomplete="on">

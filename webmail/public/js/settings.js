@@ -25,6 +25,8 @@ export function init({ profileChanged }) {
   $('#profileForm').addEventListener('submit', saveProfile);
   $('#pwForm').addEventListener('submit', changePassword);
   $('#recForm').addEventListener('submit', saveRecovery);
+  $('#recConfirmBtn').addEventListener('click', confirmRecovery);
+  $('#recResendBtn').addEventListener('click', resendRecoveryCode);
   $('#vacationForm').addEventListener('submit', saveVacation);
   $('#prefsForm').addEventListener('submit', savePreferences);
   $('#twoStepStart').addEventListener('click', startTwoStep);
@@ -56,7 +58,7 @@ export function open(which = 'general') {
   $('#prefConfirmDelete').checked = !!p.confirmDelete;
   $('#prefRemoteImages').value = p.remoteImages === 'always' ? 'always' : 'ask';
   $('#prefLang').value = lang;
-  for (const id of ['profileStatus', 'pwStatus', 'vacStatus', 'twoStepStatus', 'sessionStatus', 'appPwStatus', 'recStatus']) status(id, '');
+  for (const id of ['profileStatus', 'pwStatus', 'vacStatus', 'twoStepStatus', 'sessionStatus', 'appPwStatus', 'recStatus', 'recConfirmStatus']) status(id, '');
   $('#appPwNew').classList.add('hidden'); $('#appPwSecret').textContent = '';
   $('#stab-vacation').classList.toggle('hidden', !api.hasCapability(api.CAP.vacation));
   tab(which);
@@ -70,6 +72,7 @@ export function close() {
   modal().classList.remove('open');
   modal().setAttribute('aria-hidden', 'true');
   for (const f of ['#pwForm', '#twoStepSetup', '#twoStepOn', '#appPwForm', '#recForm']) $(f).reset();
+  $('#recSendPassword').value = ''; $('#recConfirmCode').value = '';
   $('#appPwNew').classList.add('hidden'); $('#appPwSecret').textContent = '';
   setup = null;
 }
@@ -106,9 +109,11 @@ async function changePassword(e) {
   const btn = $('#pwSubmitBtn');
   btn.disabled = true; btn.textContent = t('Changing…');
   try {
-    await api.changePassword(current, next, code);
+    const r = await api.changePassword(current, next, code);
     $('#pwForm').reset();
-    status('pwStatus', t('Password changed. Other devices have been signed out.'), true);
+    status('pwStatus', r && r.recoveryToConfirm
+      ? t('Password changed. Other devices have been signed out. Check your recovery address below and confirm it again.')
+      : t('Password changed. Other devices have been signed out.'), true);
     toast(t('Password changed'));
     loadSecurity();
   } catch (err) {
@@ -138,10 +143,64 @@ function renderRecovery() {
   const r = security.recovery;
   $('#recCurrent').textContent = r ? r.email : t('None');
   if (!$('#recEmail').value) $('#recEmail').value = r ? r.email : '';
+  const badge = $('#recBadge');
+  badge.classList.toggle('hidden', !r);
+  badge.classList.toggle('on', !!(r && r.verified));
+  badge.textContent = r && r.verified ? t('Confirmed') : t('Not confirmed');
   const note = security.twoStep ? t('With two-step sign-in on, a forgotten password is reset by an administrator, not by email.')
     : !security.passwordReset ? t('"Forgot your password?" is not available yet; your recovery address is kept for when it is.') : '';
   $('#recNote').textContent = note;
   $('#recNote').classList.toggle('hidden', !note);
+  // Confirming: a code sent to the address, typed here (only when IRON ID can send mail).
+  const confirming = !!(r && !r.verified && security.passwordReset);
+  $('#recConfirm').classList.toggle('hidden', !confirming);
+  if (confirming) {
+    $('#recConfirmText').textContent = r.codeSent
+      ? t('We sent a 6-digit code to {address}. Type it here to confirm the address. No password link is sent to an address that is not confirmed.', { address: r.email })
+      : t('Send a code to {address} and type it here to confirm the address. No password link is sent to an address that is not confirmed.', { address: r.email });
+    $('#recConfirmCodeBox').classList.toggle('hidden', !r.codeSent);
+    $('#recConfirmBtn').classList.toggle('hidden', !r.codeSent);
+    $('#recResendBtn').textContent = r.codeSent ? t('Send a new code') : t('Send the code');
+  }
+}
+
+async function confirmRecovery() {
+  const code = $('#recConfirmCode').value.replace(/\s+/g, '');
+  status('recConfirmStatus', '');
+  if (!/^\d{6}$/.test(code)) return status('recConfirmStatus', t('Enter the 6-digit code from the message.'), false);
+  const btn = $('#recConfirmBtn');
+  btn.disabled = true;
+  try {
+    const r = await api.account('recovery/confirm', { code });
+    security.recovery = r.recovery;
+    $('#recConfirmCode').value = '';
+    renderRecovery();
+    status('recStatus', t('Recovery address confirmed.'), true);
+  } catch (err) {
+    status('recConfirmStatus', err.message, false);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function resendRecoveryCode() {
+  status('recConfirmStatus', '');
+  const currentPassword = $('#recSendPassword').value;
+  if (!currentPassword) return status('recConfirmStatus', t('Enter your password to send a code.'), false);
+  const code = $('#recCode').value.replace(/\s+/g, '');
+  const btn = $('#recResendBtn');
+  btn.disabled = true;
+  try {
+    const r = await api.account('recovery/code', { currentPassword, code });
+    $('#recSendPassword').value = '';
+    security.recovery = r.recovery;
+    renderRecovery();
+    status('recConfirmStatus', t('Code sent. It works for 15 minutes.'), true);
+  } catch (err) {
+    status('recConfirmStatus', err.message, false);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function saveRecovery(e) {
@@ -158,7 +217,8 @@ async function saveRecovery(e) {
     $('#recPassword').value = ''; $('#recCode').value = '';
     $('#recEmail').value = r.recovery ? r.recovery.email : '';
     renderRecovery();
-    status('recStatus', r.recovery ? t('Recovery address saved.') : t('Recovery address removed.'), true);
+    const warn = (r.warnings || [])[0];
+    status('recStatus', warn || (r.recovery ? (r.recovery.verified ? t('Recovery address saved.') : t('Recovery address saved. Confirm it with the code we send to it.')) : t('Recovery address removed.')), !warn);
   } catch (err) {
     if (err.data && err.data.needCode) { security.twoStep = true; renderTwoStep(); }
     status('recStatus', err.message, false);

@@ -164,6 +164,12 @@ CREATE TABLE IF NOT EXISTS cp.password_resets (
   used_at     TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS password_resets_email ON cp.password_resets (email, created_at);
+-- Confirming the recovery address: a 6-digit code sent to it, typed in Settings (only a salted hash is kept).
+ALTER TABLE cp.recovery ADD COLUMN IF NOT EXISTS confirm_hash TEXT;
+ALTER TABLE cp.recovery ADD COLUMN IF NOT EXISTS confirm_expires TIMESTAMPTZ;
+ALTER TABLE cp.recovery ADD COLUMN IF NOT EXISTS confirm_attempts INT NOT NULL DEFAULT 0;
+ALTER TABLE cp.recovery ADD COLUMN IF NOT EXISTS confirm_sends INT NOT NULL DEFAULT 0;
+ALTER TABLE cp.recovery ADD COLUMN IF NOT EXISTS confirm_window TIMESTAMPTZ;
 
 -- Billing (2026-10): personal customers own the domains a person connects or buys from the webmail.
 ALTER TABLE cp.customers ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'business';
