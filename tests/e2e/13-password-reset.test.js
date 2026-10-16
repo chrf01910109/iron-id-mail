@@ -22,6 +22,7 @@ const XF = n => ({ 'x-forwarded-for': `198.19.${ipBase}.${n}` });
 let rDomainId, hostedId, createdRDomain = false, inbox, inbox2, platform, P, browser;
 const users = {};
 const seen = new Set(); // account id + message id (ids repeat across accounts)
+const seenValues = new Set(); // a message delivered twice must not give the same code again
 
 async function userOn(domainId, domain, prefix) {
   const name = `${prefix}-${crypto.randomBytes(3).toString('hex')}`;
@@ -72,6 +73,8 @@ async function waitFor(box, subject, email, re, timeoutMs = 60000) {
       seen.add(key);
       const found = re.exec(text);
       assert.ok(found, 'unexpected message text: ' + text);
+      if (seenValues.has(subject + '/' + email + '/' + found[1])) continue;
+      seenValues.add(subject + '/' + email + '/' + found[1]);
       return found[1];
     }
     await h.sleep(1000);
@@ -148,6 +151,8 @@ test('the recovery address needs the password and must be outside IRON ID', asyn
   const t = await signedIn(users.target, 2);
   const wrong = await setRecovery(t.cookie, { recoveryEmail: inbox.email, currentPassword: 'not the password' }, BAD_NET);
   assert.equal(wrong.status, 400);
+  await h.sleep(500);
+  assert.equal((await h.gw('/account/security', { cookie: t.cookie })).json.recovery, null, 'a refused request changes nothing');
   for (const inside of [`someone@${h.TEST_DOMAIN}`, `someone@sub.${h.TEST_DOMAIN}`, `someone@${HOSTED}`, `x@mail.${HOSTED}`, t.email.toUpperCase()]) {
     const r = await setRecovery(t.cookie, { recoveryEmail: inside, currentPassword: t.password });
     assert.equal(r.status, 400, inside + ' ' + r.text);
@@ -186,10 +191,19 @@ test('too many wrong codes end the code', async () => {
   assert.equal(late.status, 400, 'the right code no longer works after 5 wrong ones');
   const noPw = await sendCode(u.cookie, {}, BAD_NET);
   assert.equal(noPw.status, 400, 'sending a code needs the password');
+  await h.sleep(1500);
+  assert.equal(await codeFor(u.email, 3000), null, 'and a refused request sends nothing');
   const again = await sendCode(u.cookie, { currentPassword: u.password });
   assert.equal(again.status, 200, again.text);
   const fresh = await codeFor(u.email);
-  assert.equal((await h.gw('/account/recovery/confirm', { method: 'POST', cookie: u.cookie, body: { code: fresh } })).status, 200);
+  const last = await h.gw('/account/recovery/confirm', { method: 'POST', cookie: u.cookie, body: { code: fresh } });
+  if (last.status !== 200) { // say which codes arrived, to tell a delivery problem from a code problem
+    const [, [, got]] = await h.mail(inbox.cookie, [
+      ['Email/query', { accountId: inbox.acct, filter: { subject: CODE_SUBJECT }, sort: [{ property: 'receivedAt', isAscending: false }] }, 'q'],
+      ['Email/get', { accountId: inbox.acct, '#ids': { resultOf: 'q', name: 'Email/query', path: '/ids' }, properties: ['receivedAt', 'bodyValues'], fetchTextBodyValues: true }, 'g']]);
+    const mine = got.list.map(m => [m.id, m.receivedAt, Object.values(m.bodyValues || {}).map(v => v.value).join('')]).filter(x => x[2].includes(u.email)).map(x => [x[0], x[1], (/\n(\d{6})\n/.exec(x[2]) || [])[1]]);
+    assert.fail(`fresh ${fresh} refused (${last.text}); codes for this mailbox: ${JSON.stringify(mine)}; first ${code}`);
+  }
 });
 
 test('asking for a link gives the same answer for any address; unconfirmed addresses get nothing', async () => {

@@ -212,16 +212,18 @@ test('copying an old mailbox (IMAP): folders, dates, read state; wrong password 
   assert.ok(done.messages >= 3);
 
   const acc = await h.primaryAccount(O);
-  const res = await h.mail(O, [
+  // The search index may take a moment to see the copied messages.
+  const look = () => h.mail(O, [
     ['Mailbox/get', { accountId: acc, properties: ['name', 'role'] }, 'm'],
     ['Email/query', { accountId: acc, filter: { text: tag } }, 'q'],
     ['Email/get', { accountId: acc, '#ids': { resultOf: 'q', name: 'Email/query', path: '/ids' }, properties: ['subject', 'mailboxIds', 'keywords', 'receivedAt'] }, 'g']]);
+  const res = (await waitFor(async () => { const x = await look(); return x[2][1].list.length >= 3 ? x : null; }, 30000).catch(() => null)) || await look();
   const boxes = res[0][1].list, mails = res[2][1].list;
   const inbox = boxes.find(b => b.role === 'inbox').id;
   const proj = boxes.find(b => b.name === 'Projects ' + tag);
   assert.ok(proj, 'the folder was created');
   const p = mails.find(m => m.subject === 'Old project ' + tag);
-  assert.ok(p && p.mailboxIds[proj.id], 'in its folder');
+  assert.ok(p && p.mailboxIds[proj.id], 'in its folder: ' + JSON.stringify({ proj: proj.id, mails }));
   assert.ok(p.keywords.$seen, 'still read');
   assert.equal(p.receivedAt.slice(0, 10), '2024-03-01', 'date kept');
   assert.ok(mails.some(m => m.subject === 'Old one ' + tag && m.mailboxIds[inbox]), 'inbox to inbox');

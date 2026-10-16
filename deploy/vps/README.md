@@ -22,7 +22,10 @@ Nothing here changes DNS. **Issam's Namecheap mailbox is not affected by any ste
 ## 1. The server (once)
 1. Order the VPS (plan §0). Set its **reverse DNS** to `mail.iron-id.io` in the provider's panel.
 2. Check the IP on https://check.spamhaus.org and MXToolbox's blacklist check.
-3. At Namecheap add only: `A mail` → the VPS IPv4 (and `AAAA mail` → IPv6 if any). Nothing else.
+3. At Namecheap add only: `A mail` → the VPS IPv4. Nothing else. **No `AAAA` (IPv6) record for now**: Docker
+   would pass IPv6 visitors on as its own internal address, which breaks the sign-up/sign-in limits per network
+   and the mail engine's checks on incoming mail (SPF, blocklists). IPv6 can come later with `enable_ipv6` on the
+   compose networks.
 4. On the server (Ubuntu 24.04), as root:
    ```bash
    apt-get update && apt-get -y upgrade && apt-get -y install docker.io docker-compose-v2 git unattended-upgrades
@@ -70,8 +73,7 @@ docker compose down -v
 4. HTTPS: `docker compose up -d web`, wait a minute, open `https://mail.iron-id.io` — the webmail must load.
 5. Mail certificate (still with the recovery admin set, so it also becomes the engine's default):
    ```bash
-   docker compose exec -T app node /opt/iron-id/webmail/scripts/import-certificate.js --host mail.iron-id.io
-   docker compose restart app && sleep 45 && ./check-tls.sh
+   ./renew-mail-cert.sh       # copies Caddy's certificate into the engine, restarts the app, checks every port
    ```
    Every line must say OK (the issuer is Let's Encrypt, not "rcgen").
 6. **Remove `STALWART_RECOVERY_ADMIN` from `.env`** and run `docker compose up -d app`. Check
@@ -88,7 +90,10 @@ docker compose down -v
 30 4 1 * *  cd /opt/ironid/deploy/vps && ./restore-test.sh >> /var/log/ironid-backup.log 2>&1
 ```
 Off-site copies: install rclone, configure a remote (e.g. OVH Object Storage, another region) with
-`rclone config`, and add `RCLONE_REMOTE=<remote>:<bucket>` before `./backup.sh` in the cron line.
+`rclone config`, and add `RCLONE_REMOTE=<remote>:<bucket>` before `./backup.sh` in the cron line. Best: a bucket
+used only for this, with its own 30-day expiry rule and a key that can write but not delete; then also add
+`RCLONE_PRUNE=no` (the bucket removes old copies itself, and a broken-into server can't wipe them).
+The backup folder keeps 30 days, including the move's first copy (`railway-*.dump.enc`).
 
 ## 5. Updating the app later
 ```bash

@@ -83,6 +83,8 @@ async function takenAddresses({ fresh = false } = {}) {
     if (a.domain === DOMAIN) set.add(a.email);
     for (const x of adminConsole.aliasEmails(a, dir.domainById)) set.add(x);
   }
+  // Addresses of closed accounts: never given out again.
+  for (const r of (await db.query('SELECT email FROM cp.retired_addresses')).rows) set.add(r.email);
   taken = { at: Date.now(), set };
   return set;
 }

@@ -853,6 +853,14 @@ route('GET', '/admin-api/mailboxes', async (ctx, b, url) => {
   return { mailboxes: list.map(a => mailboxView(a, dir, admins)).sort((x, y) => x.email.localeCompare(y.email)) };
 });
 
+/** Addresses of closed accounts are never given out again (mailbox, team or alias). */
+async function refuseRetired(list) {
+  const emails = (Array.isArray(list) ? list : []).map(x => String(x || '').trim().toLowerCase()).filter(Boolean);
+  if (!emails.length) return;
+  const r = await db.query('SELECT email FROM cp.retired_addresses WHERE email = ANY($1::text[]) LIMIT 1', [emails]);
+  if (r.rows.length) fail(`${r.rows[0].email} belonged to an account that was closed; it can’t be given out again.`);
+}
+
 /** Domains of the same customer (aliases and members must stay within one customer). */
 function sameCustomerDomains(dir, row) {
   return new Set(dir.rows.filter(r => r.customer_id === row.customer_id && r.status === 'active').map(r => r.domain));
@@ -929,6 +937,7 @@ async function createMailbox(ctx, b) {
   const ed = dir.domainByName.get(domain);
   if (!ed) fail('Verify the domain before adding mailboxes.');
   if (dir.accounts.some(a => a.email === email || aliasEmails(a, dir.domainById).includes(email))) fail(`${email} already exists.`);
+  await refuseRetired([email]);
   const plan = await enforcePlan(row, dir, 'mailbox');
   const quotaMb = quotaFor(b.quotaMb, plan);
   const password = tempPassword();
@@ -953,7 +962,7 @@ route('POST', '/admin-api/mailboxes/update', async (ctx, b) => {
     const mb = quotaFor(b.quotaMb === '' ? null : b.quotaMb, await planFor(row.customer_id));
     patch.quotas = mb ? { maxDiskQuota: mb * MB } : {};
   }
-  if (b.aliases !== undefined) patch.aliases = aliasPatch(b.aliases, dir, row, a.email);
+  if (b.aliases !== undefined) { await refuseRetired(b.aliases); patch.aliases = aliasPatch(b.aliases, dir, row, a.email); }
   if (!Object.keys(patch).length) return { ok: true };
   await engineSet('Account', { update: { [a.id]: patch } }, 'save the mailbox');
   audit(ctx, 'mailbox.updated', a.email, { fields: Object.keys(patch) }, row.customer_id);
@@ -1066,6 +1075,7 @@ async function createTeam(ctx, b) {
   const ed = dir.domainByName.get(domain);
   if (!ed || row.status !== 'active') fail('Verify the domain before adding teams.');
   if (dir.accounts.some(a => a.email === email || aliasEmails(a, dir.domainById).includes(email))) fail(`${email} already exists.`);
+  await refuseRetired([email]);
   const plan = await enforcePlan(row, dir, 'team');
   const quotaMb = plan && plan.mailbox_quota_mb;
   const res = await engineSet('Account', { create: { g: {
@@ -1082,7 +1092,7 @@ route('POST', '/admin-api/teams/update', async (ctx, b) => {
   const { a: g, dir, row } = await accountInScope(ctx, b.id, 'Group');
   const patch = {};
   if (b.name !== undefined) patch.description = cleanText(b.name, 100) || null;
-  if (b.aliases !== undefined) patch.aliases = aliasPatch(b.aliases, dir, row, g.email);
+  if (b.aliases !== undefined) { await refuseRetired(b.aliases); patch.aliases = aliasPatch(b.aliases, dir, row, g.email); }
   if (Object.keys(patch).length) await engineSet('Account', { update: { [g.id]: patch } }, 'save the team');
   let changed = 0;
   if (b.members !== undefined) changed = await setMembers(g, dir, row, b.members);

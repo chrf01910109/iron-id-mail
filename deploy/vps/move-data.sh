@@ -29,6 +29,8 @@ N=$(target_psql -tAc "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('p
 echo "3/6 Copying (dump)"
 STAMP=$(date -u +%Y%m%d-%H%M%S)
 DUMP="$BACKUP_DIR/railway-$STAMP.dump"
+# The plain dump never stays on disk, whatever happens (it is kept only encrypted, step 6).
+trap 'rm -f "$DUMP" /tmp/ironid-move-diff.txt' EXIT
 PG_CLIENT_MAJOR="$SRC_MAJOR" url_dump "$SRC" > "$DUMP"
 chmod 600 "$DUMP"
 echo "    $(du -h "$DUMP" | cut -f1) dumped"
@@ -45,5 +47,5 @@ echo "6/6 Keeping the dump encrypted as the first backup"
 openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass "file:$KEY_FILE" -in "$DUMP" -out "$DUMP.enc"
 rm -f "$DUMP"
 echo "    $DUMP.enc"
-[ -z "${LOCAL_TARGET_URL:-}" ] && docker compose up -d app
+if [ -z "${LOCAL_TARGET_URL:-}" ]; then docker compose up -d app; fi
 echo "Done. Next: README.md phase 2 checks (sign in, read mail, re-index search)."

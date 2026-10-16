@@ -280,4 +280,4 @@ async function asRecovery(methodCalls) {
 
 function getStatus() { return status; }
 
-module.exports = { ensureApiKey, call, asRecovery, firstResult, getStatus, recoveryAdminSet, ROLE_PERMISSIONS };
+module.exports = { ensureApiKey, call, asRecovery, firstResult, getStatus, recoveryAdminSet, ROLE_PERMISSIONS, OPTIONAL_PERMISSIONS };

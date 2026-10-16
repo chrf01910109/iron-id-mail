@@ -52,6 +52,7 @@ services:
       PUBLIC_URL: https://${WEB_HOST:?set WEB_HOST in .env}
       MAIL_HOST: ${WEB_HOST}
       PLATFORM_ADMINS: ${PLATFORM_ADMINS:-charaf@iron-id.io}
+      TINI_KILL_PROCESS_GROUP: "1"
       # Only for the one-time steps in README.md; leave empty the rest of the time.
       STALWART_RECOVERY_ADMIN: ${STALWART_RECOVERY_ADMIN:-}
       # Switches for later (phase 6 of the plan). Unset = off.
@@ -64,10 +65,10 @@ services:
       OPENSRS_USER: ${OPENSRS_USER:-}
       OPENSRS_KEY: ${OPENSRS_KEY:-}
       OPENSRS_ENV: ${OPENSRS_ENV:-}
-    volumes:
-      # Caddy's certificates, read-only: scripts/import-certificate.js copies the one for WEB_HOST into
-      # the engine so the mail ports present it too (renew-mail-cert.sh, nightly).
-      - caddy_data:/caddy-data:ro
+    # A small init as the first process: on stop/restart it passes the signal to the gateway AND the
+    # engine (the whole process group), so both shut down cleanly instead of being killed after 10 s.
+    init: true
+    stop_grace_period: 30s
     ports:
       # Mail ports go straight to the engine. The web (3001) and the engine's own HTTP (8080) stay
       # private: Caddy reaches them on the internal network.

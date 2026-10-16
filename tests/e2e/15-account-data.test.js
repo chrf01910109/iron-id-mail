@@ -27,19 +27,29 @@ const HAVE_DB = !!(process.env.PSQL_DOCKER || process.env.TEST_DATABASE_URL);
 const dbTest = HAVE_DB ? test : test.skip;
 const safe = e => { assert.match(e, /^[a-z0-9.@-]+$/); return e; };
 
-/** Reads a .tar.gz into [{ name, data }]. */
+/** Reads a .tar.gz into [{ name, data }] (PAX "path" records give long or non-ASCII names). */
 function untar(gz) {
   const buf = zlib.gunzipSync(gz), out = [];
+  let paxPath = null;
   for (let off = 0; off + 512 <= buf.length;) {
     const hdr = buf.subarray(off, off + 512);
     if (hdr.every(b => b === 0)) break;
     const str = (a, b) => hdr.subarray(a, b).toString('utf8').replace(/\0.*$/s, '');
     const name = (str(345, 500) ? str(345, 500) + '/' : '') + str(0, 100);
     const size = parseInt(str(124, 136).trim(), 8);
+    const type = String.fromCharCode(hdr[156]);
     // The header's checksum must be right (some tools refuse the archive otherwise).
     const copy = Buffer.from(hdr); copy.fill(0x20, 148, 156);
     assert.equal(copy.reduce((s, b) => s + b, 0), parseInt(str(148, 156).trim(), 8), 'tar checksum of ' + name);
-    out.push({ name, data: buf.subarray(off + 512, off + 512 + size) });
+    const data = buf.subarray(off + 512, off + 512 + size);
+    if (type === 'x') {
+      const m = /^(\d+) path=([\s\S]*)\n$/.exec(data.toString('utf8'));
+      assert.ok(m && Number(m[1]) === data.length, 'PAX record length');
+      paxPath = m[2];
+    } else {
+      out.push({ name: paxPath || name, data });
+      paxPath = null;
+    }
     off += 512 + Math.ceil(size / 512) * 512;
   }
   return out;
@@ -68,7 +78,10 @@ before(async () => {
 after(async () => {
   if (browser) await browser.close();
   for (const u of [owner, org, closer]) await h.deleteTestUser(u);
-  if (HAVE_DB && closer) sql(`DELETE FROM cp.signup_log WHERE email = '${safe(closer.email)}'`);
+  if (HAVE_DB && closer) {
+    sql(`DELETE FROM cp.signup_log WHERE email = '${safe(closer.email)}'`);
+    sql(`DELETE FROM cp.retired_addresses WHERE email = '${safe(closer.email)}'`); // test addresses are random
+  }
 });
 
 test('download my data: every message as .eml (exact bytes), by folder, with account.json and README', async () => {
@@ -77,8 +90,13 @@ test('download my data: every message as .eml (exact bytes), by folder, with acc
   const inbox = boxes.list.find(b => b.role === 'inbox').id;
   const [[, made]] = await h.mail(owner.cookie, [['Mailbox/set', { accountId: acct, create: { p: { name: `Projets été ${tag}` } } }, 'm']]);
   const folder = made.created.p.id;
-  const raws = [RAW('Un ' + tag, 'one'), RAW('Deux ' + tag, 'two'), RAW('Trois ' + tag, 'three')];
-  const targets = [inbox, inbox, folder];
+  // Deep folders with long names (paths over 100 bytes) and a folder called "..".
+  const long = 'Clients et partenaires du projet ' + tag;
+  const [[, deep]] = await h.mail(owner.cookie, [['Mailbox/set', { accountId: acct, create: {
+    a: { name: long, parentId: folder }, b: { name: long + ' bis', parentId: '#a' }, c: { name: '..', parentId: '#b' } } }, 'm']]);
+  assert.ok(deep.created && deep.created.c, JSON.stringify(deep));
+  const raws = [RAW('Un ' + tag, 'one'), RAW('Deux ' + tag, 'two'), RAW('Trois ' + tag, 'three'), RAW('Quatre ' + tag, 'four'), RAW('Cinq ' + tag, 'five')];
+  const targets = [inbox, inbox, folder, deep.created.c.id, deep.created.c.id];
   for (let i = 0; i < raws.length; i++) {
     const up = await h.upload(owner.cookie, acct, raws[i], 'message/rfc822');
     const [[, imp]] = await h.mail(owner.cookie, [['Email/import', { accountId: acct, emails: { e: { blobId: up.blobId, mailboxIds: { [targets[i]]: true }, receivedAt: `2026-10-1${i}T08:00:00Z` } } }, 'i']]);
@@ -97,7 +115,11 @@ test('download my data: every message as .eml (exact bytes), by folder, with acc
   assert.ok(Array.isArray(info.signIns) && info.signIns.length >= 1, 'sign-in history');
   const emls = files.filter(f => f.name.endsWith('.eml'));
   assert.equal(emls.filter(f => /\/Mail\/Inbox\//.test(f.name)).length, 2, names.join('\n'));
-  assert.equal(emls.filter(f => f.name.includes(`/Mail/Projets ete ${tag}/`)).length, 1, 'folder names kept (accents simplified)');
+  assert.equal(emls.filter(f => f.name.includes(`/Mail/Projets été ${tag}/2`)).length, 1, 'folder names kept, accents too');
+  const cut = x => Array.from(x).slice(0, 40).join('').replace(/[ .]+$/, ''); // folder names: 40 characters
+  const deepFiles = emls.filter(f => f.name.includes(`/Mail/Projets été ${tag}/${cut(long)}/${cut(long + ' bis')}/Folder/`));
+  assert.equal(deepFiles.length, 2, 'long paths kept whole, ".." made harmless: ' + names.join('\n'));
+  assert.ok(names.every(n => !n.split('/').includes('..')), 'no ".." in any path');
   for (const raw of raws) assert.ok(emls.some(f => f.data.equals(raw)), 'a message is byte-for-byte the original');
 });
 
@@ -108,6 +130,11 @@ test('download my data: signed in only, 3 a day', async () => {
   const fourth = await download(owner.cookie);
   assert.equal(fourth.status, 429);
   assert.match(fourth.body.toString(), /3 times a day/);
+  // Settings asks first, so the refusal is shown as a message (not saved as a file).
+  const check = await h.gw('/account/export/check', { cookie: owner.cookie });
+  assert.equal(check.status, 429);
+  assert.match(check.json.error, /3 times a day/);
+  assert.equal((await h.gw('/account/export/check', { cookie: org.cookie })).status, 200);
 });
 
 test('close my account: a mailbox from an organisation can’t, and is told why', async () => {
@@ -130,6 +157,8 @@ dbTest('close my account: confirmation, other browsers signed out, cancel, then 
   const post = body => h.gw('/account/close', { method: 'POST', cookie: closer.cookie, body, headers: XF(3) });
   assert.equal((await post({ confirm: 'someone@else.example', currentPassword: closer.password })).json.code, 'confirm');
   assert.equal((await post({ confirm: closer.email, currentPassword: 'not the password' })).status, 400);
+  await h.sleep(500);
+  assert.equal((await h.gw('/account/close', { cookie: closer.cookie })).json.scheduled, null, 'a wrong password schedules nothing');
   const cross = await h.gw('/account/close', { method: 'POST', cookie: closer.cookie, body: { confirm: closer.email, currentPassword: closer.password }, headers: { ...XF(3), origin: 'https://evil.example' } });
   assert.equal(cross.status, 403);
   const ok = await post({ confirm: closer.email.toUpperCase(), currentPassword: closer.password });
@@ -159,6 +188,47 @@ dbTest('close my account: confirmation, other browsers signed out, cancel, then 
   assert.ok(!all.list.some(a => a.id === closer.id), 'the mailbox is gone from the mail server');
   assert.equal(sql(`SELECT count(*) FROM cp.audit_log WHERE action = 'account.closed' AND target = '${safe(closer.email)}'`), '1');
   closer.id = null;
+  // The address is never given out again: not by sign-up, not by the admin console.
+  assert.equal(sql(`SELECT count(*) FROM cp.retired_addresses WHERE email = '${safe(closer.email)}'`), '1');
+  const [local, domain] = closer.email.split('@');
+  if (domain === 'iron-id.io') {
+    const chk = await h.gw('/signup-api/check', { method: 'POST', body: { local }, headers: XF(7) });
+    if (chk.status === 200) assert.equal(chk.json.reason, 'taken', JSON.stringify(chk.json));
+  }
+  const platform = await h.createTestUser('e2e-platform-admin', { exactName: true });
+  try {
+    const P = (await h.login(platform.email, platform.password, XF(8))).cookie;
+    const again = await h.gw('/admin-api/mailboxes', { method: 'POST', cookie: P, body: { email: closer.email, name: 'New owner' } });
+    assert.equal(again.status, 400, again.text);
+    assert.match(again.json.error, /closed/);
+  } finally { await h.deleteTestUser(platform); }
+});
+
+dbTest('close my account: no cancelling while the deletion runs; a stopped deletion is finished later', async () => {
+  const u = await h.createTestUser('data-close2');
+  try {
+    const me = safe(u.email);
+    const L = await h.login(u.email, u.password, XF(9));
+    sql(`INSERT INTO cp.signup_log (email, ip, network, terms_version, lang, status) VALUES ('${me}', '198.51.103.9', '198.51.103.9', 'test', 'en', 'created')`);
+    sql(`INSERT INTO cp.user_prefs (email, lang) VALUES ('${me}', 'fr') ON CONFLICT (email) DO NOTHING`);
+    assert.equal((await h.gw('/account/close', { method: 'POST', cookie: L.cookie, body: { confirm: u.email, currentPassword: u.password }, headers: XF(9) })).status, 200);
+    // A deletion run is working on it: cancelling is refused.
+    sql(`UPDATE cp.account_closures SET claimed_at = NOW() WHERE email = '${me}'`);
+    const c = await h.gw('/account/close/cancel', { method: 'POST', cookie: L.cookie, body: {}, headers: XF(9) });
+    assert.equal(c.status, 409, c.text);
+    // A run that stopped after deleting the mailbox: the next one finishes the clean-up, it is not "refused".
+    await h.deleteTestUser(u); u.id = null;
+    sql(`UPDATE cp.account_closures SET claimed_at = NOW() - INTERVAL '2 hours', mailbox_deleted_at = NOW(), delete_after = NOW() - INTERVAL '1 minute' WHERE email = '${me}'`);
+    let gone = false;
+    for (let i = 0; i < 40 && !gone; i++) { await h.sleep(1000); gone = sql(`SELECT count(*) FROM cp.account_closures WHERE email = '${me}'`) === '0'; }
+    assert.ok(gone, 'finished');
+    assert.equal(sql(`SELECT count(*) FROM cp.user_prefs WHERE email = '${me}'`), '0', 'settings removed');
+    assert.equal(sql(`SELECT count(*) FROM cp.audit_log WHERE action = 'account.close_refused' AND target = '${me}'`), '0');
+  } finally {
+    if (u.id) await h.deleteTestUser(u);
+    sql(`DELETE FROM cp.signup_log WHERE email = '${safe(u.email)}'`);
+    sql(`DELETE FROM cp.retired_addresses WHERE email = '${safe(u.email)}'`);
+  }
 });
 
 test('Settings: "Your data" and the closing card in the browser (French)', async () => {

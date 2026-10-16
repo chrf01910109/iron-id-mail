@@ -29,6 +29,7 @@ export function init({ profileChanged }) {
   $('#recResendBtn').addEventListener('click', resendRecoveryCode);
   $('#closeForm').addEventListener('submit', closeAccount);
   $('#closeCancelBtn').addEventListener('click', cancelClosing);
+  $('#dataDownload').addEventListener('click', startDownload);
   $('#vacationForm').addEventListener('submit', saveVacation);
   $('#prefsForm').addEventListener('submit', savePreferences);
   $('#twoStepStart').addEventListener('click', startTwoStep);
@@ -60,7 +61,7 @@ export function open(which = 'general') {
   $('#prefConfirmDelete').checked = !!p.confirmDelete;
   $('#prefRemoteImages').value = p.remoteImages === 'always' ? 'always' : 'ask';
   $('#prefLang').value = lang;
-  for (const id of ['profileStatus', 'pwStatus', 'vacStatus', 'twoStepStatus', 'sessionStatus', 'appPwStatus', 'recStatus', 'recConfirmStatus', 'closeStatus']) status(id, '');
+  for (const id of ['profileStatus', 'pwStatus', 'vacStatus', 'twoStepStatus', 'sessionStatus', 'appPwStatus', 'recStatus', 'recConfirmStatus', 'closeStatus', 'dataStatus']) status(id, '');
   $('#appPwNew').classList.add('hidden'); $('#appPwSecret').textContent = '';
   $('#stab-vacation').classList.toggle('hidden', !api.hasCapability(api.CAP.vacation));
   tab(which);
@@ -182,6 +183,17 @@ async function closeAccount(e) {
   } finally {
     btn.disabled = false;
   }
+}
+
+/** Checks first, so "already running" or "3 a day" shows here instead of being saved as a file. */
+async function startDownload(e) {
+  e.preventDefault();
+  status('dataStatus', '');
+  try {
+    await api.account('export/check');
+    status('dataStatus', t('Your download is starting. Large mailboxes take a while.'), true);
+    window.location.href = '/account/export';
+  } catch (err) { status('dataStatus', err.message, false); }
 }
 
 async function cancelClosing() {

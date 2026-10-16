@@ -79,6 +79,7 @@ export default {
   'Your mailbox and everything in it will be deleted in {days} days. You can cancel until then.': 'Votre boîte mail et tout son contenu seront supprimés dans {days} jours. Vous pouvez annuler d’ici là.',
   'Done. Other browsers were signed out.': 'C’est fait. Les autres navigateurs ont été déconnectés.',
   'Your account will not be closed.': 'Votre compte ne sera pas fermé.',
+  'Your download is starting. Large mailboxes take a while.': 'Le téléchargement commence. Les grandes boîtes mail prennent un moment.',
   'Cancel closing': 'Annuler la fermeture',
   'Recovery address saved. Confirm it with the code we send to it.': 'Adresse de récupération enregistrée. Confirmez-la avec le code que nous y envoyons.',
   'Password changed. Other devices have been signed out. Check your recovery address below and confirm it again.': 'Mot de passe changé. Les autres appareils ont été déconnectés. Vérifiez votre adresse de récupération ci-dessous et confirmez-la à nouveau.'

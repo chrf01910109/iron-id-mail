@@ -6,7 +6,11 @@
  * Why not the engine's own ACME: it always adds the bare domain (iron-id.io) to the order, and that
  * name points at the website host, not this server, so the HTTP check would fail.
  *
- *   node scripts/import-certificate.js --host mail.iron-id.io [--dir /caddy-data] [--check]
+ *   ... | node scripts/import-certificate.js --host mail.iron-id.io --stdin [--check]
+ *   node scripts/import-certificate.js --host mail.iron-id.io --dir <caddy data folder> [--check]
+ *
+ * --stdin reads the certificate chain and its private key as PEM (deploy/vps/renew-mail-cert.sh pipes
+ * them from the Caddy container, so the app container never holds Caddy's other keys).
  *
  * Exit codes: 0 = already up to date, 3 = certificate created or updated (restart the app so the
  * engine presents it), 1 = error. --check only reports, never writes.
@@ -24,6 +28,7 @@ const opt = name => { const i = args.indexOf('--' + name); return i >= 0 ? (args
 const HOST = String(opt('host') || process.env.MAIL_HOST || '').toLowerCase();
 const DIR = String(opt('dir') || '/caddy-data');
 const CHECK = !!opt('check');
+const STDIN = !!opt('stdin');
 
 function fail(msg) { console.error('import-certificate: ' + msg); process.exit(1); }
 if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(HOST)) fail('give the mail host name: --host mail.example.com');
@@ -47,10 +52,20 @@ function describe(pem) {
   return { names: (c.subjectAltName || '').split(',').map(x => x.trim().replace(/^DNS:/, '').toLowerCase()), notAfter: new Date(c.validTo), issuer: c.issuer.replace(/\n/g, ', ') };
 }
 
+/** The PEM blocks read from standard input: certificates (in order) and one private key. */
+function fromStdin() {
+  const text = fs.readFileSync(0, 'utf8');
+  const certs = text.match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g) || [];
+  const keys = text.match(/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC )?PRIVATE KEY-----/g) || [];
+  if (!certs.length) fail('no certificate on standard input');
+  if (keys.length !== 1) fail('expected exactly one private key on standard input');
+  return { certPem: certs.join('\n') + '\n', keyPem: keys[0] + '\n' };
+}
+
 async function main() {
-  const files = findFiles();
-  const certPem = fs.readFileSync(files.crt, 'utf8');
-  const keyPem = fs.readFileSync(files.key, 'utf8');
+  let certPem, keyPem;
+  if (STDIN) ({ certPem, keyPem } = fromStdin());
+  else { const files = findFiles(); certPem = fs.readFileSync(files.crt, 'utf8'); keyPem = fs.readFileSync(files.key, 'utf8'); }
   const info = describe(certPem);
   if (!info.names.includes(HOST)) fail(`the certificate found does not cover ${HOST}`);
   if (info.notAfter < new Date()) fail(`Caddy's certificate for ${HOST} has expired (${info.notAfter.toISOString()})`);
@@ -62,11 +77,14 @@ async function main() {
   const state = await engineAdmin.ensureApiKey();
   if (!['ok', 'provisioned', 'needs_update'].includes(state)) fail(`no engine access (${state})`);
   const call = async calls => engineAdmin.call(calls);
-  const got = engineAdmin.firstResult(await call([['x:Certificate/get', { ids: null, properties: ['subjectAlternativeNames', 'notValidAfter', 'certificate'] }, 'g']]), 'g');
+  const got = engineAdmin.firstResult(await call([['x:Certificate/get', { ids: null, properties: ['subjectAlternativeNames', 'notValidAfter'] }, 'g']]), 'g');
   const mine = (got.list || []).filter(c => Object.keys(c.subjectAlternativeNames || {}).map(x => x.toLowerCase()).includes(HOST))
     .sort((a, b) => new Date(b.notValidAfter) - new Date(a.notValidAfter));
   const current = mine[0];
-  const same = current && current.certificate && String(current.certificate.value || '').trim() === certPem.trim();
+  // Up to date = the engine's certificate for this name ends at the same second (Caddy renews well
+  // before the end, so a renewal always changes it). The PEM text is not compared: the engine may
+  // return it normalised.
+  const same = current && Math.abs(new Date(current.notValidAfter).getTime() - info.notAfter.getTime()) < 1000;
   console.log(`Caddy: ${HOST}, valid until ${info.notAfter.toISOString().slice(0, 10)}, issuer ${info.issuer}`);
   console.log(`Engine: ${current ? `certificate ${current.id}, valid until ${String(current.notValidAfter).slice(0, 10)}` : 'none for this name'}`);
 

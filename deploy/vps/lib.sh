@@ -8,8 +8,9 @@ target_dump()    { if [ -n "${LOCAL_TARGET_URL:-}" ]; then pg_dump --format=cust
 target_restore() { if [ -n "${LOCAL_TARGET_URL:-}" ]; then pg_restore --no-owner --no-privileges --exit-on-error -d "${1:-$LOCAL_TARGET_URL}"; else docker compose exec -T db pg_restore --no-owner --no-privileges --exit-on-error -U ironid -d "${1:-ironid}"; fi; }
 
 # The same, against another database given by URL (Railway's), with a client of a given major version.
-url_psql() { local url="$1"; shift; if [ -n "${LOCAL_TARGET_URL:-}" ]; then psql "$url" -v ON_ERROR_STOP=1 "$@"; else docker run --rm -i -e PGURL="$url" "postgres:${PG_CLIENT_MAJOR:-$PG_IMAGE_MAJOR}-bookworm" sh -c 'psql "$PGURL" -v ON_ERROR_STOP=1 "$@"' sh "$@"; fi; }
-url_dump() { local url="$1"; if [ -n "${LOCAL_TARGET_URL:-}" ]; then pg_dump --format=custom --no-owner --no-privileges -d "$url"; else docker run --rm -i -e PGURL="$url" "postgres:${PG_CLIENT_MAJOR:-$PG_IMAGE_MAJOR}-bookworm" sh -c 'pg_dump --format=custom --no-owner --no-privileges -d "$PGURL"'; fi; }
+# The URL (it holds a password) goes through the environment, never the command line (visible in ps).
+url_psql() { local url="$1"; shift; if [ -n "${LOCAL_TARGET_URL:-}" ]; then psql "$url" -v ON_ERROR_STOP=1 "$@"; else PGURL="$url" docker run --rm -i -e PGURL "postgres:${PG_CLIENT_MAJOR:-$PG_IMAGE_MAJOR}-bookworm" sh -c 'psql "$PGURL" -v ON_ERROR_STOP=1 "$@"' sh "$@"; fi; }
+url_dump() { local url="$1"; if [ -n "${LOCAL_TARGET_URL:-}" ]; then pg_dump --format=custom --no-owner --no-privileges -d "$url"; else PGURL="$url" docker run --rm -i -e PGURL "postgres:${PG_CLIENT_MAJOR:-$PG_IMAGE_MAJOR}-bookworm" sh -c 'pg_dump --format=custom --no-owner --no-privileges -d "$PGURL"'; fi; }
 
 # Exact row counts of every table, one "schema.table count" per line, sorted (to compare two databases).
 COUNT_SQL="SELECT format('SELECT %L || '' '' || count(*) FROM %I.%I', schemaname || '.' || tablename, schemaname, tablename)

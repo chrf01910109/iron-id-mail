@@ -2,7 +2,7 @@
 const { test, before } = require('node:test');
 const assert = require('node:assert/strict');
 const h = require('./helpers');
-const { ROLE_PERMISSIONS } = require('../../webmail/services/engineAdmin');
+const { ROLE_PERMISSIONS, OPTIONAL_PERMISSIONS } = require('../../webmail/services/engineAdmin');
 
 before(async () => { await h.waitHealthy(120000, { requireAdmin: true }); });
 
@@ -22,7 +22,9 @@ test('gateway role grants only the expected permissions', async () => {
   for (const r of roles.list.filter(x => ['User', 'Group'].includes(x.description))) {
     for (const [k, v] of Object.entries(r.enabledPermissions || {})) if (v) grantable.add(k);
   }
-  const unexpected = granted.filter(p => !ROLE_PERMISSIONS[p] && !grantable.has(p));
+  // The certificate permissions (server kit, import-certificate.js) are added when the role is synced
+  // with the recovery admin.
+  const unexpected = granted.filter(p => !ROLE_PERMISSIONS[p] && !OPTIONAL_PERMISSIONS[p] && !grantable.has(p));
   assert.deepEqual(unexpected, [], 'no permissions beyond the console needs');
   for (const p of ['impersonate', 'sysSystemSettingsGet', 'sysSystemSettingsUpdate', 'sysNetworkListenerGet', 'sysRoleCreate', 'sysRoleUpdate', 'fetchAnyBlob']) {
     assert.ok(!granted.includes(p), `must not have ${p}`);

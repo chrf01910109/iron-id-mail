@@ -267,6 +267,17 @@ CREATE TABLE IF NOT EXISTS cp.account_closures (
   ip            TEXT,
   lang          TEXT
 );
+-- claimed_at: a deletion run is working on it (one at a time; retried after an hour if it stopped).
+-- mailbox_deleted_at: the mailbox is gone; from then on the clean-up only continues, never cancels.
+ALTER TABLE cp.account_closures ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ;
+ALTER TABLE cp.account_closures ADD COLUMN IF NOT EXISTS mailbox_deleted_at TIMESTAMPTZ;
+-- Addresses of closed accounts are never given out again (their mail, password resets from other
+-- sites and history would go to a new owner).
+CREATE TABLE IF NOT EXISTS cp.retired_addresses (
+  email       TEXT PRIMARY KEY,
+  retired_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  reason      TEXT
+);
 -- A bought domain whose IRON ID account was closed stays its owner's at the registrar: "released".
 ALTER TABLE cp.registered_domains DROP CONSTRAINT IF EXISTS registered_domains_status_check;
 ALTER TABLE cp.registered_domains ADD CONSTRAINT registered_domains_status_check CHECK (status IN ('active', 'expired', 'released'));

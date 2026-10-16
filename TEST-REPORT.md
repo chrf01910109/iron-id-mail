@@ -1,5 +1,24 @@
 # IRON ID Mail — Test and Security Audit Report
 
+## Update 2026-10-16 (evening) — work that needs no server (branch `next`, on the live `d0f7fc4`)
+
+No daily sending limit (texts); the app runs as an unprivileged user; the server (VPS) kit; "Your data" (download
+everything, close my account); credit notes for refunds. Same local stack and switches as below, plus
+`IRONID_CLOSE_CHECK_SECONDS=5` and a test `STRIPE_WEBHOOK_SECRET` (signed webhook events).
+
+| Check | Result |
+|---|---|
+| End-to-end tests, all files (17) | **131 / 131 passed**: 130 in the full run + the restart test with a real restart. One test ("copying an old mailbox") failed once right after the stack restarted: the search index had not seen the copied mail yet; it now waits up to 30 s for it, and passed |
+| New tests | `15-account-data` (7): exact message bytes in the archive, long and non-Latin folder names (PAX), a folder called "..", 3 downloads a day and the check Settings makes first, organisation mailboxes can't close, closing with confirmation/password/other browsers signed out/cancel/deletion, the address never given out again (sign-up and console), no cancelling during a deletion run, a stopped deletion finished later, the French Settings card. `16-credit-notes` (3): partial and full refunds, repeats, numbering, access, console totals |
+| Non-root run | Engine and gateway run as `ironid` (uid 10001); mail ports 25/993 open; a slow engine is never started twice |
+| Server kit (locally) | Data move into an empty database: 52 tables, identical counts, a second run refused; backup + restore test OK; certificate import through a pipe: created, then "up to date" on the second run |
+| Translation coverage | **OK** — 1,431 texts, 1,026 French entries; gateway 314 |
+| Security audit | 0 dependency problems; semgrep: one SQL statement written with a template (fixed table names) rewritten literally, 3 known warnings; HTTP probe 44/47 — the 3 "failures" are the test switches and recovery login left on in the test copy |
+| Independent review (separate agent) | 1 high, 6 medium, 13 low. **Fixed:** a closed address could be signed up again and the new owner would get the old owner's mail and history (now retired for good, also refused in the console); a cancelled download blocked further downloads until restart; the engine fallback could start a second engine; a deletion stopped half-way was never finished; cancel and deletion could race; with IPv6 every visitor looked the same (no AAAA in the runbook); the off-site clean-up could delete other files; long folder paths collided; ".." folders; page loads read the whole account list; credit-note VAT could exceed the invoice's by a cent; refunds of never-invoiced orders; a failure reason overwritten; the database URL visible in the process list; plain dumps left after a failed move; the move's dump never pruned; Caddy's keys mounted in the app; slow stops (no init); credit notes missing from the export; refusals saved as a file; a domain paid in an old tab after closing. **Left:** the engine sees the gateway's settings in its environment (it needs some of them); OpenSearch documents of a deleted account are not removed by the gateway (to check with the engine) |
+| Found while testing | The shared password check in the new code answered "incorrect password" but **carried on** (a code was sent, a closing could be scheduled). Never deployed (live code has its own check). Fixed, with tests that a refused request changes nothing |
+
+---
+
 ## Update 2026-10-16 — "Forgot password?" review fixes, domain pages and renewal tests (branch `recovery-fixes`, on `b8f0414`)
 
 Same local stack, gateway with `PASSWORD_RESET_ENABLED=true`, `PUBLIC_URL` and the test-only

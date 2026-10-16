@@ -182,11 +182,18 @@ async function recordRefund({ paymentRef, refundedTotalCents, providerRef = null
   try {
     await client.query('BEGIN');
     order = (await client.query('SELECT * FROM cp.orders WHERE payment_ref = $1 FOR UPDATE', [paymentRef])).rows[0];
-    if (!order || !order.invoice_number) { await client.query('ROLLBACK'); return null; }
-    const done = Number((await client.query('SELECT COALESCE(SUM(amount_cents), 0) AS s FROM cp.credit_notes WHERE order_id = $1', [order.id])).rows[0].s);
+    if (!order) { await client.query('ROLLBACK'); return null; }
+    if (!order.invoice_number) { // never invoiced (should not happen: paying gives a number): nothing to correct
+      if (total >= order.amount_cents) await client.query(`UPDATE cp.orders SET status = 'refunded' WHERE id = $1`, [order.id]);
+      await client.query('COMMIT');
+      return null;
+    }
+    const sums = (await client.query('SELECT COALESCE(SUM(amount_cents), 0) AS a, COALESCE(SUM(vat_cents), 0) AS v FROM cp.credit_notes WHERE order_id = $1', [order.id])).rows[0];
+    const done = Number(sums.a), vatDone = Number(sums.v);
     const delta = Math.min(total, order.amount_cents) - done;
     if (delta > 0) {
-      const vat = order.amount_cents ? Math.round(order.vat_cents * delta / order.amount_cents) : 0;
+      // VAT on the running total, so the credit notes' VAT never adds up to more than the invoice's.
+      const vat = order.amount_cents ? Math.round(order.vat_cents * (done + delta) / order.amount_cents) - vatDone : 0;
       const year = Number((await client.query(`SELECT EXTRACT(YEAR FROM NOW() AT TIME ZONE 'Europe/Paris')::int AS y`)).rows[0].y);
       const seq = await client.query(`INSERT INTO cp.credit_seq (year, last) VALUES ($1, 1)
                                       ON CONFLICT (year) DO UPDATE SET last = cp.credit_seq.last + 1 RETURNING last`, [year]);
@@ -196,7 +203,7 @@ async function recordRefund({ paymentRef, refundedTotalCents, providerRef = null
     }
     const refunded = done + Math.max(delta, 0);
     if (refunded >= order.amount_cents) await client.query(`UPDATE cp.orders SET status = 'refunded' WHERE id = $1`, [order.id]);
-    else await client.query('UPDATE cp.orders SET error = $2 WHERE id = $1', [order.id, `Partly refunded: ${(refunded / 100).toFixed(2)} €`]);
+    else if (order.status !== 'failed') await client.query('UPDATE cp.orders SET error = $2 WHERE id = $1', [order.id, `Partly refunded: ${(refunded / 100).toFixed(2)} €`]);
     await client.query('COMMIT');
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
@@ -213,6 +220,9 @@ async function creditNote(id) {
 /* What to do when an order is paid, registered by the features that sell something. */
 const fulfillers = {};
 function onPaid(kind, fn) { fulfillers[kind] = fn; }
+
+/** Set on the pending orders of an account that is deleted (accountData.deleteAccount). */
+const ACCOUNT_CLOSED = 'Account closed';
 
 /** Marks an order paid (once), gives it an invoice number, then delivers the service. */
 async function markPaid(orderId, { paymentRef = null } = {}) {
@@ -239,6 +249,10 @@ async function markPaid(orderId, { paymentRef = null } = {}) {
   } finally { client.release(); }
   if (!order) return null; // already paid (webhook sent twice) or not pending
   db.audit({ actor: order.email, customerId: order.customer_id, action: 'billing.paid', target: order.domain, details: { order: Number(order.id), kind: order.kind, amountCents: order.amount_cents, invoice: order.invoice_number } }).catch(() => {});
+  if (order.error === ACCOUNT_CLOSED) { // paid in a tab left open after the account was closed: nothing to deliver
+    await db.query(`UPDATE cp.orders SET status = 'failed', error = $2 WHERE id = $1`, [order.id, 'Paid after the account was closed: refund this payment in Stripe.']);
+    return order;
+  }
   await fulfil(order);
   return order;
 }
@@ -404,5 +418,5 @@ ${vatLine}<p class="muted">${fr ? 'Remboursé sur la carte utilisée pour le pai
 module.exports = {
   settings, amounts, priceList, provider, createOrder, markPaid, retry, onPaid, orderView, ordersFor, order, totalsByCustomer,
   stripeWebhook, verifyStripeSignature, sweepStuck, cancelOpen, fakeCheckoutValid, invoiceHtml, labelFor, KINDS, BillingError,
-  recordRefund, creditsFor, creditNote, creditNoteHtml
+  recordRefund, creditsFor, creditNote, creditNoteHtml, ACCOUNT_CLOSED
 };

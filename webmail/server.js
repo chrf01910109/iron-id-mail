@@ -427,21 +427,30 @@ const server = http.createServer(async (req, res) => {
 
       // The current password (and the code when two-step is on), for actions a stolen session must not do.
       // Returns null when right, else the response already sent.
+      // Checks the password (and the two-step code when it is on). Answers the request itself and returns
+      // true when it is refused: the caller must then stop (sendJson returns nothing).
       const checkCurrentPassword = async () => {
+        const refuse = obj => { sendJson(res, 400, obj); return true; };
         const password = String(body.currentPassword || '');
         const code = String(body.code || '').replace(/\s+/g, '');
         const twoStep = await security.twoStepEnabled(current.auth);
-        if (twoStep && !security.validCodeFormat(code)) return sendJson(res, 400, { needCode: true, error: 'Enter the current 6-digit code from your authenticator app.' });
-        if (twoStep && !(await security.claimCode(current.email, code))) return sendJson(res, 400, { needCode: true, error: 'That code was already used. Wait for the next one.' });
+        if (twoStep && !security.validCodeFormat(code)) return refuse({ needCode: true, error: 'Enter the current 6-digit code from your authenticator app.' });
+        if (twoStep && !(await security.claimCode(current.email, code))) return refuse({ needCode: true, error: 'That code was already used. Wait for the next one.' });
         if (twoStep ? !(await security.signInWithCode(current.email, password, code)) : (await security.checkPassword(current.email, password)).result !== 'ok') {
           sessions.recordFailedLogin(ip, current.email);
-          return sendJson(res, 400, { error: twoStep ? 'Your current password or the code is not right.' : 'Your current password is incorrect.' });
+          return refuse({ error: twoStep ? 'Your current password or the code is not right.' : 'Your current password is incorrect.' });
         }
         sessions.clearFailedLogins(ip, current.email);
-        return null;
+        return false;
       };
 
       // "Your data": download everything, or close the account (people who signed up themselves).
+      if (route === 'GET /account/export/check') {
+        try { return sendJson(res, 200, accountData.exportCheck(current.email)); } catch (e) {
+          if (e.userError) return sendJson(res, e.status || 400, { error: e.message });
+          throw e;
+        }
+      }
       if (route === 'GET /account/export') {
         try { return await accountData.exportData(current, res, { lang: res.ironLang, billing }); } catch (e) {
           if (res.headersSent) return;
@@ -454,8 +463,7 @@ const server = http.createServer(async (req, res) => {
         try {
           if (route === 'POST /account/close/cancel') return sendJson(res, 200, { ok: true, ...(await accountData.cancelClose(current, { ip })) });
           if (String(body.confirm || '').trim().toLowerCase() !== String(current.email).toLowerCase()) return sendJson(res, 400, { error: 'Type your address to confirm.', code: 'confirm' });
-          const sent = await checkCurrentPassword();
-          if (sent) return sent;
+          if (await checkCurrentPassword()) return;
           return sendJson(res, 200, { ok: true, ...(await accountData.requestClose(current, { ip, lang: res.ironLang, keepSession: sid })) });
         } catch (e) {
           if (e.userError) return sendJson(res, e.status || 400, { error: e.message });
@@ -469,8 +477,7 @@ const server = http.createServer(async (req, res) => {
         if (signup.brake('recovery-change:' + String(current.email).toLowerCase(), 10, 3600e3)) {
           return sendJson(res, 429, { error: 'Too many requests. Please wait a few minutes and try again.' });
         }
-        const sent = await checkCurrentPassword();
-        if (sent) return sent;
+        if (await checkCurrentPassword()) return;
         if (route === 'POST /account/recovery/code') {
           try {
             return sendJson(res, 200, { ok: true, recovery: await passwordReset.sendCode(current.email, res.ironLang) });
@@ -522,7 +529,7 @@ const server = http.createServer(async (req, res) => {
           getLangPref(current.email)
         ]);
         const domainNotices = await domains.notices(current.email).catch(() => []);
-        const closing = await accountData.closeStatus(current.email).then(c => c.scheduled).catch(() => null);
+        const closing = await accountData.closingFor(current.email).catch(() => null);
         return sendJson(res, 200, { email: current.email, admin, teams, labels: myLabels, lang, domainNotices, closing });
       }
 

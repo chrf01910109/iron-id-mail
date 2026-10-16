@@ -13,9 +13,8 @@ node /opt/iron-id/webmail/scripts/generateConfig.js
 RUN_USER=ironid
 id "$RUN_USER" > /dev/null 2>&1 || RUN_USER=""
 if [ -n "$RUN_USER" ]; then chown root:"$RUN_USER" /opt/iron-id/config.json; chmod 640 /opt/iron-id/config.json; else chmod 600 /opt/iron-id/config.json; fi
-# Runs a command as the unprivileged user when the image has one (the engine gets only the right to use
-# ports below 1024, set on its file in the Dockerfile).
-as_app() { if [ -n "$RUN_USER" ]; then setpriv --reuid="$RUN_USER" --regid="$RUN_USER" --init-groups "$@"; else "$@"; fi; }
+# The engine and the gateway run as this unprivileged user when the image has one (the engine gets only
+# the right to use ports below 1024, set on its file in the Dockerfile).
 
 DB_HOST=$(node -e "console.log(require('/opt/iron-id/webmail/services/dbUrlParser').getPostgresConfig().host)")
 DB_PORT=$(node -e "console.log(require('/opt/iron-id/webmail/services/dbUrlParser').getPostgresConfig().port)")
@@ -110,16 +109,28 @@ wait_engine() {
   done
   return 1
 }
-as_app /usr/local/bin/stalwart -c /opt/iron-id/config.json >> /var/log/ironid-engine.log 2>&1 &
+# Started directly (not through a shell function) so $! is the engine itself: setpriv replaces itself
+# with it, and the fallback below can stop it for sure.
+if [ -n "$RUN_USER" ]; then
+  setpriv --reuid="$RUN_USER" --regid="$RUN_USER" --init-groups /usr/local/bin/stalwart -c /opt/iron-id/config.json >> /var/log/ironid-engine.log 2>&1 &
+else
+  /usr/local/bin/stalwart -c /opt/iron-id/config.json >> /var/log/ironid-engine.log 2>&1 &
+fi
 ENGINE_PID=$!
 echo "--> Verifying IRON ID Sovereign Mail Engine is listening (as ${RUN_USER:-root})..."
-if ! wait_engine && [ -n "$RUN_USER" ]; then
-  # Should not happen; if this host refuses the engine's port right, keep the service up as before.
-  echo "[WARNING] The engine did not start as $RUN_USER; starting it as root instead. Log:"
-  tail -n 40 /var/log/ironid-engine.log || true
-  kill "$ENGINE_PID" 2>/dev/null || true; sleep 1
-  /usr/local/bin/stalwart -c /opt/iron-id/config.json >> /var/log/ironid-engine.log 2>&1 &
-  wait_engine || true
+if ! wait_engine; then
+  if kill -0 "$ENGINE_PID" 2>/dev/null; then
+    # Still running, only slow (first start on a large database): never start a second one.
+    echo "--> The engine is still starting; waiting longer..."
+    wait_engine || wait_engine || wait_engine || true
+  elif [ -n "$RUN_USER" ]; then
+    # It stopped. Should not happen; if this host refuses the engine's port right, keep the service up as before.
+    echo "[WARNING] The engine did not start as $RUN_USER; starting it as root instead. Log:"
+    tail -n 40 /var/log/ironid-engine.log || true
+    /usr/local/bin/stalwart -c /opt/iron-id/config.json >> /var/log/ironid-engine.log 2>&1 &
+    ENGINE_PID=$!
+    wait_engine || true
+  fi
 fi
 
 if [ -n "$DETECTED_PORT" ]; then
