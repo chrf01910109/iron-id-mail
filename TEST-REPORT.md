@@ -1,5 +1,32 @@
 # IRON ID Mail — Test and Security Audit Report
 
+## Update 2026-10-16 — "Forgot password?" review fixes, domain pages and renewal tests (branch `recovery-fixes`, on `b8f0414`)
+
+Same local stack, gateway with `PASSWORD_RESET_ENABLED=true`, `PUBLIC_URL` and the test-only
+`IRONID_RECOVERY_TEST_DOMAIN=recovery-e2e.test` (a throwaway engine domain standing in for "outside" mail).
+
+| Check | Result |
+|---|---|
+| End-to-end tests, all files (15) | **122 / 122 passed**: 121 in the full run (incl. 14 recovery tests in the rewritten `13-password-reset.test.js` and 6 new tests in `14-domains-ui.test.js`) + the restart test with a real restart |
+| Translation coverage | **OK** — 1,407 texts, 1,008 French entries; gateway 304 |
+| Security audit | 0 dependency problems; semgrep 0 errors after one fix (an SQL statement written with a template), warnings known (TLS off only in the migration test switch, MD5 required by OpenSRS, a feature-flag comparison flagged as a secret compare); HTTP probe 44/47 — the 3 "failures" are the test switches and recovery login left on in the test copy |
+| Independent reviews (2 separate agents) | First review of PR #2: 1 high, 3 medium, 7 low → all fixed. Second review of the fixes: all confirmed fixed; 1 medium-high (a burst of code requests could hold the database connections), 2 medium (password change could skip the clean-up; a stolen session could re-confirm a leftover address) and 5 low → all fixed |
+| Flaky | The console test "mailbox created, suspended, deleted" failed in 2 of 4 full local runs (passes alone and in the last full run); it now reports what the page showed, to find the cause |
+
+Recovery tests: the address needs the password and must be outside IRON ID (platform domain and sub-domains, a domain
+hosted here and its sub-domains, the mailbox itself); a code confirms it (wrong code, 5 wrong codes end it, sending a code
+needs the password); the mailbox gets a notice; the same answer for any address and nothing sent to an unconfirmed one;
+the link works once and signs everyone out, with a notice after; a newer link replaces the older; changing the address,
+the owner's password change and an admin's Reset sign-in each cancel links (and the admin's removes the address);
+6 simultaneous requests give exactly 3 links with one working; engine admins get none; the pages in a real browser
+(forgot-password flow and the Settings card with the code).
+Domain tests: buying through the webmail pages (owner details error, fake card payment, address added, invoice link);
+renewal refused before 30 days, the notice, a cancelled payment, then one more year paid and invoiced; up to 30 days
+after the end renewal still possible, later only through support; console Payments, Customers' paid column and
+"Prix et factures" in French; no sideways scroll on a phone for the four domain pages.
+
+---
+
 ## Update 2026-10-15 (night) — Own domains and payments (branch `i18n-en-fr`)
 
 Same local stack, gateway started with `OWN_DOMAINS_ENABLED=true` and the test-only fakes for payments
