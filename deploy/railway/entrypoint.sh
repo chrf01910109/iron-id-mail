@@ -9,6 +9,13 @@ mkdir -p /opt/iron-id/data /var/log /opt/iron-id/engine /var/log/postgresql
 
 # 1. Generate config.json using Node.js URL parser (handles DATABASE_URL and env vars safely)
 node /opt/iron-id/webmail/scripts/generateConfig.js
+# It holds the database password: readable by the engine's user only.
+RUN_USER=ironid
+id "$RUN_USER" > /dev/null 2>&1 || RUN_USER=""
+if [ -n "$RUN_USER" ]; then chown root:"$RUN_USER" /opt/iron-id/config.json; chmod 640 /opt/iron-id/config.json; else chmod 600 /opt/iron-id/config.json; fi
+# Runs a command as the unprivileged user when the image has one (the engine gets only the right to use
+# ports below 1024, set on its file in the Dockerfile).
+as_app() { if [ -n "$RUN_USER" ]; then setpriv --reuid="$RUN_USER" --regid="$RUN_USER" --init-groups "$@"; else "$@"; fi; }
 
 DB_HOST=$(node -e "console.log(require('/opt/iron-id/webmail/services/dbUrlParser').getPostgresConfig().host)")
 DB_PORT=$(node -e "console.log(require('/opt/iron-id/webmail/services/dbUrlParser').getPostgresConfig().port)")
@@ -89,28 +96,31 @@ unset PGPASSWORD
 # 5. Start IRON ID Sovereign Mail Engine (PostgreSQL 16) in background
 echo "--> Starting IRON ID Sovereign Mail Engine (PostgreSQL 16) in background..."
 touch /var/log/ironid-engine.log
+[ -n "$RUN_USER" ] && chown "$RUN_USER":"$RUN_USER" /var/log/ironid-engine.log
 ln -sf /var/log/ironid-engine.log /var/log/stalwart.log 2>/dev/null || true
-(/usr/local/bin/ironid-engine -c /opt/iron-id/config.json || /usr/local/bin/stalwart -c /opt/iron-id/config.json) > /var/log/ironid-engine.log 2>&1 &
 
 # 6. Wait for Engine to report healthy on internal port
-echo "--> Verifying IRON ID Sovereign Mail Engine is listening..."
-MAX_RETRIES=30
-RETRY_COUNT=0
-DETECTED_PORT=""
-
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-  if curl -s http://127.0.0.1:8080/jmap/session > /dev/null 2>&1; then
-    DETECTED_PORT="8080"
-    break
-  fi
-  if curl -s http://127.0.0.1:8085/jmap/session > /dev/null 2>&1; then
-    DETECTED_PORT="8085"
-    break
-  fi
-  RETRY_COUNT=$((RETRY_COUNT+1))
-  echo "Waiting for IRON ID Sovereign Engine... ($RETRY_COUNT/$MAX_RETRIES)"
-  sleep 1
-done
+wait_engine() {
+  DETECTED_PORT=""
+  for RETRY_COUNT in $(seq 1 30); do
+    if curl -s http://127.0.0.1:8080/jmap/session > /dev/null 2>&1; then DETECTED_PORT="8080"; return 0; fi
+    if curl -s http://127.0.0.1:8085/jmap/session > /dev/null 2>&1; then DETECTED_PORT="8085"; return 0; fi
+    echo "Waiting for IRON ID Sovereign Engine... ($RETRY_COUNT/30)"
+    sleep 1
+  done
+  return 1
+}
+as_app /usr/local/bin/stalwart -c /opt/iron-id/config.json >> /var/log/ironid-engine.log 2>&1 &
+ENGINE_PID=$!
+echo "--> Verifying IRON ID Sovereign Mail Engine is listening (as ${RUN_USER:-root})..."
+if ! wait_engine && [ -n "$RUN_USER" ]; then
+  # Should not happen; if this host refuses the engine's port right, keep the service up as before.
+  echo "[WARNING] The engine did not start as $RUN_USER; starting it as root instead. Log:"
+  tail -n 40 /var/log/ironid-engine.log || true
+  kill "$ENGINE_PID" 2>/dev/null || true; sleep 1
+  /usr/local/bin/stalwart -c /opt/iron-id/config.json >> /var/log/ironid-engine.log 2>&1 &
+  wait_engine || true
+fi
 
 if [ -n "$DETECTED_PORT" ]; then
   echo "--> IRON ID Sovereign Engine (PostgreSQL 16) is LIVE and READY on internal port $DETECTED_PORT!"
@@ -128,6 +138,12 @@ if [ "$WEB_PORT" = "$FINAL_ENGINE_PORT" ]; then
   WEB_PORT="3001"
 fi
 
-echo "--> Starting IRON ID Webmail & Sovereign Admin Gateway on port $WEB_PORT (connecting to internal engine on $FINAL_ENGINE_PORT)..."
+echo "--> Starting IRON ID Webmail & Sovereign Admin Gateway on port $WEB_PORT as ${RUN_USER:-root} (connecting to internal engine on $FINAL_ENGINE_PORT)..."
 cd /opt/iron-id/webmail
-PORT="$WEB_PORT" IRONID_ENGINE_PORT="$FINAL_ENGINE_PORT" exec node server.js
+export PORT="$WEB_PORT" IRONID_ENGINE_PORT="$FINAL_ENGINE_PORT"
+if [ -n "$RUN_USER" ] && [ "$WEB_PORT" -lt 1024 ]; then
+  echo "[WARNING] Port $WEB_PORT needs root; the gateway runs as root."
+  exec node server.js
+fi
+as_app_exec() { if [ -n "$RUN_USER" ]; then exec setpriv --reuid="$RUN_USER" --regid="$RUN_USER" --init-groups "$@"; else exec "$@"; fi; }
+as_app_exec node server.js
