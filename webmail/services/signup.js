@@ -13,8 +13,8 @@
  *   - passwords: 12+ characters, not in a list of ~47,000 common long passwords, not the person's name
  *     or address.
  * Settings (cp.settings): signup.quota_mb (storage per new mailbox, default 5120 = 5 GB) and
- * signup.external_daily_limit (messages a day to outside addresses for new accounts; recorded now,
- * enforced when outgoing mail moves to the VPS).
+ * signup.external_daily_limit (decided 2026-10-16: no daily sending limit, so it stays empty; the column is
+ * kept in cp.signup_log in case one is ever set).
  */
 const crypto = require('crypto');
 const fs = require('fs');

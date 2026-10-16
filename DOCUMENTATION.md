@@ -198,8 +198,8 @@ moves after Issam's mailbox is migrated); before that, mail from outside would n
 Limits: 3 accounts a day per network (IPv4 address, or IPv6 /64) — `SIGNUP_PER_IP_DAY`; 200 a day in total —
 `SIGNUP_PER_DAY`; both counted under a database lock, so parallel requests can't exceed them. Settings for later in
 `cp.settings` (empty = none): `signup.quota_mb` (storage per new mailbox) and `signup.external_daily_limit`
-(messages a day to outside addresses for new accounts — recorded per sign-up now, enforced when outgoing mail
-moves to the VPS). The sign-in card shows "No IRON ID mailbox yet? Create one" only while sign-up is on.
+(**decided 2026-10-16: no daily sending limit** — left empty; recorded per sign-up only in case one is ever set).
+Abuse is handled by the Acceptable Use Policy (spam-like sending can be slowed or stopped). The sign-in card shows "No IRON ID mailbox yet? Create one" only while sign-up is on.
 
 ### 4.5b "Forgot password?" — built, switched off in production
 On only with `PASSWORD_RESET_ENABLED=true` (and `PUBLIC_URL`, or Railway's public domain, for the link). It stays **off
@@ -467,7 +467,7 @@ sign-in brake; every admin action audited; admin scope enforced on the server; e
 1. Deploy Phases 2, 3a, 3b + audit fixes + English/French; do the actions in §10.2.
    Built and switched off in production: sign-up for name@iron-id.io (§4.5) and own domains with payments
    (§4.6). Before opening them: the VPS and the iron-id.io MX move, a French company with Stripe, the OpenSRS
-   account, reviewed legal texts, the sending limit, and recovery-email verification.
+   account, reviewed legal texts.
 2. VPS (OVH, port 25 open): move the engine and its database, clean IP + reverse DNS, TLS on mail ports,
    listeners bound correctly, fresh keys; pilot on `mail.iron-id.io`.
 3. Mail apps (IMAP/SMTP submission), spam/virus filtering, deliverability monitoring, verified-sender badge.

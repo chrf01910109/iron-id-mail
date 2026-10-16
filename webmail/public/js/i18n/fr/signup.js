@@ -25,7 +25,6 @@ export default {
   'Acceptable Use Policy': 'Politique d’usage acceptable',
   '(no bulk or unsolicited mail), and I have read the': '(pas d’envois en masse ni de messages non sollicités), et j’ai lu la',
   'Privacy Notice': 'Politique de confidentialité',
-  'New accounts have a daily limit for mail to addresses outside IRON ID at first. Mail between IRON ID addresses is not limited.': 'Au début, les nouveaux comptes ont une limite quotidienne de messages vers des adresses hors IRON ID. Les échanges entre adresses IRON ID ne sont pas limités.',
   'Continue': 'Continuer',
   '← Back': '← Retour',
   'Open my mailbox': 'Ouvrir ma boîte mail',
