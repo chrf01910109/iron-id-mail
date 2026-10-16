@@ -73,7 +73,7 @@ the encryption key is derived from `ADMIN_TOKEN`, which only exists in Railway's
 
 | Path | What |
 |---|---|
-| `Dockerfile`, `railway.json` | The production container: Node 20, Stalwart 0.16.23 (checksum-pinned), optional built-in Postgres |
+| `Dockerfile`, `.railway/railway.ts` | The production container: Node 20, Stalwart 0.16.23 (checksum-pinned), optional built-in Postgres |
 | `deploy/railway/entrypoint.sh` | Container start: database, one-time seed import, engine, gateway |
 | `deploy/opensearch/` | The OpenSearch service (Dockerfile, entrypoint, index templates, README) |
 | `deploy/docker-compose.yml`, `deploy-vps.sh`, `vps-setup.sh`, `config.toml` | Early VPS scripts — **not production-ready** (see §10.3) |
@@ -355,6 +355,11 @@ are in the engine's own tables in the same database. `ironid_meta` (public schem
 - `iron-id-mail`: the container (gateway + engine). Public HTTPS domain.
 - Postgres: Railway database service (`DATABASE_URL`).
 - `opensearch`: search service on the private network, with a volume at `/var/lib/ironid-search`.
+- Settings as code: `.railway/railway.ts` (since 2026-10-16; replaced the `railway.json` files, which Railway stops
+  reading on 2026-12-01). It describes the services, the Dockerfile builds, Postgres and the volumes; **variables are
+  not in it** (`variables: { managed: false }`) and stay in the dashboard / CLI. Preview with `railway config plan`
+  (Node 22.6+: `PATH=/opt/homebrew/opt/node@22/bin:$PATH`, and `npm install --no-save railway` once); it should say
+  "already up to date". `railway config apply` changes Railway and may redeploy services.
 
 ### 8.2 One-time engine access setup (and after permission changes)
 The gateway needs its own engine API key, and its role must contain the permissions the running version uses.

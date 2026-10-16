@@ -123,7 +123,7 @@ iron-id-workspace/
 ├── Dockerfile                   # Ubuntu 24.04 all-in-one Virtual VPS container for Railway
 ├── package.json                 # Node.js dependencies
 ├── server.js                    # Root server entrypoint
-├── railway.json                 # Railway deployment config
+├── .railway/railway.ts          # Railway settings as code (was railway.json)
 ├── deploy/
 │   ├── init.sql                 # PostgreSQL 16 schema migrations
 │   ├── railway/entrypoint.sh    # Multi-process entrypoint (Postgres, Stalwart, Node.js)
