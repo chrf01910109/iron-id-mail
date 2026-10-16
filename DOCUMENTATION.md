@@ -73,10 +73,10 @@ the encryption key is derived from `ADMIN_TOKEN`, which only exists in Railway's
 
 | Path | What |
 |---|---|
-| `Dockerfile`, `.railway/railway.ts` | The production container: Node 20, Stalwart 0.16.23 (checksum-pinned), optional built-in Postgres |
+| `Dockerfile`, `.railway/railway.ts` | The production container: Node 22 (official image), Stalwart 0.16.23 (checksum-pinned), optional built-in Postgres; the engine and the gateway run as the unprivileged user `ironid` |
 | `deploy/railway/entrypoint.sh` | Container start: database, one-time seed import, engine, gateway |
 | `deploy/opensearch/` | The OpenSearch service (Dockerfile, entrypoint, index templates, README) |
-| `deploy/docker-compose.yml`, `deploy-vps.sh`, `vps-setup.sh`, `config.toml` | Early VPS scripts — **not production-ready** (see §10.3) |
+| `deploy/vps/` | The server (VPS) kit: compose file (app, Postgres, OpenSearch, Caddy), data move, encrypted backups + restore test, mail certificate import and checks; runbook in its README. Tested by `.github/workflows/vps-kit.yml` |
 | `engine/export_data.json/` | Seed data imported on a fresh database (domains, settings, first accounts) |
 | `webmail/server.js` | The gateway (all HTTP routes) |
 | `webmail/services/` | `accountSecurity.js` (sign-in, two-step, app passwords), `sessionStore.js`, `secretBox.js` (encryption), `db.js` + `controlPlane.sql` (schema), `engineAdmin.js` (engine API key, role), `adminConsole.js` (/admin-api), `labels.js`, `dnsCheck.js`, `searchBackend.js`, `seedGuard.js` |
@@ -440,9 +440,12 @@ sign-in brake; every admin action audited; admin scope enforced on the server; e
   moving to the VPS.
 - The seed dump contains private keys besides DKIM (likely the engine's TLS key and a server secret): regenerate
   them on the VPS.
-- Container runs as root; Node is installed with the NodeSource script (semgrep warning); built-in Postgres uses
-  `trust` (only when `DATABASE_URL` is unset).
-- VPS compose files serve HTTP without TLS and allow clear-text mail auth; default DB password in `deploy/`.
+- Built-in Postgres uses `trust` (only when `DATABASE_URL` is unset — never in production).
+  (Fixed 2026-10-16: the engine and the gateway no longer run as root — user `ironid`, the engine keeps only the
+  right to use ports below 1024; if a host refuses that right the entrypoint falls back to root and says so in the
+  log. Node 22 comes from the official image instead of a download-and-run script. The early VPS files with
+  default passwords and no TLS were replaced by `deploy/vps/`.)
+- Check on the VPS that the mail ports refuse password sign-in before TLS (the seed's listener settings).
 - `ADMIN_TOKEN` is both a server secret and the encryption-key source; a separate key would be cleaner.
 - Per-mailbox brake (30 failures) can be used to lock someone out for 15 minutes.
 - OpenSearch is reached with certificate checks off (self-signed, private network, password-protected).

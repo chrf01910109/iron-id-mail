@@ -1,0 +1,105 @@
+# IRON ID Mail on one server (the VPS): the same app image as on Railway, its database, mail search,
+# and Caddy for HTTPS. Run from this folder:  docker compose up -d --build
+# Settings come from ./.env (copy .env.example; chmod 600). See README.md for the whole move.
+name: ironid
+
+services:
+  db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ironid
+      POSTGRES_DB: ironid
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ironid -d ironid"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    shm_size: 256mb
+
+  search:
+    build: ../opensearch
+    restart: unless-stopped
+    environment:
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:?set OPENSEARCH_PASSWORD in .env}
+      OPENSEARCH_JAVA_OPTS: ${OPENSEARCH_JAVA_OPTS:--Xms1g -Xmx1g}
+    volumes:
+      - search:/var/lib/ironid-search
+    networks: [internal]
+    ulimits:
+      nofile: { soft: 65536, hard: 65536 }
+
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: ironid-mail:local
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      search: { condition: service_started }
+    environment:
+      DATABASE_URL: postgresql://ironid:${DB_PASSWORD}@db:5432/ironid
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?set ADMIN_TOKEN in .env (the same value as on Railway)}
+      OPENSEARCH_URL: https://search:9200
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD}
+      PORT: "3001"
+      TRUST_PROXY: "true"
+      PUBLIC_URL: https://${WEB_HOST:?set WEB_HOST in .env}
+      MAIL_HOST: ${WEB_HOST}
+      PLATFORM_ADMINS: ${PLATFORM_ADMINS:-charaf@iron-id.io}
+      # Only for the one-time steps in README.md; leave empty the rest of the time.
+      STALWART_RECOVERY_ADMIN: ${STALWART_RECOVERY_ADMIN:-}
+      # Switches for later (phase 6 of the plan). Unset = off.
+      PASSWORD_RESET_ENABLED: ${PASSWORD_RESET_ENABLED:-}
+      SIGNUP_ENABLED: ${SIGNUP_ENABLED:-}
+      OWN_DOMAINS_ENABLED: ${OWN_DOMAINS_ENABLED:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      REGISTRAR: ${REGISTRAR:-}
+      OPENSRS_USER: ${OPENSRS_USER:-}
+      OPENSRS_KEY: ${OPENSRS_KEY:-}
+      OPENSRS_ENV: ${OPENSRS_ENV:-}
+    volumes:
+      # Caddy's certificates, read-only: scripts/import-certificate.js copies the one for WEB_HOST into
+      # the engine so the mail ports present it too (renew-mail-cert.sh, nightly).
+      - caddy_data:/caddy-data:ro
+    ports:
+      # Mail ports go straight to the engine. The web (3001) and the engine's own HTTP (8080) stay
+      # private: Caddy reaches them on the internal network.
+      - "25:25"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+    networks: [internal, web]
+
+  web:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      WEB_HOST: ${WEB_HOST}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [web]
+
+networks:
+  internal:
+    internal: true   # database and search: no internet, no ports
+  web: {}
+
+volumes:
+  db: {}
+  search: {}
+  caddy_data: {}
+  caddy_config: {}

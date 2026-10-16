@@ -1,0 +1,12 @@
+# HTTPS for the webmail and admin console at WEB_HOST. Caddy gets and renews the Let's Encrypt
+# certificate itself (ports 80 and 443) and redirects plain HTTP to HTTPS. The mail engine uses the same
+# certificate: renew-mail-cert.sh copies it in every night.
+{
+	email {$ACME_EMAIL}
+}
+
+{$WEB_HOST} {
+	encode zstd gzip
+	reverse_proxy app:3001
+	header -Server
+}

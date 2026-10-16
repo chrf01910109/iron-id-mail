@@ -14,7 +14,6 @@ iron-id-workspace/
 ├── engine/                      # IRON ID Core Mail Engine (Rust) & PostgreSQL / Data Store
 │   ├── stalwart.exe             # Core Engine binary (Windows x86_64)
 │   ├── config.json              # Relational store configuration pointer
-│   ├── config.toml              # Engine TOML configuration reference
 │   └── data/                    # Data directory containing accounts & mailboxes
 ├── webmail/                     # Frontend Client & JMAP Gateway
 │   ├── server.js                # Node.js transparent proxy & SPA webmail UI

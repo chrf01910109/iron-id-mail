@@ -1,0 +1,64 @@
+name: Server kit
+
+# Starts the server set-up (deploy/vps) the way the VPS will run it: builds the images, checks the
+# engine and the gateway run as the unprivileged user with the mail ports open, then makes a backup
+# and restores it. HTTPS (Caddy) is not started here: it needs a public name.
+on:
+  push:
+    branches: [main, master]
+    paths: ['deploy/**', 'Dockerfile', 'webmail/scripts/**', 'webmail/services/engineAdmin.js', '.github/workflows/vps-kit.yml']
+  pull_request:
+    paths: ['deploy/**', 'Dockerfile', 'webmail/scripts/**', 'webmail/services/engineAdmin.js', '.github/workflows/vps-kit.yml']
+
+jobs:
+  compose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Throw-away settings
+        working-directory: deploy/vps
+        run: |
+          umask 077
+          {
+            echo WEB_HOST=localhost
+            echo ACME_EMAIL=ci@example.com
+            echo DB_PASSWORD=$(openssl rand -hex 24)
+            echo OPENSEARCH_PASSWORD=$(openssl rand -hex 24)
+            echo ADMIN_TOKEN=$(openssl rand -hex 32)
+          } > .env
+          sudo sysctl -w vm.max_map_count=262144
+          docker compose config -q
+      - name: Start the database, search and the app
+        working-directory: deploy/vps
+        run: docker compose up -d --build db search app
+      - name: Healthy, unprivileged, mail ports open
+        working-directory: deploy/vps
+        run: |
+          for i in $(seq 1 120); do docker compose exec -T app curl -sf http://127.0.0.1:3001/healthz | grep -q '"engine":"ok"' && break; sleep 2; done
+          docker compose exec -T app curl -s http://127.0.0.1:3001/healthz; echo
+          docker compose exec -T app curl -s http://127.0.0.1:3001/healthz | grep -q '"engine":"ok"'
+          docker compose top app
+          # The engine and the gateway must not run as root (uid 0).
+          ! docker compose top app | awk 'NR>1 && ($0 ~ /stalwart/ || $0 ~ /node server.js/) {print $1}' | grep -qxE 'root|0'
+          docker compose top app | grep -q stalwart
+          for port in 25 465 587 993; do timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/$port" && echo "port $port open"; done
+          timeout 5 bash -c 'exec 3<>/dev/tcp/127.0.0.1/993'
+          docker compose logs app | grep -q "as ironid"
+          ! docker compose logs app | grep -q "did not start as ironid"
+      - name: Backup, then restore it into a throw-away database
+        working-directory: deploy/vps
+        run: |
+          sudo mkdir -p /etc/ironid
+          openssl rand -hex 32 | sudo tee /etc/ironid/backup.key > /dev/null
+          sudo chmod 600 /etc/ironid/backup.key
+          sudo ./backup.sh
+          sudo ./restore-test.sh
+      - name: Logs
+        if: failure()
+        working-directory: deploy/vps
+        run: docker compose logs --tail 120
+      - name: Stop
+        if: always()
+        working-directory: deploy/vps
+        run: docker compose down -v

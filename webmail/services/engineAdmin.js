@@ -42,6 +42,15 @@ const ROLE_PERMISSIONS = (() => {
   return p;
 })();
 
+// Added only when the role is synced with the recovery admin (one-time server set-up), and never
+// reported as missing: the mail server's TLS certificate, renewed by Caddy and imported by
+// scripts/import-certificate.js on the VPS. Not needed on Railway (no mail ports there).
+const OPTIONAL_PERMISSIONS = (() => {
+  const p = {};
+  for (const op of ['Get', 'Query', 'Create', 'Update']) p[`sysCertificate${op}`] = true;
+  return p;
+})();
+
 let apiKey = null;   // decrypted key, in memory
 let status = 'unknown';
 
@@ -130,7 +139,7 @@ const GRANTABLE_ROLES = ['User', 'Group'];
  */
 async function syncRole(rec, checkWith = null) {
   const roles = firstResult(await jmap(rec || checkWith, [['x:Role/get', { ids: null, properties: ['description', 'enabledPermissions'] }, 'r']]), 'r').list;
-  const wanted = { ...ROLE_PERMISSIONS };
+  const wanted = rec ? { ...ROLE_PERMISSIONS, ...OPTIONAL_PERMISSIONS } : { ...ROLE_PERMISSIONS };
   for (const r of roles.filter(x => GRANTABLE_ROLES.includes(x.description))) {
     for (const [k, v] of Object.entries(r.enabledPermissions || {})) if (v) wanted[k] = true;
   }
