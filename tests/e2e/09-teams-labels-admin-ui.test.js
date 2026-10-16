@@ -177,7 +177,11 @@ test('admin console in the browser: mailbox created, suspended, deleted; team li
   await p.selectOption('#formDialog .addr-row select', h.TEST_DOMAIN);
   await p.fill('#f_name', 'UI Person');
   await p.click('#formDialog button[type=submit]');
-  await p.waitForSelector('#secretValue');
+  // On failure, say what the dialog showed (this step has failed rarely, only in full runs).
+  await p.waitForSelector('#secretValue').catch(async e => {
+    const shown = await p.evaluate(() => [...document.querySelectorAll('#formDialog, .form-status, .toast')].map(x => x.textContent.trim()).filter(Boolean).join(' | ')).catch(() => '');
+    throw new Error(e.message + ' — page showed: ' + shown.slice(0, 400));
+  });
   const pw = (await p.textContent('#secretValue')).trim();
   assert.match(pw, /^[A-Za-z0-9]{4}(-[A-Za-z0-9]{4}){3}$/);
   await p.click('#formDialog button:has-text("Done")');
